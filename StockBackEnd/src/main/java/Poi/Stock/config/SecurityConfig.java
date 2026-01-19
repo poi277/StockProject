@@ -22,7 +22,9 @@ public class SecurityConfig {
 		http.cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS 설정 추가
 				.csrf(csrf -> csrf.disable())
 				.authorizeHttpRequests(
-						auth -> auth.requestMatchers("/", "/hello").permitAll().anyRequest().authenticated())
+						// 허용 안하면 403 에러(forbidden)로 처리됨
+						auth -> auth.requestMatchers("/", "/hello", "/user/register").permitAll().anyRequest()
+								.authenticated())
 				.formLogin(form -> form.disable()).httpBasic(basic -> basic.disable());
 
 		return http.build();

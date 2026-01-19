@@ -19,7 +19,6 @@ public class StockUserService {
 
 	public void registerUser(UserRegisterDto dto) {
 		try {
-			// 중복 체크 (선택사항)
 			if (userRepository.existsById(dto.getId())) {
 				throw new IllegalArgumentException("이미 존재하는 사용자입니다");
 			}

@@ -23,7 +23,7 @@ public class StockUserController {
 	public ResponseEntity<?> register(@RequestBody UserRegisterDto dto) {
 		try {
 			userService.registerUser(dto);
-			return ResponseEntity.ok("로그아웃 성공");
+			return ResponseEntity.ok("회원가입 성공");
 		} catch (IllegalArgumentException e) {
 			return ResponseEntity.badRequest().body(e.getMessage()); // 400
 
