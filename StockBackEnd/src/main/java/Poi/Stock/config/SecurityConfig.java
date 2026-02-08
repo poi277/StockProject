@@ -23,7 +23,8 @@ public class SecurityConfig {
 				.csrf(csrf -> csrf.disable())
 				.authorizeHttpRequests(
 						// 허용 안하면 403 에러(forbidden)로 처리됨
-						auth -> auth.requestMatchers("/", "/hello", "/user/register").permitAll().anyRequest()
+						auth -> auth.requestMatchers("/", "/hello", "/user/register", "/stock/*").permitAll()
+								.anyRequest()
 								.authenticated())
 				.formLogin(form -> form.disable()).httpBasic(basic -> basic.disable());
 
