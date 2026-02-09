@@ -18,20 +18,16 @@ public class StockService {
 	private final SimpMessagingTemplate messagingTemplate;
 	private final Random random = new Random();
 
-	// 1초마다 DB에서 주식 정보를 읽어서 WebSocket으로 전송
+	// 데베 정보 읽고 5초마다 모든 주식을 /topic/stock/{id}경로로 WebSocket으로 전송
 	@Scheduled(fixedRate = 5000)
 	public void broadcastStockPrices() {
 		List<Stock> stocks = stockRepository.findAll();
-
 		for (Stock stock : stocks) {
-			// 랜덤 변동
 			updateStockPrice(stock);
-
-			// 각 종목별로 전송
+			// 각 종목별로 메세지 전송
 			messagingTemplate.convertAndSend("/topic/stock/" + stock.getId(), stock);
 		}
 	}
-
 	// 테스트용: 랜덤 가격 변동
 	private void updateStockPrice(Stock stock) {
 		int change = random.nextInt(2001) - 1000; // -1000 ~ +1000
