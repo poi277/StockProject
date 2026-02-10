@@ -4,15 +4,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import Poi.Stock.DTO.user.UserRegisterDto;
-import Poi.Stock.repository.UserRepository;
+import Poi.Stock.repository.StockUserRepository;
 
 @Service
-public class StockUserService {
+public class UserService {
 
 	private final PasswordEncoder passwordEncoder;
-	private final UserRepository userRepository;
+	private final StockUserRepository userRepository;
 
-	public StockUserService(PasswordEncoder passwordEncoder, UserRepository userRepository) {
+	public UserService(PasswordEncoder passwordEncoder, StockUserRepository userRepository) {
 		this.passwordEncoder = passwordEncoder;
 		this.userRepository = userRepository;
 	}

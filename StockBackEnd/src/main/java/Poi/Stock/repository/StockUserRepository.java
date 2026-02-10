@@ -4,6 +4,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import Poi.Stock.features.User.StockUser;
 
-public interface UserRepository extends JpaRepository<StockUser, String> {
+public interface StockUserRepository extends JpaRepository<StockUser, String> {
 }
 

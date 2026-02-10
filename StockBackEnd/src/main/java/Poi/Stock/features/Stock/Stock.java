@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 public class Stock {
 	@Id
 	private String id; // 종목코드
-	private String name; // 종목명 추가
+	private String name; // 종목명
 	private Integer price; // 현재가
 	private Integer changeAmount; // 전일대비 금액
 	private Double changeRate; // 전일대비 등락률

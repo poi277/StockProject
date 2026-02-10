@@ -11,11 +11,11 @@ import Poi.Stock.DTO.user.UserRegisterDto;
 
 @RequestMapping("/user")
 @RestController
-public class StockUserController {
+public class UserController {
 
-	private final StockUserService userService;
+	private final UserService userService;
 
-	public StockUserController(StockUserService userService) {
+	public UserController(UserService userService) {
 		this.userService = userService;
 	}
 

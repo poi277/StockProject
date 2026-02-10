@@ -1,16 +1,25 @@
 package Poi.Stock.features.User;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "Stock_User")
+@Table(name = "StockUser")
 public class StockUser {
 	@Id
 	String id;
 	String username;
 	String password;
+	// 가지고있는 주식
+	// 사용자가 보유한 주식들
+	@OneToMany(mappedBy = "stockUser", cascade = CascadeType.ALL)
+	private List<HaveStock> holdings = new ArrayList<>();
 
 	public String getId() {
 		return id;
