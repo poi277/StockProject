@@ -11,6 +11,8 @@ import Poi.Stock.features.User.StockUser;
 
 public interface HaveStockRepository extends JpaRepository<HaveStock, Long> {
 	Optional<HaveStock> findByStockUserAndStock(StockUser stockUser, Stock stock);
-	List<HaveStock> findByUser(StockUser user);
+
+	List<HaveStock> findByStockUser(StockUser stockUser);
+
 }
 

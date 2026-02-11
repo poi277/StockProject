@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import Poi.Stock.DTO.user.ApiResponse;
-import Poi.Stock.DTO.user.SellAndBuyDTO;
+import Poi.Stock.DTO.user.TradeDTO;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -29,20 +29,20 @@ public class StockController {
 
 	// 주식 사거나 팔기
 	// @RequestBody에 아이디 정보랑 매수나 매도
-	@PostMapping("/SellAndBuy")
-	public ResponseEntity<ApiResponse> stockSell(@RequestBody SellAndBuyDTO sellAndBuyDTO) {
-
-		if ("매수".equals(sellAndBuyDTO.getOption())) {
-			stockService.buyStock(sellAndBuyDTO.getUserId(), sellAndBuyDTO.getStockId(), sellAndBuyDTO.getQuantity());
+	@PostMapping("/trade")
+	public ResponseEntity<ApiResponse> stockSell(@RequestBody TradeDTO tradeDTO) {
+		switch (tradeDTO.getTradeType()) {
+		case BUY -> {
+			System.out.println("buy");
+			stockService.buyStock(tradeDTO.getUserId(), tradeDTO.getStockId(), tradeDTO.getQuantity());
 			return ResponseEntity.ok(new ApiResponse(true, "매수 완료"));
-
-		} else if ("매도".equals(sellAndBuyDTO.getOption())) {
-			stockService.sellStock(sellAndBuyDTO.getUserId(), sellAndBuyDTO.getStockId(), sellAndBuyDTO.getQuantity());
+		}
+		case SELL -> {
+			System.out.println("SELL");
+			stockService.sellStock(tradeDTO.getUserId(), tradeDTO.getStockId(), tradeDTO.getQuantity());
 			return ResponseEntity.ok(new ApiResponse(true, "매도 완료"));
 		}
-
+		}
 		return ResponseEntity.badRequest().body(new ApiResponse(false, "잘못된 옵션입니다"));
 	}
-
-
 }

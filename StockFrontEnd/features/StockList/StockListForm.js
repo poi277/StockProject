@@ -1,11 +1,14 @@
 'use client';
 
+import Trade from "../Trade/Trade";
+import TradeForm from "../Trade/TradeForm";
 import { StockList } from "./StockList";
 
 export default function StockListForm({stockCodes}) {
   const { connected, stocks } = StockList(stockCodes);
 
   return (
+      <>
     <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
       <h1>📈 실시간 주식 시세</h1>
 
@@ -56,5 +59,7 @@ export default function StockListForm({stockCodes}) {
         )}
       </div>
     </div>
+    <TradeForm/>
+  </>
   );
 }
