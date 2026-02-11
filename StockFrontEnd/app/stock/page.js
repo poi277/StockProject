@@ -1,10 +1,12 @@
 import StockListForm from "../../features/StockList/StockListForm";
+import { stockListApi } from "../../lib/stock";
 
 export default async function StockListPage() {
       
-const stockCodes = ['005930', '000660', '035420'];
+const stocklist = await stockListApi()
+const stockArray = Array.isArray(stocklist.data) ? stocklist.data : [];
 
     return (
-        <StockListForm stockCodes={stockCodes}/>
+        <StockListForm stocklist={stockArray}/>
     );
 }

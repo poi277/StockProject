@@ -1,5 +1,6 @@
 package Poi.Stock.features.Stock;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,11 @@ public class StockController {
 		return Map.of("success", true, "message", "hello websocket");
 	}
 
+	@GetMapping("/stocklist")
+	public ResponseEntity<ApiResponse> stockList() {
+		List<Stock> stocklist = stockService.getAllStocks();
+		return ResponseEntity.ok(new ApiResponse(true, "리스트 불러오기 완료", stocklist));
+	}
 	// 주식 사거나 팔기
 	// @RequestBody에 아이디 정보랑 매수나 매도
 	@PostMapping("/trade")

@@ -6,5 +6,5 @@ export async function stockApi(stockId) {
 }
 
 export async function stockListApi() {
-  return await apiFetch(`${API_URL}/stock/`);
+  return await apiFetch(`${API_URL}/stock/stocklist`);
 }

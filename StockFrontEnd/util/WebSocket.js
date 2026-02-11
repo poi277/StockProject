@@ -9,10 +9,12 @@ export function useWebSocket() {
   const clientRef = useRef(null);
 
   useEffect(() => {
-    const socket = new SockJS('http://localhost:8080/ws');
-
     const client = new Client({
-      webSocketFactory: () => socket,
+      webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+
+      reconnectDelay: 5000,            // 자동 재연결
+      heartbeatIncoming: 4000,         // 서버 heartbeat 감지
+      heartbeatOutgoing: 4000,
 
       onConnect: () => {
         console.log('✅ WebSocket 연결 성공!');
@@ -20,7 +22,17 @@ export function useWebSocket() {
       },
 
       onDisconnect: () => {
-        console.log('❌ WebSocket 연결 끊김');
+        console.log('❌ 정상 연결 종료');
+        setConnected(false);
+      },
+
+      onWebSocketClose: () => {
+        console.log('🔥 서버 다운 / 강제 종료 감지');
+        setConnected(false);
+      },
+
+      onStompError: (frame) => {
+        console.error('STOMP 에러:', frame);
         setConnected(false);
       }
     });
