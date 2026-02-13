@@ -4,10 +4,14 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { loginHandler, logoutHandler, checkSession } from '../lib/auth'
 import { useRouter } from 'next/navigation';
+import { useWebSocket } from '../util/WebSocket'
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
+  //웹소켓은 항상 connect
+  const { connected, client } = useWebSocket();
+
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -16,12 +20,12 @@ export function AuthProvider({ children }) {
     loadUser();
   }, [pathname]);
 
-  const loadUser = async () => {
+    const loadUser = async () => {
     try {
-      const data = await checkSession();
-      if (data.isLoggedIn) {
-        setUser(data.user);
-        console.log('✅ 세션 확인 완료:', data.user);
+      const res = await checkSession();
+      if (res.success) {
+        setUser(res.data); // ✅ 백엔드에서 data에 userId가 담겨 있음
+        console.log('✅ 세션 확인 완료:', res.data);
       } else {
         console.log('❌ 세션 없음');
         setUser(null);
@@ -39,7 +43,7 @@ export function AuthProvider({ children }) {
       const res = await loginHandler(id, password);
       
       if (res.success) {
-        setUser(res.id);
+        setUser(res.data); // ✅ 마찬가지로 res.data가 userId
       }
       return res;
     } catch (error) {
@@ -66,6 +70,8 @@ export function AuthProvider({ children }) {
       loading, 
       login, 
       logout,
+      connected, 
+      client 
     }}>
       {children}
     </AuthContext.Provider>

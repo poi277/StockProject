@@ -139,4 +139,9 @@ public class StockService {
 		StockUser user = stockUserRepository.findById(userId).orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
 		return haveStockRepository.findByStockUser(user);
 	}
+
+	public Stock getStock(String stockId) {
+		Stock stock = stockRepository.findById(stockId).orElseThrow(() -> new RuntimeException("주식을 찾을 수 없습니다"));
+		return stock;
+	}
 }

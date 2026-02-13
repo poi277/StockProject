@@ -37,7 +37,7 @@ public class SecurityConfig {
             
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/", "/hello", "/user/register", "/stock/*", "/ws/**", "/auth/**").permitAll()
+						.requestMatchers("/", "/hello", "/user/register", "/stock/**", "/ws/**", "/auth/**").permitAll()
                 .anyRequest().authenticated()
             )
             

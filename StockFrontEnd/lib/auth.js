@@ -19,7 +19,7 @@ export async function loginHandler(id, password) {
 }
 
 export async function checkSession() {
-  const response = await fetch(`${API_URL}/auth/me`, {
+  const response = await fetch(`${API_URL}/auth/check`, {
     credentials: 'include', // ✅ 자동으로 쿠키 전송
   });
   return await response.json();

@@ -2,9 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { logoutHandler } from "../../lib/auth";
+import { useAuth } from "../../context/AuthContext";
 
 export default function UnderBarForm() {
   const router = useRouter();
+  const {user,logout} = useAuth();
   const [active, setActive] = useState("");
 
   const menuItems = [
@@ -12,6 +15,11 @@ export default function UnderBarForm() {
     { label: "자산", path: "/assets" },
     { label: "내 자신", path: "/profile" }
   ];
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/');
+  };
 
   return (
     <div style={styles.container}>
@@ -39,6 +47,11 @@ export default function UnderBarForm() {
           {item.label}
         </button>
       ))}
+     {user ? (
+      <button onClick={handleLogout}> 로그아웃 </button>
+     ):(
+         <button onClick={() => {router.push(`/login`)}}>로그인</button>
+      )}
     </div>
   );
 }

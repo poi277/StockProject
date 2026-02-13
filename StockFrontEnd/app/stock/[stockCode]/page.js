@@ -1,11 +1,15 @@
 import StockDetailForm from "../../../features/StockDetail/StockDetailForm";
-import { stockApi } from "../../../lib/stock";
+import { StockDetailApi } from "../../../lib/stock";
 
 export default async function StockDetail({ params }) {
     const {stockCode} = await params;
+    const res = await StockDetailApi(stockCode)
+    if (!res?.success) {
+        throw new Error(res.message);
+    }
     return (
         <div>
-            <StockDetailForm stockCode={stockCode} />
+            <StockDetailForm stock={res.data} />
         </div>
     );
 }

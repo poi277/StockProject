@@ -1,11 +1,10 @@
+import { useAuth } from "../../context/AuthContext";
 import { useStockSocket } from "../../util/useStockSocket";
-import { useWebSocket } from "../../util/WebSocket";
 
-export function StockList(stockCodes) {
+export function StockList(stockCode) {
 
-  const { connected, client } = useWebSocket();
-  const { stocks } = useStockSocket(client, connected, stockCodes);
-  
+  const { connected, client } = useAuth();
+  const { stocks } = useStockSocket(client, connected, stockCode);
 
   return {
     connected,

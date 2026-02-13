@@ -1,10 +1,10 @@
 package Poi.Stock.features.Stock;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,18 +21,19 @@ public class StockController {
 
 	private final StockService stockService;
 
-	// 프론트의 apifetch의 반환타입을 위해 ApiResponse으로 반환해야하여 success와 data,message가 표준이다.
-	// 웹소켓 가동하는 string을 그냥 보냄 실상은 서비스에서 실행
-	@GetMapping("/")
-	public Map<String, Object> hello() {
-		return Map.of("success", true, "message", "hello websocket");
-	}
-
 	@GetMapping("/stocklist")
 	public ResponseEntity<ApiResponse> stockList() {
 		List<Stock> stocklist = stockService.getAllStocks();
 		return ResponseEntity.ok(new ApiResponse(true, "리스트 불러오기 완료", stocklist));
 	}
+
+	// pathvariable 오류로 ("stockId")를 붙어야함
+	@GetMapping("/{stockId}")
+	public ResponseEntity<ApiResponse> getStock(@PathVariable("stockId") String stockId) {
+		Stock stock = stockService.getStock(stockId);
+		return ResponseEntity.ok(new ApiResponse(true, "주식 한개 불러오기 완료", stock));
+	}
+
 	// 주식 사거나 팔기
 	// @RequestBody에 아이디 정보랑 매수나 매도
 	@PostMapping("/trade")

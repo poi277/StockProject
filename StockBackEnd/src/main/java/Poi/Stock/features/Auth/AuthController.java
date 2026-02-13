@@ -36,29 +36,25 @@ public class AuthController {
 	@PostMapping("/login")
 	public ResponseEntity<ApiResponse> login(@RequestBody LoginDTO loginDTO, HttpServletRequest request,
 			HttpServletResponse response) {
-
 		try {
 			// 1. 인증
 			Authentication authentication = authenticationManager
 					.authenticate(new UsernamePasswordAuthenticationToken(loginDTO.getId(), loginDTO.getPassword()));
-
 			// 2. SecurityContext 생성 및 설정
 			SecurityContext context = SecurityContextHolder.createEmptyContext();
 			context.setAuthentication(authentication);
 			SecurityContextHolder.setContext(context);
-
-			// 3. 세션에 SecurityContext 저장 (중요!)
+			// 3. 세션에 SecurityContext 저장
 			securityContextRepository.saveContext(context, request, response);
-
 			// 4. 세션 ID 확인 (디버깅용)
 			HttpSession session = request.getSession(false);
 			if (session != null) {
 				System.out.println("✅ 세션 ID: " + session.getId());
 				System.out.println("✅ 로그인 사용자: " + authentication.getName());
 			}
-
-			return ResponseEntity.ok(new ApiResponse(true, "로그인 성공"));
-
+			// 5. 사용자 ID를 data에 담아서 반환
+			String userId = authentication.getName();
+			return ResponseEntity.ok(new ApiResponse(true, "로그인 성공", userId));
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
 					.body(new ApiResponse(false, "로그인 실패: " + e.getMessage()));
@@ -68,20 +64,21 @@ public class AuthController {
 	@GetMapping("/check")
 	public ResponseEntity<ApiResponse> checkAuth(Authentication authentication) {
 		if (authentication != null && authentication.isAuthenticated()) {
-			return ResponseEntity.ok(new ApiResponse(true, "인증됨: " + authentication.getName()));
+			// 인증된 사용자의 ID를 data에 담아서 반환
+			String userId = authentication.getName();
+			return ResponseEntity.ok(new ApiResponse(true, "인증됨", userId));
 		}
-		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse(false, "인증되지 않음"));
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+				.body(new ApiResponse(false, "인증되지 않음"));
 	}
 
 	@PostMapping("/logout")
 	public ResponseEntity<ApiResponse> logout(HttpServletRequest request, HttpServletResponse response) {
-
 		SecurityContextHolder.clearContext();
 		HttpSession session = request.getSession(false);
 		if (session != null) {
 			session.invalidate();
 		}
-
 		return ResponseEntity.ok(new ApiResponse(true, "로그아웃 성공"));
 	}
 }
