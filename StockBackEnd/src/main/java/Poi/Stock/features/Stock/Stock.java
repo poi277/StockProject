@@ -1,23 +1,38 @@
 package Poi.Stock.features.Stock;
 
+import java.time.LocalDate;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.Index;  // <- 이거 추가!
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "Stock")
+@Table(name = "Stock",indexes = {
+        // 날짜만으로 조회할 경우를 위한 인덱스
+        @Index(name = "idx_date", columnList = "date")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@IdClass(StockDailyPriceId.class)
 public class Stock {
 	@Id
-	private String id; // 종목코드
-	private String name; // 종목명
-	private Integer price; // 현재가
-	private Integer changeAmount; // 전일대비 금액
-	private Double changeRate; // 전일대비 등락률
+	private String stockCode;
+	@Id
+	private LocalDate date;
+	private String stockName;
+	private Integer openPrice; // 시가
+	private Integer highPrice; // 고가
+	private Integer lowPrice; // 저가
+	private Integer closePrice; // 종가
 	private Long volume; // 거래량
+	private Long value; // 거래대금
+	// 계산 필드들 (선택사항)
+	private Integer changeAmount;
+	private Double changeRate;
 }

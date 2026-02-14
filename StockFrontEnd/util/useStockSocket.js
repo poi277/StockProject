@@ -29,7 +29,7 @@ export function useStockSocket(client, connected, stockCodes = []) {
           
           setStocks(prev => ({
             ...prev,
-            [stock.id]: stock
+            [stock.stockCode]: stock
           }));
         } catch (error) {
           console.error(' 메시지 파싱 실패:', error);

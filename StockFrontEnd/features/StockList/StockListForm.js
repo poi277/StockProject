@@ -3,8 +3,8 @@
 import TradeForm from "../Trade/TradeForm";
 import { StockList } from "./StockList";
 
-export default function StockListForm({stocklist}) {
-  const stockCodes = stocklist.map(stock => stock.id);
+export default function StockListForm({ stocklist }) {
+  const stockCodes = stocklist.map(stock => stock.stockCode);
 
   const { connected, stocks } = StockList(stockCodes);
 
@@ -23,34 +23,51 @@ export default function StockListForm({stocklist}) {
 
         <div style={{ marginTop: '20px' }}>
           {stocklist.map(stock => {
-            const currentStock = stocks[stock.id] || stock;
+            const currentStock = stocks[stock.stockCode] || stock;
             
             return (
-              <div key={stock.id} style={{
+              <div key={stock.stockCode} style={{
                 border: '1px solid #ddd',
                 padding: '20px',
                 marginBottom: '10px',
                 borderRadius: '8px',
-                backgroundColor: '#fff'
-              }}>
+                backgroundColor: '#fff',
+                cursor: 'pointer',
+                transition: 'box-shadow 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)'}
+              onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <div>
-                    <h3>{currentStock.name}</h3>
-                    <p>{currentStock.id}</p>
+                    <h3>{currentStock.stockName}</h3>
+                    <p style={{ color: '#666' }}>{currentStock.stockCode}</p>
                   </div>
                   <div style={{ textAlign: 'right' }}>
+                    {/* 종가 */}
                     <div style={{ fontSize: '28px', fontWeight: 'bold' }}>
-                      {currentStock.price?.toLocaleString()}원
+                      {currentStock.closePrice?.toLocaleString() || '0'}원
                     </div>
+                    
+                    {/* 전일대비 */}
                     <div style={{
-                      color: currentStock.changeAmount >= 0 ? '#d00' : '#00d',
+                      color: (currentStock.changeAmount || 0) >= 0 ? '#d00' : '#00d',
                       fontWeight: 'bold'
                     }}>
-                      {currentStock.changeAmount >= 0 ? '▲' : '▼'}
+                      {(currentStock.changeAmount || 0) >= 0 ? '▲' : '▼'}
                       {Math.abs(currentStock.changeAmount || 0).toLocaleString()}원
                       ({(currentStock.changeRate || 0).toFixed(2)}%)
                     </div>
-                    <div>
+                    
+                    {/* 시고저 (간단 버전) */}
+                    <div style={{ fontSize: '12px', color: '#999', marginTop: '5px' }}>
+                      시: {currentStock.openPrice?.toLocaleString() || '0'} | 
+                      고: {currentStock.highPrice?.toLocaleString() || '0'} | 
+                      저: {currentStock.lowPrice?.toLocaleString() || '0'}
+                    </div>
+                    
+                    {/* 거래량 */}
+                    <div style={{ fontSize: '14px', marginTop: '5px' }}>
                       거래량: {(currentStock.volume || 0).toLocaleString()}주
                     </div>
                   </div>
@@ -60,7 +77,8 @@ export default function StockListForm({stocklist}) {
           })}
         </div>
       </div>
-      <TradeForm/>
+      
+      <TradeForm />
     </>
   );
 }

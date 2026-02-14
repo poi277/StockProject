@@ -1,6 +1,5 @@
 package Poi.Stock.features.User;
 
-import Poi.Stock.features.Stock.Stock;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -20,13 +19,19 @@ public class HaveStock {
 	@JoinColumn(name = "stockUser_id")
 	private StockUser stockUser;
 	// 어떤 주식을
-	@ManyToOne
-	@JoinColumn(name = "stock_id")
-	private Stock stock;
+	private String stockCode; // "005930" (삼성전자)
 	// 몇 주 보유하고 있는지
 	private Integer quantity;
 	// 평균 매수가
 	private Integer averagePrice;
+
+	public String getStockCode() {
+		return stockCode;
+	}
+
+	public void setStockCode(String stockCode) {
+		this.stockCode = stockCode;
+	}
 
 	public Long getId() {
 		return id;
@@ -42,14 +47,6 @@ public class HaveStock {
 
 	public void setStockUser(StockUser stockUser) {
 		this.stockUser = stockUser;
-	}
-
-	public Stock getStock() {
-		return stock;
-	}
-
-	public void setStock(Stock stock) {
-		this.stock = stock;
 	}
 
 	public Integer getQuantity() {
