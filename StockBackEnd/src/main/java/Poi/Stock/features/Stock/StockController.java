@@ -2,7 +2,9 @@ package Poi.Stock.features.Stock;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,19 +39,23 @@ public class StockController {
 	// 주식 사거나 팔기
 	// @RequestBody에 아이디 정보랑 매수나 매도
 	@PostMapping("/trade")
-	public ResponseEntity<ApiResponse> stockSell(@RequestBody TradeDTO tradeDTO) {
+	public ResponseEntity<ApiResponse> stockSell(@RequestBody TradeDTO tradeDTO, Authentication authentication) {
+		if (authentication == null || !authentication.isAuthenticated()) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse(false, "세션에 값이 필요합니다"));
+		}
+		// ✅ 세션에서 인증된 사용자 ID 추출
+		String userId = authentication.getName();
 		switch (tradeDTO.getTradeType()) {
 		case BUY -> {
-			System.out.println("buy");
-			stockService.buyStock(tradeDTO.getUserId(), tradeDTO.getStockId(), tradeDTO.getQuantity());
+			stockService.buyStock(userId, tradeDTO.getStockId(), tradeDTO.getQuantity());
 			return ResponseEntity.ok(new ApiResponse(true, "매수 완료"));
 		}
 		case SELL -> {
-			System.out.println("SELL");
-			stockService.sellStock(tradeDTO.getUserId(), tradeDTO.getStockId(), tradeDTO.getQuantity());
+			stockService.sellStock(userId, tradeDTO.getStockId(), tradeDTO.getQuantity());
 			return ResponseEntity.ok(new ApiResponse(true, "매도 완료"));
 		}
 		}
 		return ResponseEntity.badRequest().body(new ApiResponse(false, "잘못된 옵션입니다"));
 	}
+
 }

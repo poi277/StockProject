@@ -4,13 +4,10 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { loginHandler, logoutHandler, checkSession } from '../lib/auth'
 import { useRouter } from 'next/navigation';
-import { useWebSocket } from '../util/WebSocket'
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  //웹소켓은 항상 connect
-  const { connected, client } = useWebSocket();
 
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -70,8 +67,6 @@ export function AuthProvider({ children }) {
       loading, 
       login, 
       logout,
-      connected, 
-      client 
     }}>
       {children}
     </AuthContext.Provider>

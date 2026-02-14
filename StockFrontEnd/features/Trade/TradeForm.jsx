@@ -6,8 +6,6 @@ export default function TradeForm() {
   const {
     tradeType,
     setTradeType,
-    userId,
-    setUserId,
     stockId,
     setStockId,
     quantity,
@@ -31,15 +29,6 @@ export default function TradeForm() {
           <option value="SELL">매도</option>
         </select>
       </div>
-
-      <div>
-        <label>유저 ID</label>
-        <input
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-        />
-      </div>
-
       <div>
         <label>주식 ID</label>
         <input

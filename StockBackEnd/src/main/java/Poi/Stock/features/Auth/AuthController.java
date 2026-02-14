@@ -49,8 +49,8 @@ public class AuthController {
 			// 4. 세션 ID 확인 (디버깅용)
 			HttpSession session = request.getSession(false);
 			if (session != null) {
-				System.out.println("✅ 세션 ID: " + session.getId());
-				System.out.println("✅ 로그인 사용자: " + authentication.getName());
+				System.out.println("세션 ID: " + session.getId());
+				System.out.println("로그인 사용자: " + authentication.getName());
 			}
 			// 5. 사용자 ID를 data에 담아서 반환
 			String userId = authentication.getName();

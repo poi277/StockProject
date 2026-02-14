@@ -6,7 +6,6 @@ public class TradeDTO {
 
 	private tradeType tradeType; // BUY / SELL
 	String stockId;
-	String userId;
 	Integer quantity;
 	public tradeType getTradeType() {
 		return tradeType;
@@ -19,12 +18,6 @@ public class TradeDTO {
 	}
 	public void setStockId(String stockId) {
 		this.stockId = stockId;
-	}
-	public String getUserId() {
-		return userId;
-	}
-	public void setUserId(String userId) {
-		this.userId = userId;
 	}
 	public Integer getQuantity() {
 		return quantity;

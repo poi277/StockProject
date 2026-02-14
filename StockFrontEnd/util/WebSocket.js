@@ -1,20 +1,28 @@
+// context/WebSocketContext.jsx
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 
-export function useWebSocket() {
+const WebSocketContext = createContext(null);
+
+export function WebSocketProvider({ children }) {
   const [connected, setConnected] = useState(false);
   const clientRef = useRef(null);
 
   useEffect(() => {
-    const client = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+    console.log('🔌 WebSocket 초기화...');
 
-      reconnectDelay: 5000,            // 자동 재연결
-      heartbeatIncoming: 4000,         // 서버 heartbeat 감지
-      heartbeatOutgoing: 4000,
+    const client = new Client({
+      webSocketFactory: () => {
+        console.log('🏭 SockJS 생성');
+        return new SockJS('http://localhost:8080/ws');
+      },
+
+      reconnectDelay: 5000,
+      heartbeatIncoming: 10000,
+      heartbeatOutgoing: 10000,
 
       onConnect: () => {
         console.log('✅ WebSocket 연결 성공!');
@@ -22,18 +30,24 @@ export function useWebSocket() {
       },
 
       onDisconnect: () => {
-        console.log('❌ 정상 연결 종료');
+        console.log('❌ 연결 종료');
         setConnected(false);
       },
 
       onWebSocketClose: () => {
-        console.log('🔥 서버 다운 / 강제 종료 감지');
+        console.log('🔌 WebSocket 닫힘');
         setConnected(false);
       },
 
       onStompError: (frame) => {
-        console.error('STOMP 에러:', frame);
+        console.error('❌ STOMP 에러:', frame);
         setConnected(false);
+      },
+
+      debug: (str) => {
+        if (str.includes('ERROR')) {
+          console.error('🐛 STOMP:', str);
+        }
       }
     });
 
@@ -41,12 +55,24 @@ export function useWebSocket() {
     client.activate();
 
     return () => {
-      client.deactivate();
+      console.log('🧹 WebSocket 정리');
+      if (client.active) {
+        client.deactivate();
+      }
     };
   }, []);
 
-  return {
-    connected,
-    client: clientRef.current
-  };
+  return (
+    <WebSocketContext.Provider value={{ connected, client: clientRef.current }}>
+      {children}
+    </WebSocketContext.Provider>
+  );
+}
+
+export function useWebSocket() {
+  const context = useContext(WebSocketContext);
+  if (!context) {
+    throw new Error('useWebSocket은 WebSocketProvider 내부에서만 사용 가능합니다');
+  }
+  return context;
 }
