@@ -5,12 +5,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import Poi.Stock.DTO.user.getAssetDTO;
 import Poi.Stock.features.User.HaveStock;
 import Poi.Stock.features.User.StockUser;
 import Poi.Stock.repository.HaveStockRepository;
@@ -19,7 +23,6 @@ import Poi.Stock.repository.StockUserRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -211,5 +214,19 @@ public class StockService {
 	// 특정 종목의 기간별 데이터 조회 (차트용)
 	public List<Stock> getStockHistory(String stockCode, LocalDate startDate, LocalDate endDate) {
 		return stockRepository.findByStockCodeAndDateBetweenOrderByDateDesc(stockCode, startDate, endDate);
+	}
+
+	public getAssetDTO getMyAsset() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		String userId = authentication.getName();
+		// 사용자 조회
+		StockUser user = stockUserRepository.findById(userId).orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
+		// Holdings를 HoldingDTO로 변환
+		List<getAssetDTO.HoldingDTO> holdingDTOs = user.getHoldings().stream()
+				.map(holding -> new getAssetDTO.HoldingDTO(holding.getStockCode(), holding.getQuantity(),
+						holding.getAveragePrice()))
+				.collect(Collectors.toList());
+		// DTO 생성 및 반환
+		return new getAssetDTO(user.getAsset(), holdingDTOs);
 	}
 }

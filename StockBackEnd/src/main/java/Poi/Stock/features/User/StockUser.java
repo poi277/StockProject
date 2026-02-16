@@ -16,10 +16,27 @@ public class StockUser {
 	String id;
 	String username;
 	String password;
+	Integer Asset;
 	// 가지고있는 주식
 	// 사용자가 보유한 주식들
 	@OneToMany(mappedBy = "stockUser", cascade = CascadeType.ALL)
 	private List<HaveStock> holdings = new ArrayList<>();
+
+	public Integer getAsset() {
+		return Asset;
+	}
+
+	public void setAsset(Integer asset) {
+		Asset = asset;
+	}
+
+	public List<HaveStock> getHoldings() {
+		return holdings;
+	}
+
+	public void setHoldings(List<HaveStock> holdings) {
+		this.holdings = holdings;
+	}
 
 	public String getId() {
 		return id;

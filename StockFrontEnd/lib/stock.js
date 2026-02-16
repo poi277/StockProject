@@ -10,3 +10,6 @@ export async function stockListApi() {
 export async function StockDetailApi(stockId) {
   return await apiFetch(`${API_URL}/stock/${stockId}`);
 }
+export async function getAssetApi() {
+  return await apiFetch(`${API_URL}/stock/myAsset`,{auth: true});
+}

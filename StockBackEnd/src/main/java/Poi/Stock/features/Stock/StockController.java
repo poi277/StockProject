@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import Poi.Stock.DTO.user.ApiResponse;
 import Poi.Stock.DTO.user.TradeDTO;
+import Poi.Stock.DTO.user.getAssetDTO;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -56,6 +57,11 @@ public class StockController {
 		}
 		}
 		return ResponseEntity.badRequest().body(new ApiResponse(false, "잘못된 옵션입니다"));
+	}
+	@GetMapping("/myAsset")
+	public ResponseEntity<ApiResponse> getMyAsset() {
+		getAssetDTO getAssetDTO = stockService.getMyAsset();
+		return ResponseEntity.ok(new ApiResponse(true, "자산 불러오기 완료", getAssetDTO));
 	}
 
 }
