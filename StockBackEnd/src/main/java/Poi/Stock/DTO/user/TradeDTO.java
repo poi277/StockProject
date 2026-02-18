@@ -5,20 +5,25 @@ import Poi.Stock.util.EnumUtil.tradeType;
 public class TradeDTO {
 
 	private tradeType tradeType; // BUY / SELL
-	String stockId;
+	String stockCode;
 	Integer quantity;
+	Integer tradePrice;
+
 	public tradeType getTradeType() {
 		return tradeType;
 	}
 	public void setTradeType(tradeType tradeType) {
 		this.tradeType = tradeType;
 	}
-	public String getStockId() {
-		return stockId;
+
+	public String getStockCode() {
+		return stockCode;
 	}
-	public void setStockId(String stockId) {
-		this.stockId = stockId;
+
+	public void setStockCode(String stockCode) {
+		this.stockCode = stockCode;
 	}
+
 	public Integer getQuantity() {
 		return quantity;
 	}
@@ -26,7 +31,13 @@ public class TradeDTO {
 		this.quantity = quantity;
 	}
 
+	public Integer getTradePrice() {
+		return tradePrice;
+	}
 
+	public void setTradePrice(Integer tradePrice) {
+		this.tradePrice = tradePrice;
+	}
 }
 
 

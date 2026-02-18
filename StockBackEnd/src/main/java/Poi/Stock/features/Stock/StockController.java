@@ -48,11 +48,11 @@ public class StockController {
 		String userId = authentication.getName();
 		switch (tradeDTO.getTradeType()) {
 		case BUY -> {
-			stockService.buyStock(userId, tradeDTO.getStockId(), tradeDTO.getQuantity());
+			stockService.buyStock(userId, tradeDTO.getStockCode(), tradeDTO.getQuantity());
 			return ResponseEntity.ok(new ApiResponse(true, "매수 완료"));
 		}
 		case SELL -> {
-			stockService.sellStock(userId, tradeDTO.getStockId(), tradeDTO.getQuantity());
+			stockService.sellStock(userId, tradeDTO.getStockCode(), tradeDTO.getQuantity());
 			return ResponseEntity.ok(new ApiResponse(true, "매도 완료"));
 		}
 		}

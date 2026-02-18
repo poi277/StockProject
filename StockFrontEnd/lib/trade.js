@@ -1,14 +1,18 @@
 import { apiFetch } from '../util/apiClient';
 import { API_URL } from '../util/URLconfig';
 
-export async function tradeApi(tradeType,stockId,quantity) {
-  return await apiFetch(`${API_URL}/stock/trade`,{
+export async function tradeApi(tradeType,stockCode,quantity,tradePrice) {
+  return await apiFetch(`${API_URL}/order/trade`,{
     method: 'POST',
     auth: true,
     body: JSON.stringify({
           tradeType,
-          stockId,
+          stockCode,
           quantity: Number(quantity),
+          tradePrice
         }),
     })
+}
+export async function getOrdersApi(stockCode) {
+   return await apiFetch(`${API_URL}/order/orders/${stockCode}`,{auth: true})
 }

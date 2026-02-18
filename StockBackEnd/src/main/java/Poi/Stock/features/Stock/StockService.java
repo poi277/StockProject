@@ -122,7 +122,17 @@ public class StockService {
 			throw new RuntimeException("주식을 찾을 수 없습니다");
 		}
 
-		// 3. 기존 보유 주식 확인 (stockCode로 조회)
+		// 3. 자산 확인 (살 수 있는지)
+		int totalCost = stock.getClosePrice() * quantity;
+		if (user.getAsset() < totalCost) {
+			throw new RuntimeException("자산이 부족합니다. " + "필요: " + totalCost + "원, " + "보유: " + user.getAsset() + "원");
+		}
+
+		// 4. 자산 차감
+		user.setAsset(user.getAsset() - totalCost);
+		stockUserRepository.save(user);
+
+		// 5. 기존 보유 주식 확인
 		HaveStock haveStock = haveStockRepository.findByStockUserAndStockCode(user, stockCode).orElse(null);
 
 		if (haveStock == null) {
@@ -144,8 +154,11 @@ public class StockService {
 
 		haveStockRepository.save(haveStock);
 
-		// 4. 매수 후 가격 상승 (1주당 100원)
+		// 6. 매수 후 가격 상승 (1주당 100원)
 		updateStockPrice(stock, quantity * 100);
+
+		log.info("매수 완료 - 사용자: {}, 종목: {}, 수량: {}주, 금액: {}원, 잔여자산: {}원", userId, stockCode, quantity, totalCost,
+				user.getAsset());
 	}
 
 	@Transactional
@@ -159,27 +172,38 @@ public class StockService {
 			throw new RuntimeException("주식을 찾을 수 없습니다");
 		}
 
-		// 3. 보유 주식 확인 (stockCode로 조회)
+		// 3. 보유 주식 확인
 		HaveStock haveStock = haveStockRepository.findByStockUserAndStockCode(user, stockCode)
 				.orElseThrow(() -> new RuntimeException("보유 주식이 없습니다"));
 
 		// 4. 보유 수량 확인
 		if (haveStock.getQuantity() < quantity) {
-			throw new RuntimeException("보유 수량이 부족합니다");
+			throw new RuntimeException(
+					"보유 수량이 부족합니다. " + "보유: " + haveStock.getQuantity() + "주, " + "매도 요청: " + quantity + "주");
 		}
 
-		// 5. 수량 차감
+		// 5. 자산 증가 (판 금액만큼)
+		int totalRevenue = stock.getClosePrice() * quantity;
+		user.setAsset(user.getAsset() + totalRevenue);
+		stockUserRepository.save(user);
+
+		// 6. 수량 차감
 		haveStock.setQuantity(haveStock.getQuantity() - quantity);
 
-		// 6. 모두 판 경우 삭제, 아니면 업데이트
+		// 7. 모두 판 경우 삭제, 아니면 업데이트
 		if (haveStock.getQuantity() == 0) {
 			haveStockRepository.delete(haveStock);
 		} else {
 			haveStockRepository.save(haveStock);
 		}
 
-		// 7. 매도 후 가격 하락 (1주당 100원)
+		// 8. 매도 후 가격 하락 (1주당 100원)
 		updateStockPrice(stock, -quantity * 100);
+
+		// 9. 수익 계산 로그
+		int profit = (stock.getClosePrice() - haveStock.getAveragePrice()) * quantity;
+		log.info("매도 완료", userId, stockCode, quantity,
+				totalRevenue, profit, user.getAsset());
 	}
 
 	// 내 보유 주식 목록 조회
@@ -195,7 +219,6 @@ public class StockService {
 		if (stock != null) {
 			return stock;
 		}
-
 		// 캐시에 없으면 DB에서 최신 데이터 조회
 		stock = stockRepository.findFirstByStockCodeOrderByDateDesc(stockCode)
 				.orElseThrow(() -> new RuntimeException("주식을 찾을 수 없습니다: " + stockCode));

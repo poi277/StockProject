@@ -77,8 +77,6 @@ export default function StockListForm({ stocklist }) {
           })}
         </div>
       </div>
-      
-      <TradeForm />
     </>
   );
 }

@@ -3,9 +3,8 @@
 import { useState } from 'react';
 import { tradeApi } from '../../lib/trade';
 
-export default function Trade() {
+export default function Trade(selectedPrice,stockCode) {
   const [tradeType, setTradeType] = useState('BUY');
-  const [stockId, setStockId] = useState('');
   const [quantity, setQuantity] = useState(1);
 
   const [message, setMessage] = useState('');
@@ -16,12 +15,12 @@ export default function Trade() {
     setMessage('');
     setError('');
 
-    if (!stockId || quantity <= 0) {
-      setError('모든 값을 올바르게 입력해주세요.');
+    if (quantity <= 0) {
+      setError('수량을 올바르게 입력해주세요.');
       return;
     }
     try {
-      const res = await tradeApi(tradeType,stockId,quantity)
+      const res = await tradeApi(tradeType,stockCode,quantity,selectedPrice)
       if (!res.success) {
         setError(res.message);
         return;
@@ -34,12 +33,10 @@ export default function Trade() {
   };
   return {
     tradeType,
-    stockId,
     quantity,
     message,
     error,
     setTradeType,
-    setStockId,
     setQuantity,
     handleSubmit,
   };
