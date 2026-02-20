@@ -33,8 +33,9 @@ public class SecurityConfig {
 						.maximumSessions(1).maxSessionsPreventsLogin(false))
 
 				.authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-						.requestMatchers("/stock/trade").authenticated()
-						.requestMatchers("/", "/hello", "/user/register", "/stock/**", "/ws/**", "/auth/**").permitAll()
+						.requestMatchers("/", "/hello", "/user/register", "/stock/**", "/ws/**", "/auth/**",
+								"/order/orderbook/*")
+						.permitAll()
 						.anyRequest().authenticated())
 
 				.formLogin(form -> form.disable()).httpBasic(basic -> basic.disable());

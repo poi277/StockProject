@@ -1,15 +1,13 @@
+import { useMemo, useState } from 'react';
 import { useStockSocket } from "../../util/useStockSocket";
 import { useWebSocket } from "../../util/WebSocket";
-import { useState, useEffect } from 'react';
 
-export function StockDetail(stockCodes) {
+export function StockDetail(stockCode) {
   const { connected, client } = useWebSocket();
-  const { stocks } = useStockSocket(client, connected,[stockCodes]);
+
+  const { stocks } = useStockSocket(client, connected, stockCode ? [stockCode] : []);
+
   const [selectedPrice, setSelectedPrice] = useState(null);
-  return {
-    connected,
-    stocks,
-    setSelectedPrice,
-    selectedPrice
-  };
+
+  return { connected, stocks, selectedPrice, setSelectedPrice };
 }

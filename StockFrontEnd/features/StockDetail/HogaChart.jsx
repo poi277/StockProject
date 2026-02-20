@@ -3,8 +3,12 @@
 import { useState, useEffect } from 'react';
 import styles from '../../css/HogaChart.module.css'
 import {getOrdersApi} from '../../lib/trade'
+import { useHogaSocket } from '../../util/useHogaSocket';
+import { useWebSocket } from '../../util/WebSocket';
 
 export default function HogaChart({ currentStock, selectedPrice, setSelectedPrice }) {
+  const { connected, client } = useWebSocket();
+  const { hogas } = useHogaSocket(client, connected, currentStock?.stockCode);
   const [sellOrders, setSellOrders] = useState([]);
   const [buyOrders, setBuyOrders] = useState([]);
 
@@ -13,59 +17,81 @@ export default function HogaChart({ currentStock, selectedPrice, setSelectedPric
   const changeAmt = currentStock?.changeAmount || 0;
   const changeRate = currentStock?.changeRate || 0;
 
+  //초기 데이터 렌더링
   useEffect(() => {
     if (!closePrice || !currentStock?.stockCode) return;
 
-    // 호가 단위 계산
     const unit = closePrice >= 500000 ? 1000
-               : closePrice >= 100000 ? 500
-               : closePrice >= 50000  ? 100
-               : closePrice >= 10000  ? 50
-               : 10;
+              : closePrice >= 100000 ? 500
+              : closePrice >= 50000  ? 100
+              : closePrice >= 10000  ? 50
+              : 10;
 
-    // 호가 가격 리스트 생성 (현재가 기준 ±5 단계)
     const sellPrices = [4, 3, 2, 1, 0].map(i => closePrice + unit * i);
     const buyPrices = [1, 2, 3, 4].map(i => closePrice - unit * i);
 
-    // ✅ API 호출하여 실제 주문 데이터 가져오기
     getOrdersApi(currentStock.stockCode)
       .then(res => {
-        console.log(res);
+        console.log(res)
+        const sellDb = res.data?.sellOrders || [];
+        const buyDb  = res.data?.buyOrders || [];
 
-
-        const orders = res.data || [];
-
-        const sellDb = orders.filter(o => o.tradeType === "SELL");
-        const buyDb  = orders.filter(o => o.tradeType === "BUY");
-
-        const newSell = sellPrices.map(price => {
-          const dbOrder = sellDb.find(order => order.tradePrice === price);
-          return {
-            price,
-            qty: dbOrder ? dbOrder.remainingQuantity : 0
-          };
+          const newSell = sellPrices.map(price => {
+          const dbOrders = sellDb.filter(order => order.tradePrice === price);
+          const qty = dbOrders.reduce((sum, o) => sum + o.remainingQuantity, 0);
+          return { price, qty };
         });
 
         const newBuy = buyPrices.map(price => {
-          const dbOrder = buyDb.find(order => order.tradePrice === price);
-          return {
-            price,
-            qty: dbOrder ? dbOrder.remainingQuantity : 0
-          };
+          const dbOrders = buyDb.filter(order => order.tradePrice === price);
+          const qty = dbOrders.reduce((sum, o) => sum + o.remainingQuantity, 0);
+          return { price, qty };
         });
 
         setSellOrders(newSell);
         setBuyOrders(newBuy);
-
       })
-      .catch(error => {
-        console.error('호가 데이터 로드 실패:', error);
-        
-        // 에러 시 기본값 (모두 0)
+      .catch(() => {
         setSellOrders(sellPrices.map(price => ({ price, qty: 0 })));
         setBuyOrders(buyPrices.map(price => ({ price, qty: 0 })));
       });
+
   }, [closePrice, currentStock?.stockCode]);
+
+  // WebSocket 데이터 들어오면 → API 데이터 대체 */
+    useEffect(() => {
+      if (!currentStock?.stockCode) return;
+
+      const hoga = hogas[currentStock.stockCode];
+      if (!hoga) return;
+
+      console.log("🔥 WebSocket 호가 수신:", hoga);
+
+      setSellOrders(prev =>
+        prev.map(level => {
+          const found = hoga.sellOrders?.find(
+            o => o.tradePrice === level.price
+          );
+          return {
+            ...level,
+            qty: found ? found.remainingQuantity : 0
+          };
+        })
+      );
+
+      setBuyOrders(prev =>
+        prev.map(level => {
+          const found = hoga.buyOrders?.find(
+            o => o.tradePrice === level.price
+          );
+          return {
+            ...level,
+            qty: found ? found.remainingQuantity : 0
+          };
+        })
+      );
+
+    }, [hogas, currentStock?.stockCode]);
 
   // 주식 옆에 %비율
   const pct = (price) => {

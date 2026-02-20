@@ -6,9 +6,8 @@ import TradeForm from '../Trade/TradeForm';
 import { StockDetail } from './StockDetail';
 
 export default function StockDetailForm({ stock }) {
-  const { connected, stocks,selectedPrice,setSelectedPrice } = StockDetail(stock.stockCode);
+  const { connected, stocks, selectedPrice, setSelectedPrice } = StockDetail(stock.stockCode);
   const currentStock = stocks[stock.stockCode] || stock;
-
   const changeAmt  = currentStock?.changeAmount || 0;
   const changeRate = currentStock?.changeRate || 0;
   const isUp = changeAmt >= 0;

@@ -50,7 +50,6 @@ export function WebSocketProvider({ children }) {
         }
       }
     });
-
     clientRef.current = client;
     client.activate();
 
@@ -61,7 +60,6 @@ export function WebSocketProvider({ children }) {
       }
     };
   }, []);
-
   return (
     <WebSocketContext.Provider value={{ connected, client: clientRef.current }}>
       {children}

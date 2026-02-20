@@ -14,5 +14,5 @@ export async function tradeApi(tradeType,stockCode,quantity,tradePrice) {
     })
 }
 export async function getOrdersApi(stockCode) {
-   return await apiFetch(`${API_URL}/order/orders/${stockCode}`,{auth: true})
+   return await apiFetch(`${API_URL}/order/orderbook/${stockCode}`)
 }

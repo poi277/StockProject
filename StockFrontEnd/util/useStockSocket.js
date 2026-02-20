@@ -1,50 +1,34 @@
-// util/useStockSocket.js
-'use client';
-
-import { useEffect, useState } from 'react';
+// useStockSocket.js
+import { useEffect, useRef, useState } from 'react';
 
 export function useStockSocket(client, connected, stockCodes = []) {
   const [stocks, setStocks] = useState({});
+  
+  // 문자열로 직렬화해서 실제 값이 바뀔 때만 effect 재실행
+  const codesKey = stockCodes.join(',');
 
   useEffect(() => {
-    if (!client || !connected) {
-      console.warn(' WebSocket 연결 대기 중...');
-      return;
-    }
+    if (!client || !connected) return;
+    if (!stockCodes || stockCodes.length === 0) return;
 
-    if (stockCodes.length === 0) {
-      console.warn(' 구독할 주식 코드가 없습니다');
-      return;
-    }
+    const codes = codesKey.split(',').filter(Boolean);
+    console.log('주식 구독 시작:', codes);
 
-    console.log(' 주식 구독 시작:', stockCodes);
-
-    const subscriptions = [];
-
-    stockCodes.forEach(code => {
-      const sub = client.subscribe(`/topic/stock/${code}`, message => {
-        try {
-          const stock = JSON.parse(message.body);
-          console.log(' 가격 업데이트:', stock);
-          
-          setStocks(prev => ({
-            ...prev,
-            [stock.stockCode]: stock
-          }));
-        } catch (error) {
-          console.error(' 메시지 파싱 실패:', error);
-        }
-      });
-
-      subscriptions.push(sub);
-      console.log(`${code} 구독 완료`);
-    });
+    const subscriptions = codes.map(code =>
+      client.subscribe(`/topic/stock/${code}`, message => {
+        const stock = JSON.parse(message.body);
+        setStocks(prev => ({
+          ...prev,
+          [stock.stockCode]: stock
+        }));
+      })
+    );
 
     return () => {
-      console.log('구독 해제:', stockCodes);
       subscriptions.forEach(sub => sub.unsubscribe());
     };
-  }, [client, connected, stockCodes]);
+
+  }, [client, connected, codesKey]); // ✅ 배열 대신 문자열 사용
 
   return { stocks };
 }
