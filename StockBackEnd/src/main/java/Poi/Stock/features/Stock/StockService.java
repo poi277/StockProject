@@ -79,4 +79,20 @@ public class StockService {
 		// DTO 생성 및 반환
 		return new getAssetDTO(user.getAsset(), holdingDTOs);
 	}
+
+	public void updateCurrentPrice(String stockCode, int lastFillPrice) {
+		Stock stock = stockCache.get(stockCode);
+		if (stock == null || stock.getClosePrice() == lastFillPrice)
+			return;
+
+		stock.setClosePrice(lastFillPrice);
+		stock.setHighPrice(Math.max(stock.getHighPrice(), lastFillPrice));
+		stock.setLowPrice(Math.min(stock.getLowPrice(), lastFillPrice));
+
+		int changeAmount = lastFillPrice - stock.getOpenPrice();
+		stock.setChangeAmount(changeAmount);
+		stock.setChangeRate((double) changeAmount / stock.getOpenPrice() * 100);
+
+		stockCache.put(stockCode, stock);
+	}
 }

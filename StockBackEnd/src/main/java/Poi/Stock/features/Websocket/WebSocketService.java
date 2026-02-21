@@ -3,7 +3,6 @@ package Poi.Stock.features.Websocket;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -104,7 +103,7 @@ public class WebSocketService {
 
 //	-------------------------------
 	// 가격 업데이트 및 WebSocket 전송
-	public void updateCurrentPrice(String stockCode, int currentPrice) {
+	public void SendCurrentPrice(String stockCode, int currentPrice) {
 		Map<String, Object> payload = new HashMap<>();
 		payload.put("stockCode", stockCode);
 		payload.put("currentPrice", currentPrice);
@@ -114,34 +113,23 @@ public class WebSocketService {
 	public void updateWebsocketHoga(String stockCode) {
 		OrderBook orderBook = orderBookCache.get(stockCode);
 
-		// 가격별 합산
-		Map<Integer, Integer> sellMap = new LinkedHashMap<>();
-		for (Order o : orderBook.getSellOrders()) {
-			sellMap.merge(o.getTradePrice(), o.getRemainingQuantity(), Integer::sum);
-		}
-		Map<Integer, Integer> buyMap = new LinkedHashMap<>();
-		for (Order o : orderBook.getBuyOrders()) {
-			buyMap.merge(o.getTradePrice(), o.getRemainingQuantity(), Integer::sum);
-		}
+		Map<String, Object> payload = new HashMap<>();
+		payload.put("sellOrders", aggregateOrders(orderBook.getSellOrders()));
+		payload.put("buyOrders", aggregateOrders(orderBook.getBuyOrders()));
 
-		List<Map<String, Object>> sellList = sellMap.entrySet().stream()
-				.map(e -> {
+		messagingTemplate.convertAndSend("/topic/hoga/" + stockCode, payload);
+	}
+
+	private List<Map<String, Object>> aggregateOrders(List<Order> orders) {
+		return orders.stream()
+				.collect(
+						Collectors.groupingBy(Order::getTradePrice, Collectors.summingInt(Order::getRemainingQuantity)))
+				.entrySet().stream().map(e -> {
 					Map<String, Object> m = new HashMap<>();
 					m.put("tradePrice", e.getKey());
 					m.put("remainingQuantity", e.getValue());
 					return m;
 				}).collect(Collectors.toList());
-
-		List<Map<String, Object>> buyList = buyMap.entrySet().stream().map(e -> {
-			Map<String, Object> m = new HashMap<>();
-			m.put("tradePrice", e.getKey());
-			m.put("remainingQuantity", e.getValue());
-			return m;
-		}).collect(Collectors.toList());
-
-		Map<String, Object> payload = new HashMap<>();
-		payload.put("sellOrders", sellList);
-		payload.put("buyOrders", buyList);
-		messagingTemplate.convertAndSend("/topic/hoga/" + stockCode, payload);
 	}
+
 }

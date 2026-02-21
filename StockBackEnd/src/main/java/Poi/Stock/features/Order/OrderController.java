@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import Poi.Stock.DTO.user.ApiResponse;
 import Poi.Stock.DTO.user.TradeDTO;
+import Poi.Stock.features.Websocket.OrderBookCache;
+import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.repository.OrderRepository;
 import Poi.Stock.util.EnumUtil.tradeType;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,8 @@ public class OrderController {
 
 	private final OrderService orderService;
 	private final OrderRepository orderRepository;
+	private final OrderBookCache orderBookCache;
+	private final WebSocketService webSocketService;
 
 	@PostMapping("/trade")
 	public ResponseEntity<ApiResponse> stockTrade(@RequestBody TradeDTO tradeDTO, Authentication authentication) {
@@ -33,18 +37,17 @@ public class OrderController {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse(false, "세션에 값이 필요합니다"));
 		}
 		String userId = authentication.getName();
-		// ✅ 주문을 DB에 저장
-		Order savedOrder = orderService.createOrder(userId, tradeDTO);
-		// 응답 메시지
+
+		// 검증 (트랜잭션 밖에서 미리 체크)
+		orderService.validateOrder(userId, tradeDTO);
+		// 주문 접수 (생성 ~ 정산 ~ 현재가 업데이트 모두 트랜잭션 안에서)
+		Order order = orderService.placeOrder(userId, tradeDTO);
+
 		String message = String.format("%s 주문 접수 - 종목: %s, 가격: %d원, 수량: %d주 (주문번호: %d)",
 				tradeDTO.getTradeType() == tradeType.BUY ? "매수" : "매도", tradeDTO.getStockCode(),
-				tradeDTO.getTradePrice(), tradeDTO.getQuantity(), savedOrder.getOrderId());
+				tradeDTO.getTradePrice(), tradeDTO.getQuantity(), order.getOrderId());
 		return ResponseEntity.ok(new ApiResponse(true, message));
 	}
-
-	// ─────────────────────────────────────────────
-	// 주문 조회 API 추가
-	// ─────────────────────────────────────────────
 
 	@GetMapping("/orders/{stockCode}")
 	public ResponseEntity<?> getOrders(@PathVariable("stockCode") String stockCode, Authentication authentication) {
