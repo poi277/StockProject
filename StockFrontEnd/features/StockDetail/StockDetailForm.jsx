@@ -6,21 +6,21 @@ import TradeForm from '../Trade/TradeForm';
 import { StockDetail } from './StockDetail';
 
 export default function StockDetailForm({ stock }) {
-  const { connected, stocks, selectedPrice, setSelectedPrice } = StockDetail(stock.stockCode);
+  const { connected, stocks, selectedPrice, setSelectedPrice } = StockDetail(stock.stockCode, stock);
   const currentStock = stocks[stock.stockCode] || stock;
-  const changeAmt  = currentStock?.changeAmount || 0;
-  const changeRate = currentStock?.changeRate || 0;
+  
+  // ✅ 시가 기준으로 변경
+  const openPrice  = currentStock?.openPrice || 0;
+  const closePrice = currentStock?.closePrice || 0;
+  const changeAmt  = closePrice - openPrice;
+  const changeRate = openPrice ? (changeAmt / openPrice * 100) : 0;
   const isUp = changeAmt >= 0;
 
   return (
     <>
       <div className={styles.container}>
         <h1>📈 실시간 주식 시세</h1>
-
-        <p
-          className={styles.status}
-          style={{ backgroundColor: connected ? '#79b387' : '#f8d7da' }}
-        >
+        <p className={styles.status} style={{ backgroundColor: connected ? '#79b387' : '#f8d7da' }}>
           상태: {connected ? '✅ 연결됨' : '❌ 연결 안됨'}
         </p>
 
@@ -30,16 +30,11 @@ export default function StockDetailForm({ stock }) {
               <h3>{currentStock?.stockName}</h3>
               <p>{currentStock?.stockCode}</p>
             </div>
-
             <div className={styles.priceBox}>
-              <div className={styles.price}>
-                {currentStock?.closePrice?.toLocaleString()}원
+              <div className={styles.price} style={{ color: isUp ? '#ff3b30' : '#0056e0' }}>
+                {closePrice.toLocaleString()}원
               </div>
-
-              <div
-                className={styles.change}
-                style={{ color: isUp ? '#ff3b30' : '#0056e0' }}
-              >
+              <div className={styles.change} style={{ color: isUp ? '#ff3b30' : '#0056e0' }}>
                 {isUp ? '▲' : '▼'}
                 {Math.abs(changeAmt).toLocaleString()}원
                 ({Math.abs(changeRate).toFixed(2)}%)
@@ -48,13 +43,12 @@ export default function StockDetailForm({ stock }) {
           </div>
         </div>
 
-       <HogaChart
+        <HogaChart
           currentStock={currentStock}
           selectedPrice={selectedPrice}
           setSelectedPrice={setSelectedPrice}
         />
       </div>
-
       <TradeForm stockCode={stock.stockCode} selectedPrice={selectedPrice}/>
     </>
   );

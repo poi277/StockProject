@@ -59,20 +59,19 @@ public class OrderTradeService {
 						Comparator.comparingInt(Order::getTradePrice).reversed().thenComparingLong(Order::getPriority))
 						.collect(Collectors.toList());
 	}
+	
 	/**
-	 * 체결 루프 - 마지막 체결 가격 반환 (체결 없으면 0)
+	 * 체결 루프
 	 */
-	public int processMatching(Order order, List<Order> matchOrderList) {
-		// 남은 매도 최저가
-		int lastFillPrice = 0;
+	public boolean processMatching(Order order, List<Order> matchOrderList) {
+		boolean matched = false;
 
 		for (Order opposite : matchOrderList) {
 			if (order.getRemainingQuantity() == 0)
 				break;
-			// 리스트와 주문에서 남은 주식만큼 체결
+
 			int fillQty = Math.min(order.getRemainingQuantity(), opposite.getRemainingQuantity());
 			int fillPrice = opposite.getTradePrice();
-			lastFillPrice = fillPrice;
 
 			order.setRemainingQuantity(order.getRemainingQuantity() - fillQty);
 			opposite.setRemainingQuantity(opposite.getRemainingQuantity() - fillQty);
@@ -80,14 +79,12 @@ public class OrderTradeService {
 			order.setStatus(order.getRemainingQuantity() == 0 ? OrderStatus.COMPLETED : OrderStatus.PARTIAL);
 			opposite.setStatus(opposite.getRemainingQuantity() == 0 ? OrderStatus.COMPLETED : OrderStatus.PARTIAL);
 
-			// 신규 주문 저장
 			saveOrComplete(opposite);
-
-			// 자산 및 보유주식 정산
 			settle(order, opposite, fillQty, fillPrice);
+			matched = true;
 		}
 
-		return lastFillPrice;
+		return matched;
 	}
 
 	private void settle(Order newOrder, Order opposite, int fillQty, int fillPrice) {
@@ -131,5 +128,10 @@ public class OrderTradeService {
 		} else {
 			orderRepository.save(order);
 		}
+	}
+
+	public int getLowestSellPrice(String stockCode) {
+		OrderBook orderBook = orderBookCache.get(stockCode);
+		return orderBook.getSellOrders().stream().mapToInt(Order::getTradePrice).min().orElse(0);
 	}
 }

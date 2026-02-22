@@ -37,7 +37,6 @@ public class OrderController {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse(false, "세션에 값이 필요합니다"));
 		}
 		String userId = authentication.getName();
-
 		// 검증 (트랜잭션 밖에서 미리 체크)
 		orderService.validateOrder(userId, tradeDTO);
 		// 주문 접수 (생성 ~ 정산 ~ 현재가 업데이트 모두 트랜잭션 안에서)

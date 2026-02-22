@@ -31,6 +31,7 @@ public class StockController {
 		Stock stock = stockService.getStock(stockId);
 		return ResponseEntity.ok(new ApiResponse(true, "주식 한개 불러오기 완료", stock));
 	}
+
 	@GetMapping("/myAsset")
 	public ResponseEntity<ApiResponse> getMyAsset() {
 		getAssetDTO getAssetDTO = stockService.getMyAsset();

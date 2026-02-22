@@ -68,20 +68,19 @@ public class OrderService {
 		// 주문 생성 및 저장
 		Order order = orderTradeService.buildOrder(userId, tradeDTO);
 		orderRepository.save(order);
+		// 캐시에 저장
 		orderBookCache.addOrder(order);
-
 		// 매칭 가능한 반대 주문 조회
 		List<Order> matchOrderList = orderTradeService.findMatchOrderList(order);
 
-		// 체결 처리
-		int lastFillPrice = orderTradeService.processMatching(order, matchOrderList);
-
+		// 체결 처리 후 체결 여부 반환
+		boolean isUpdate = orderTradeService.processMatching(order, matchOrderList);
 		orderTradeService.saveOrComplete(order);
-		// 체결이 발생했으면 현재가 업데이트
-		if (lastFillPrice > 0) {
-			stockService.updateCurrentPrice(order.getStockCode(), lastFillPrice); // 캐시 갱신
-			webSocketService.SendCurrentPrice(order.getStockCode(), lastFillPrice); // 프론트 전송
-		}
+
+			int lastFillPrice = orderTradeService.getLowestSellPrice(order.getStockCode());
+			stockService.updateCurrentPrice(order.getStockCode(), lastFillPrice);
+			webSocketService.SendCurrentPrice(order.getStockCode(), lastFillPrice);
+
 
 		webSocketService.updateWebsocketHoga(order.getStockCode());
 		return order;
