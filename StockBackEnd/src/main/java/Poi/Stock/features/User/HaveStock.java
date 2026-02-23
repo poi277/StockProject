@@ -23,7 +23,7 @@ public class HaveStock {
 	// 몇 주 보유하고 있는지
 	private Integer quantity;
 	// 평균 매수가
-	private Integer averagePrice;
+	private double averagePrice;
 
 	public String getStockCode() {
 		return stockCode;
@@ -57,12 +57,13 @@ public class HaveStock {
 		this.quantity = quantity;
 	}
 
-	public Integer getAveragePrice() {
+	public Double getAveragePrice() {
 		return averagePrice;
 	}
 
-	public void setAveragePrice(Integer averagePrice) {
+	public void setAveragePrice(double averagePrice) {
 		this.averagePrice = averagePrice;
 	}
+
 
 }

@@ -34,12 +34,12 @@ public class getAssetDTO {
 	public static class HoldingDTO {
 		private String stockCode;
 		private Integer quantity;
-		private Integer averagePrice;
+		private double averagePrice;
 
 		public HoldingDTO() {
 		}
 
-		public HoldingDTO(String stockCode, Integer quantity, Integer averagePrice) {
+		public HoldingDTO(String stockCode, Integer quantity, double averagePrice) {
 			this.stockCode = stockCode;
 			this.quantity = quantity;
 			this.averagePrice = averagePrice;
@@ -61,7 +61,7 @@ public class getAssetDTO {
 			this.quantity = quantity;
 		}
 
-		public Integer getAveragePrice() {
+		public double getAveragePrice() {
 			return averagePrice;
 		}
 

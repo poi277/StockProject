@@ -78,7 +78,10 @@ public class OrderService {
 		orderTradeService.saveOrComplete(order);
 
 			int lastFillPrice = orderTradeService.getLowestSellPrice(order.getStockCode());
+
+			// 주식의 현재 정보를 캐시에 업데이트
 			stockService.updateCurrentPrice(order.getStockCode(), lastFillPrice);
+			// 웹소켓에 주식 반환
 			webSocketService.SendCurrentPrice(order.getStockCode(), lastFillPrice);
 
 

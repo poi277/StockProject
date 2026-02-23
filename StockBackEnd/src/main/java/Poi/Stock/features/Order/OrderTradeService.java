@@ -107,7 +107,7 @@ public class OrderTradeService {
 		seller.setAsset(seller.getAsset() + totalAmount);
 		stockUserRepository.save(seller);
 
-		// 매수자 보유주식 증가
+		// 매수자 보유주식 찾기
 		HaveStock haveStock = haveStockRepository.findByStockUserAndStockCode(buyer, newOrder.getStockCode())
 				.orElseGet(() -> {
 					HaveStock hs = new HaveStock();
@@ -116,8 +116,19 @@ public class OrderTradeService {
 					hs.setQuantity(0);
 					return hs;
 				});
-		haveStock.setQuantity(haveStock.getQuantity() + fillQty);
+		// 매수자의 주식 증가
+		updateAveragePrice(haveStock, fillQty, fillPrice);
 		haveStockRepository.save(haveStock);
+	}
+
+	private void updateAveragePrice(HaveStock haveStock, int fillQty, int fillPrice) {
+		if (haveStock.getQuantity() == 0) {
+			haveStock.setAveragePrice(fillPrice);
+		} else {
+			double totalCost = haveStock.getAveragePrice() * haveStock.getQuantity() + (double) fillPrice * fillQty;
+			haveStock.setAveragePrice(totalCost / (haveStock.getQuantity() + fillQty));
+		}
+		haveStock.setQuantity(haveStock.getQuantity() + fillQty);
 	}
 
 	public void saveOrComplete(Order order) {
@@ -134,4 +145,5 @@ public class OrderTradeService {
 		OrderBook orderBook = orderBookCache.get(stockCode);
 		return orderBook.getSellOrders().stream().mapToInt(Order::getTradePrice).min().orElse(0);
 	}
+
 }
