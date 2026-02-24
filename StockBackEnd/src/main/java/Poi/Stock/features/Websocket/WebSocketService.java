@@ -3,10 +3,8 @@ package Poi.Stock.features.Websocket;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -42,28 +40,22 @@ public class WebSocketService {
 		List<Stock> latestStocks = stockRepository.findLatestStocks();
 
 		latestStocks.forEach(stock -> {
-
 			String stockCode = stock.getStockCode();
-
 			stockCache.put(stockCode, stock);
-
-			// 미체결 상태 목록
 			List<OrderStatus> activeStatuses = List.of(OrderStatus.PENDING, OrderStatus.PARTIAL);
-
-			// 매도 호가
 			List<Order> sellOrders = orderRepository
 					.findByStockCodeAndTradeTypeAndStatusInOrderByTradePriceAscPriorityAsc(stockCode, tradeType.SELL,
 							activeStatuses);
-
-			// 매수 호가
 			List<Order> buyOrders = orderRepository
 					.findByStockCodeAndTradeTypeAndStatusInOrderByTradePriceDescPriorityAsc(stockCode, tradeType.BUY,
 							activeStatuses);
-
 			OrderBook orderBook = new OrderBook();
-			orderBook.setSellOrders(sellOrders);
-			orderBook.setBuyOrders(buyOrders);
-
+			for (Order order : sellOrders) {
+				orderBook.addOrder(order);
+			}
+			for (Order order : buyOrders) {
+				orderBook.addOrder(order);
+			}
 			orderBookCache.put(stockCode, orderBook);
 
 			log.info("호가 초기화 완료: {} (sell {}, buy {})", stockCode, sellOrders.size(), buyOrders.size());
@@ -112,26 +104,40 @@ public class WebSocketService {
 		messagingTemplate.convertAndSend("/topic/stock/" + stockCode, payload);
 	}
 
-	public void updateWebsocketHoga(String stockCode) {
-		OrderBook orderBook = orderBookCache.get(stockCode);
+	public void sendDelta(String stockCode, tradeType side, int price, int qty) {
 		Map<String, Object> payload = new HashMap<>();
-		payload.put("sellOrders", aggregateOrders(orderBook.getSellOrders()));
-		payload.put("buyOrders", aggregateOrders(orderBook.getBuyOrders()));
-		System.out.println(payload);
+		payload.put("type", "DELTA");
+		payload.put("side", side.name());
+		payload.put("price", price);
+		payload.put("qty", qty);
+
+		System.out.println("=== WebSocket 전송 ===");
+		System.out.println("destination: /topic/hoga/" + stockCode);
+		System.out.println("payload: " + payload);
+
 		messagingTemplate.convertAndSend("/topic/hoga/" + stockCode, payload);
 	}
 
-	private List<Map<String, Object>> aggregateOrders(List<Order> orders) {
-		return orders.stream().filter(o -> o.getRemainingQuantity() != null && o.getRemainingQuantity() > 0) // ✅ null 및
-																												// 0 방어
-				.collect(Collectors.groupingBy(Order::getTradePrice, LinkedHashMap::new,
-						Collectors.summingInt(Order::getRemainingQuantity)))
-				.entrySet().stream().map(e -> {
-					Map<String, Object> m = new HashMap<>();
-					m.put("tradePrice", e.getKey());
-					m.put("remainingQuantity", e.getValue());
-					return m;
-				}).collect(Collectors.toList());
-	}
+//	public void updateWebsocketHoga(String stockCode) {
+//		OrderBook orderBook = orderBookCache.get(stockCode);
+//		Map<String, Object> payload = new HashMap<>();
+//		payload.put("sellOrders", aggregateOrders(orderBook.getSellOrders()));
+//		payload.put("buyOrders", aggregateOrders(orderBook.getBuyOrders()));
+//		System.out.println(payload);
+//		messagingTemplate.convertAndSend("/topic/hoga/" + stockCode, payload);
+//	}
+//
+//	private List<Map<String, Object>> aggregateOrders(List<Order> orders) {
+//		return orders.stream().filter(o -> o.getRemainingQuantity() != null && o.getRemainingQuantity() > 0) // ✅ null 및
+//																												// 0 방어
+//				.collect(Collectors.groupingBy(Order::getTradePrice, LinkedHashMap::new,
+//						Collectors.summingInt(Order::getRemainingQuantity)))
+//				.entrySet().stream().map(e -> {
+//					Map<String, Object> m = new HashMap<>();
+//					m.put("tradePrice", e.getKey());
+//					m.put("remainingQuantity", e.getValue());
+//					return m;
+//				}).collect(Collectors.toList());
+//	}
 
 }

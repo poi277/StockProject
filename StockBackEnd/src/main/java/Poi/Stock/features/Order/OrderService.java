@@ -1,8 +1,10 @@
 package Poi.Stock.features.Order;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,27 +67,19 @@ public class OrderService {
 	 */
 	@Transactional
 	public Order placeOrder(String userId, TradeDTO tradeDTO) {
-		// 주문 생성 및 저장
-		Order order = orderTradeService.buildOrder(userId, tradeDTO);
+
+		Order order = orderTradeService.setOrder(userId, tradeDTO);
 		orderRepository.save(order);
-		// 캐시에 저장
-		orderBookCache.addOrder(order);
-		// 매칭 가능한 반대 주문 조회
+		OrderBook book = orderBookCache.get(order.getStockCode());
+		book.addOrder(order);
+		Set<Integer> changedPrices = new HashSet<>();
+		changedPrices.add(order.getTradePrice());
 		List<Order> matchOrderList = orderTradeService.findMatchOrderList(order);
-
-		// 체결 처리 후 체결 여부 반환
-		boolean isUpdate = orderTradeService.processMatching(order, matchOrderList);
+		Set<Integer> matchedPrices = orderTradeService.processMatching(order, matchOrderList);
+		changedPrices.addAll(matchedPrices);
 		orderTradeService.saveOrComplete(order);
+		orderTradeService.sendDeltaForPrice(order.getStockCode(), changedPrices);
 
-			int lastFillPrice = orderTradeService.getLowestSellPrice(order.getStockCode());
-
-			// 주식의 현재 정보를 캐시에 업데이트
-			stockService.updateCurrentPrice(order.getStockCode(), lastFillPrice);
-			// 웹소켓에 주식 반환
-			webSocketService.SendCurrentPrice(order.getStockCode(), lastFillPrice);
-
-
-		webSocketService.updateWebsocketHoga(order.getStockCode());
 		return order;
 	}
 

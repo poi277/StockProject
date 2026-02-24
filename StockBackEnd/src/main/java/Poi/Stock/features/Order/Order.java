@@ -101,4 +101,17 @@ public class Order {
 		this.priority = priority;
 	}
 
+	public void decreaseRemainingQuantity(int qty) {
+		if (qty <= 0)
+			return;
+		if (this.remainingQuantity < qty) {
+			throw new IllegalArgumentException("감소 수량이 남은 수량보다 큽니다.");
+		}
+		this.remainingQuantity -= qty;
+		if (this.remainingQuantity == 0) {
+			this.status = OrderStatus.COMPLETED;
+		} else {
+			this.status = OrderStatus.PARTIAL;
+		}
+	}
 }

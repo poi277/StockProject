@@ -1,9 +1,11 @@
 package Poi.Stock.features.Order;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.NavigableMap;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
@@ -34,7 +36,7 @@ public class OrderTradeService {
 	private final WebSocketService webSocketService;
 	private final CompletedOrderRepository completedOrderRepository;
 
-	public Order buildOrder(String userId, TradeDTO tradeDTO) {
+	public Order setOrder(String userId, TradeDTO tradeDTO) {
 		Order order = new Order();
 		order.setUserId(userId);
 		order.setStockCode(tradeDTO.getStockCode());
@@ -50,29 +52,35 @@ public class OrderTradeService {
 
 	public List<Order> findMatchOrderList(Order order) {
 		OrderBook orderBook = orderBookCache.get(order.getStockCode());
+		List<Order> result = new ArrayList<>();
+		if (order.getTradeType() == tradeType.BUY) {
+			NavigableMap<Integer, PriceLevel> matchLevels = orderBook.getSellBook().headMap(order.getTradePrice(),
+					true);
+			for (PriceLevel level : matchLevels.values()) {
+				result.addAll(level.getOrders());
+			}
+		} else {
+			NavigableMap<Integer, PriceLevel> matchLevels = orderBook.getBuyBook().headMap(order.getTradePrice(), true);
 
-		return order.getTradeType() == tradeType.BUY
-				? orderBook.getSellOrders().stream().filter(o -> o.getTradePrice() <= order.getTradePrice())
-						.sorted(Comparator.comparingInt(Order::getTradePrice).thenComparingLong(Order::getPriority))
-						.collect(Collectors.toList())
-				: orderBook.getBuyOrders().stream().filter(o -> o.getTradePrice() >= order.getTradePrice()).sorted(
-						Comparator.comparingInt(Order::getTradePrice).reversed().thenComparingLong(Order::getPriority))
-						.collect(Collectors.toList());
+			for (PriceLevel level : matchLevels.values()) {
+				result.addAll(level.getOrders());
+			}
+		}
+
+		return result;
 	}
 	
 	/**
 	 * 체결 루프
 	 */
-	public boolean processMatching(Order order, List<Order> matchOrderList) {
-		boolean matched = false;
-
+	public Set<Integer> processMatching(Order order, List<Order> matchOrderList) {
+		Set<Integer> changedPrices = new HashSet<>();
 		for (Order opposite : matchOrderList) {
+
 			if (order.getRemainingQuantity() == 0)
 				break;
-
 			int fillQty = Math.min(order.getRemainingQuantity(), opposite.getRemainingQuantity());
 			int fillPrice = opposite.getTradePrice();
-
 			order.setRemainingQuantity(order.getRemainingQuantity() - fillQty);
 			opposite.setRemainingQuantity(opposite.getRemainingQuantity() - fillQty);
 
@@ -81,12 +89,13 @@ public class OrderTradeService {
 
 			saveOrComplete(opposite);
 			settle(order, opposite, fillQty, fillPrice);
-			matched = true;
+
+			// 🔥 변경된 가격 기록
+			changedPrices.add(fillPrice);
 		}
 
-		return matched;
+		return changedPrices;
 	}
-
 	private void settle(Order newOrder, Order opposite, int fillQty, int fillPrice) {
 		String buyerId = newOrder.getTradeType() == tradeType.BUY ? newOrder.getUserId() : opposite.getUserId();
 		String sellerId = newOrder.getTradeType() == tradeType.BUY ? opposite.getUserId() : newOrder.getUserId();
@@ -135,15 +144,27 @@ public class OrderTradeService {
 		if (order.getStatus() == OrderStatus.COMPLETED) {
 			completedOrderRepository.save(CompletedOrder.from(order));
 			orderRepository.delete(order);
-			orderBookCache.removeOrder(order);
+			OrderBook book = orderBookCache.get(order.getStockCode());
+			book.removeOrder(order);
 		} else {
 			orderRepository.save(order);
 		}
 	}
 
 	public int getLowestSellPrice(String stockCode) {
-		OrderBook orderBook = orderBookCache.get(stockCode);
-		return orderBook.getSellOrders().stream().mapToInt(Order::getTradePrice).min().orElse(0);
+		OrderBook book = orderBookCache.get(stockCode);
+		return book.getSellBook().isEmpty() ? 0 : book.getSellBook().firstKey();
 	}
 
+	public void sendDeltaForPrice(String stockCode, Set<Integer> changedPrices) {
+		OrderBook book = orderBookCache.get(stockCode);
+		for (int price : changedPrices) {
+			PriceLevel sellLevel = book.getSellBook().get(price);
+			PriceLevel buyLevel = book.getBuyBook().get(price);
+			int sellQty = sellLevel == null ? 0 : sellLevel.getTotalQuantity();
+			int buyQty = buyLevel == null ? 0 : buyLevel.getTotalQuantity();
+			webSocketService.sendDelta(stockCode, tradeType.SELL, price, sellQty);
+			webSocketService.sendDelta(stockCode, tradeType.BUY, price, buyQty);
+		}
+	}
 }
