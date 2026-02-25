@@ -22,20 +22,26 @@ public class OrderBook {
 
 		TreeMap<Integer, PriceLevel> book = order.getTradeType() == tradeType.BUY ? buyBook : sellBook;
 
+		;
+
 		PriceLevel level = book.computeIfAbsent(order.getTradePrice(), PriceLevel::new);
 
 		level.addOrder(order);
 	}
 
 	public void removeOrder(Order order) {
-
 		TreeMap<Integer, PriceLevel> book = order.getTradeType() == tradeType.BUY ? buyBook : sellBook;
-
 		PriceLevel level = book.get(order.getTradePrice());
 		if (level == null)
 			return;
 
-		level.getOrders().removeIf(o -> o.getOrderId().equals(order.getOrderId()));
+		level.getOrders().removeIf(o -> {
+			if (o.getOrderId().equals(order.getOrderId())) {
+				level.reduceQuantity(o.getRemainingQuantity());
+				return true;
+			}
+			return false;
+		});
 
 		if (level.isEmpty()) {
 			book.remove(order.getTradePrice());
@@ -48,6 +54,12 @@ public class OrderBook {
 
 	public TreeMap<Integer, PriceLevel> getSellBook() {
 		return sellBook;
+	}
+
+	public Integer getSellfirstKey() {
+		if (sellBook.isEmpty())
+			return null;
+		return sellBook.firstKey();
 	}
 
 }

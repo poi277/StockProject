@@ -11,6 +11,7 @@ import Poi.Stock.features.Order.OrderBook;
 public class OrderBookCache {
 
 	private final Map<String, OrderBook> orderBooks = new ConcurrentHashMap<>();
+
 	public OrderBook get(String stockCode) {
 		return orderBooks.computeIfAbsent(stockCode, s -> new OrderBook());
 	}

@@ -1,7 +1,6 @@
 package Poi.Stock.features.Order;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -67,21 +66,13 @@ public class OrderService {
 	 */
 	@Transactional
 	public Order placeOrder(String userId, TradeDTO tradeDTO) {
-
+		// dto에서 order로 변환
 		Order order = orderTradeService.setOrder(userId, tradeDTO);
-		orderRepository.save(order);
-		OrderBook book = orderBookCache.get(order.getStockCode());
-		book.addOrder(order);
-		Set<Integer> changedPrices = new HashSet<>();
-		changedPrices.add(order.getTradePrice());
-		List<Order> matchOrderList = orderTradeService.findMatchOrderList(order);
-		Set<Integer> matchedPrices = orderTradeService.processMatching(order, matchOrderList);
-		changedPrices.addAll(matchedPrices);
-		orderTradeService.saveOrComplete(order);
-		orderTradeService.sendDeltaForPrice(order.getStockCode(), changedPrices);
-
+		Set<Integer> matchedPrices = orderTradeService.processMatching(order);
+		orderTradeService.sendDeltaForPrice(order.getStockCode(), matchedPrices);
 		return order;
 	}
+
 
 	public Map<String, Object> getOrderBook(String stockCode) {
 		List<Order> sellOrders = orderRepository.findByStockCodeAndTradeTypeAndStatusInOrderByTradePriceAscPriorityAsc(

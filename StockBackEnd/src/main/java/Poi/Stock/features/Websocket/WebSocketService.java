@@ -117,27 +117,4 @@ public class WebSocketService {
 
 		messagingTemplate.convertAndSend("/topic/hoga/" + stockCode, payload);
 	}
-
-//	public void updateWebsocketHoga(String stockCode) {
-//		OrderBook orderBook = orderBookCache.get(stockCode);
-//		Map<String, Object> payload = new HashMap<>();
-//		payload.put("sellOrders", aggregateOrders(orderBook.getSellOrders()));
-//		payload.put("buyOrders", aggregateOrders(orderBook.getBuyOrders()));
-//		System.out.println(payload);
-//		messagingTemplate.convertAndSend("/topic/hoga/" + stockCode, payload);
-//	}
-//
-//	private List<Map<String, Object>> aggregateOrders(List<Order> orders) {
-//		return orders.stream().filter(o -> o.getRemainingQuantity() != null && o.getRemainingQuantity() > 0) // ✅ null 및
-//																												// 0 방어
-//				.collect(Collectors.groupingBy(Order::getTradePrice, LinkedHashMap::new,
-//						Collectors.summingInt(Order::getRemainingQuantity)))
-//				.entrySet().stream().map(e -> {
-//					Map<String, Object> m = new HashMap<>();
-//					m.put("tradePrice", e.getKey());
-//					m.put("remainingQuantity", e.getValue());
-//					return m;
-//				}).collect(Collectors.toList());
-//	}
-
 }

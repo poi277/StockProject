@@ -43,13 +43,13 @@ export default function StockDetailForm({ stock }) {
           </div>
         </div>
 
+        <TradeForm stockCode={stock.stockCode} selectedPrice={selectedPrice}/>
         <HogaChart
           currentStock={currentStock}
           selectedPrice={selectedPrice}
           setSelectedPrice={setSelectedPrice}
         />
       </div>
-      <TradeForm stockCode={stock.stockCode} selectedPrice={selectedPrice}/>
     </>
   );
 }
