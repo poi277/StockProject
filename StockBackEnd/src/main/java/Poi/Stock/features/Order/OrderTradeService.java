@@ -2,11 +2,13 @@ package Poi.Stock.features.Order;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.NavigableMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -50,132 +52,140 @@ public class OrderTradeService {
 		order.setPriority(System.nanoTime());
 		return order;
 	}
-
-	public List<Order> findMatchOrderList(Order order) {
-		OrderBook orderBook = orderBookCache.get(order.getStockCode());
-		List<Order> result = new ArrayList<>();
-		if (order.getTradeType() == tradeType.BUY) {
-			NavigableMap<Integer, PriceLevel> matchLevels = orderBook.getSellBook().headMap(order.getTradePrice(),
-					true);
-			for (PriceLevel level : matchLevels.values()) {
-				result.addAll(level.getOrders()); // FIFO여야 함
-			}
-		} else {
-			NavigableMap<Integer, PriceLevel> matchLevels = orderBook.getBuyBook().tailMap(order.getTradePrice(), true);
-			for (PriceLevel level : matchLevels.values()) {
-				result.addAll(level.getOrders());
-			}
-		}
-
-		return result;
-	}
-	
 	/**
 	 * 체결 루프
 	 */
 	public Set<Integer> processMatching(Order order) {
-		// 변동이 있는 가격의 WebSocket 전송용
 		Set<Integer> matchedPrices = new HashSet<>();
 		matchedPrices.add(order.getTradePrice());
-		// 해당 종목의 OrderBook 조회
+		List<TradeExecution> executions = new ArrayList<>();
 		OrderBook book = orderBookCache.get(order.getStockCode());
-		// 남은 수량이 있는 동안 반복 (부분 체결 대응)
-		while (order.getRemainingQuantity() > 0) {
-			// 내 주문의 반대편 호가창 선택 매수면 매도호가(sellBook) 매도면 매수호가(buyBook)
-			TreeMap<Integer, PriceLevel> oppositeBook = order.getTradeType() == tradeType.BUY ? book.getSellBook()
-					: book.getBuyBook();
-			// 반대편에 주문이 하나도 없으면 체결 종료
-			if (oppositeBook.isEmpty())
-				break;
-			// 가장 유리한 가격 선택
-			Integer bestPrice = oppositeBook.firstKey();
-			// 가격 조건이 체결 가능한지 확인 매수: 상대 가격 ≤ 내 매수가격 매도: 상대 가격 ≥ 내 매도가격
-			boolean priceMatch = order.getTradeType() == tradeType.BUY ? bestPrice <= order.getTradePrice()
-					: bestPrice >= order.getTradePrice();
-			// 가격이 안 맞으면 더 이상 체결 불가 → 종료
-			if (!priceMatch)
-				break;
-			PriceLevel level = oppositeBook.get(bestPrice);
-			// 해당 가격 레벨의 가장 먼저 들어온 주문(FIFO) 가져오기
-			Order restingOrder = level.peek();
-			// 실제 체결 수량 계산 (둘 중 작은 값)
-			int fillQty = Math.min(order.getRemainingQuantity(), restingOrder.getRemainingQuantity());
-			// 내 주문 수량 감소
-			order.decreaseRemainingQuantity(fillQty);
-			// 상대 주문 수량 감소
-			restingOrder.decreaseRemainingQuantity(fillQty);
-			// 해당 가격 레벨의 총 수량 감소
-			level.reduceQuantity(fillQty);
-			// 체결 가격은 기존 대기 주문(resting order)의 가격을 사용
-			int fillPrice = restingOrder.getTradePrice();
-			// 체결 가격 기록
-			matchedPrices.add(fillPrice);
-			// 상대 주문이 전량 체결된 경우
-			if (restingOrder.getRemainingQuantity() == 0) {
-				// 큐에서 제거 (FIFO)
-				level.removeTopOrder();
-				// DB 이동 또는 완료 처리
-				OrderSaveDB(restingOrder);
-			}
-			// 해당 가격 레벨에 더 이상 주문이 없다면
-			if (level.isEmpty()) {
-				// 가격 레벨 자체 제거 (TreeMap에서 삭제)
-				oppositeBook.remove(bestPrice);
-			}
-			// 실제 자산 이동 및 보유주식 갱신 처리
-			settle(order, restingOrder, fillQty, fillPrice);
-		}
+		TreeMap<Integer, PriceLevel> oppositeBook = order.getTradeType() == tradeType.BUY ? book.getSellBook()
+				: book.getBuyBook();
 
-		// 내 주문 상태 최종 갱신
+		matchLoop(order, oppositeBook, matchedPrices, executions);
+		settleAll(executions);
+		saveOrder(order, book);
 
-		// 전량 체결
-		if (order.getRemainingQuantity() == 0) {
-			order.setStatus(OrderStatus.COMPLETED);
-			// 일부 체결
-		} else if (order.getRemainingQuantity() < order.getQuantity()) {
-			order.setStatus(OrderStatus.PARTIAL);
-		}
-		// 남은 수량이 있으면 Book에 등록
-		if (order.getRemainingQuantity() > 0) {
-			book.addOrder(order);
-		}
-		OrderSaveDB(order);
-		// 체결된 가격 목록 반환
 		return matchedPrices;
 	}
 
-	private void settle(Order newOrder, Order opposite, int fillQty, int fillPrice) {
-		String buyerId = newOrder.getTradeType() == tradeType.BUY ? newOrder.getUserId() : opposite.getUserId();
-		String sellerId = newOrder.getTradeType() == tradeType.BUY ? opposite.getUserId() : newOrder.getUserId();
-		int totalAmount = fillPrice * fillQty;
+	private void matchLoop(Order order, TreeMap<Integer, PriceLevel> oppositeBook, Set<Integer> matchedPrices,
+			List<TradeExecution> executions) {
+		while (order.getRemainingQuantity() > 0) {
+			if (oppositeBook.isEmpty())
+				break;
+			Integer firstPrice = oppositeBook.firstKey();
+			boolean priceMatch = order.getTradeType() == tradeType.BUY ? firstPrice <= order.getTradePrice()
+					: firstPrice >= order.getTradePrice();
+			if (!priceMatch)
+				break;
 
-		// 매수자 자산 차감
-		StockUser buyer = stockUserRepository.findById(buyerId)
-				.orElseThrow(() -> new RuntimeException("매수자를 찾을 수 없습니다"));
-		if (buyer.getAsset() < totalAmount) {
-			throw new RuntimeException("체결 시점에 자산이 부족합니다");
+			PriceLevel level = oppositeBook.get(firstPrice);
+			Order restingOrder = level.peek();
+			int fillQty = Math.min(order.getRemainingQuantity(), restingOrder.getRemainingQuantity());
+
+			order.decreaseRemainingQuantity(fillQty);
+			restingOrder.decreaseRemainingQuantity(fillQty);
+			level.reduceQuantity(fillQty);
+
+			int fillPrice = restingOrder.getTradePrice();
+			matchedPrices.add(fillPrice);
+
+			String buyerId = order.getTradeType() == tradeType.BUY ? order.getUserId() : restingOrder.getUserId();
+			String sellerId = order.getTradeType() == tradeType.BUY ? restingOrder.getUserId() : order.getUserId();
+			executions.add(new TradeExecution(buyerId, sellerId, fillQty, fillPrice, order.getStockCode()));
+
+			saveRestingOrder(restingOrder, level, oppositeBook, firstPrice);
 		}
-		buyer.setAsset(buyer.getAsset() - totalAmount);
-		stockUserRepository.save(buyer);
+	}
 
-		// 매도자 자산 증가
-		StockUser seller = stockUserRepository.findById(sellerId)
-				.orElseThrow(() -> new RuntimeException("매도자를 찾을 수 없습니다"));
-		seller.setAsset(seller.getAsset() + totalAmount);
-		stockUserRepository.save(seller);
+	private void saveRestingOrder(Order restingOrder, PriceLevel level, TreeMap<Integer, PriceLevel> oppositeBook,
+			int firstPrice) {
+		if (restingOrder.isCompleted()) {
+			level.removeTopOrder();
+			completedOrderRepository.save(CompletedOrder.from(restingOrder));
+			orderRepository.delete(restingOrder);
+		} else {
+			orderRepository.save(restingOrder);
+		}
+		if (level.isEmpty()) {
+			oppositeBook.remove(firstPrice);
+		}
+	}
 
-		// 매수자 보유주식 찾기
-		HaveStock haveStock = haveStockRepository.findByStockUserAndStockCode(buyer, newOrder.getStockCode())
-				.orElseGet(() -> {
-					HaveStock hs = new HaveStock();
-					hs.setStockUser(buyer);
-					hs.setStockCode(newOrder.getStockCode());
-					hs.setQuantity(0);
-					return hs;
-				});
-		// 매수자의 주식 증가
-		updateAveragePrice(haveStock, fillQty, fillPrice);
-		haveStockRepository.save(haveStock);
+	private void saveOrder(Order order, OrderBook book) {
+		if (order.isCompleted()) {
+			completedOrderRepository.save(CompletedOrder.from(order));
+		} else {
+			orderRepository.save(order);
+			book.addOrder(order);
+		}
+	}
+
+	private void settleAll(List<TradeExecution> executions) {
+		if (executions.isEmpty())
+			return;
+
+		Map<String, Integer> assetDelta = new HashMap<>();
+		Map<String, List<TradeExecution>> buyerExecutions = new HashMap<>();
+		Map<String, Map<String, Integer>> sellerStockDelta = new HashMap<>();
+
+		for (TradeExecution ex : executions) {
+			int totalAmount = ex.getPrice() * ex.getQuantity();
+			assetDelta.merge(ex.getBuyerId(), -totalAmount, Integer::sum);
+			assetDelta.merge(ex.getSellerId(), totalAmount, Integer::sum);
+			buyerExecutions.computeIfAbsent(ex.getBuyerId(), k -> new ArrayList<>()).add(ex);
+			sellerStockDelta.computeIfAbsent(ex.getSellerId(), k -> new HashMap<>()).merge(ex.getStockCode(),
+					-ex.getQuantity(), Integer::sum);
+		}
+		List<StockUser> users = stockUserRepository.findAllById(assetDelta.keySet());
+		Map<String, StockUser> userMap = users.stream().collect(Collectors.toMap(StockUser::getId, u -> u));
+
+
+		for (Map.Entry<String, Integer> entry : assetDelta.entrySet()) {
+			userMap.get(entry.getKey()).setAsset(userMap.get(entry.getKey()).getAsset() + entry.getValue());
+		}
+		stockUserRepository.saveAll(users);
+
+		// 한 번에 조회
+		String stockCode = executions.get(0).getStockCode(); // 단일 종목
+		Set<String> allUserIds = new HashSet<>();
+		allUserIds.addAll(buyerExecutions.keySet());
+		allUserIds.addAll(sellerStockDelta.keySet());
+
+		Map<String, HaveStock> haveStockMap = haveStockRepository.findByUserIdsAndStockCode(allUserIds, stockCode)
+				.stream().collect(Collectors.toMap(h -> h.getStockUser().getId(), h -> h));
+
+		// 매수자 주식 반영
+		List<HaveStock> toSave = new ArrayList<>();
+		for (Map.Entry<String, List<TradeExecution>> entry : buyerExecutions.entrySet()) {
+			StockUser buyer = userMap.get(entry.getKey());
+			HaveStock hs = haveStockMap.computeIfAbsent(entry.getKey(), k -> {
+				HaveStock h = new HaveStock();
+				h.setStockUser(buyer);
+				h.setStockCode(stockCode);
+				h.setQuantity(0);
+				return h;
+			});
+			for (TradeExecution ex : entry.getValue()) {
+				updateAveragePrice(hs, ex.getQuantity(), ex.getPrice());
+			}
+			toSave.add(hs);
+		}
+
+		// 매도자 주식 반영
+		for (Map.Entry<String, Map<String, Integer>> sellerEntry : sellerStockDelta.entrySet()) {
+			HaveStock hs = haveStockMap.get(sellerEntry.getKey());
+			if (hs == null)
+				throw new RuntimeException("매도자 보유 주식을 찾을 수 없습니다");
+			for (Map.Entry<String, Integer> stockEntry : sellerEntry.getValue().entrySet()) {
+				hs.setQuantity(hs.getQuantity() + stockEntry.getValue());
+			}
+			toSave.add(hs);
+		}
+
+		haveStockRepository.saveAll(toSave); // 한 번에 저장
 	}
 
 	private void updateAveragePrice(HaveStock haveStock, int fillQty, int fillPrice) {
@@ -186,17 +196,6 @@ public class OrderTradeService {
 			haveStock.setAveragePrice(totalCost / (haveStock.getQuantity() + fillQty));
 		}
 		haveStock.setQuantity(haveStock.getQuantity() + fillQty);
-	}
-
-	public void OrderSaveDB(Order order) {
-		if (order.getStatus() == OrderStatus.COMPLETED) {
-			completedOrderRepository.save(CompletedOrder.from(order));
-			orderRepository.delete(order);
-			OrderBook book = orderBookCache.get(order.getStockCode());
-			book.removeOrder(order);
-		} else {
-			orderRepository.save(order);
-		}
 	}
 
 	public int getLowestSellPrice(String stockCode) {

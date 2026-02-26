@@ -114,4 +114,8 @@ public class Order {
 			this.status = OrderStatus.PARTIAL;
 		}
 	}
+
+	public boolean isCompleted() {
+		return this.status == OrderStatus.COMPLETED;
+	}
 }

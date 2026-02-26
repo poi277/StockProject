@@ -66,14 +66,12 @@ public class OrderService {
 	 */
 	@Transactional
 	public Order placeOrder(String userId, TradeDTO tradeDTO) {
-		// dto에서 order로 변환
+		// dto에서 변환
 		Order order = orderTradeService.setOrder(userId, tradeDTO);
 		Set<Integer> matchedPrices = orderTradeService.processMatching(order);
 		orderTradeService.sendDeltaForPrice(order.getStockCode(), matchedPrices);
 		return order;
 	}
-
-
 	public Map<String, Object> getOrderBook(String stockCode) {
 		List<Order> sellOrders = orderRepository.findByStockCodeAndTradeTypeAndStatusInOrderByTradePriceAscPriorityAsc(
 				stockCode, tradeType.SELL, List.of(OrderStatus.PENDING, OrderStatus.PARTIAL));
