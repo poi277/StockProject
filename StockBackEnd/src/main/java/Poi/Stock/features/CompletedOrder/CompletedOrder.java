@@ -34,7 +34,7 @@ public class CompletedOrder {
 
 	private LocalDateTime completedAt;
 
-	public static CompletedOrder from(Order order) {
+	public static CompletedOrder setCompletedOrder(Order order) {
 		CompletedOrder co = new CompletedOrder();
 		co.orderId = order.getOrderId();
 		co.stockCode = order.getStockCode();

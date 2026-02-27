@@ -22,7 +22,7 @@ public interface HaveStockRepository extends JpaRepository<HaveStock, Long> {
 	List<HaveStock> findByStockCode(String stockCode);
 
 	@Query("SELECT h FROM HaveStock h WHERE h.stockUser.id IN :userIds AND h.stockCode = :stockCode")
-	List<HaveStock> findByUserIdsAndStockCode(@Param("id") Collection<String> userIds,
+	List<HaveStock> findByUserIdsAndStockCode(@Param("userIds") Collection<String> userIds,
 			@Param("stockCode") String stockCode);
 }
 

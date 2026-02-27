@@ -104,7 +104,7 @@ public class OrderTradeService {
 			int firstPrice) {
 		if (restingOrder.isCompleted()) {
 			level.removeTopOrder();
-			completedOrderRepository.save(CompletedOrder.from(restingOrder));
+			completedOrderRepository.save(CompletedOrder.setCompletedOrder(restingOrder));
 			orderRepository.delete(restingOrder);
 		} else {
 			orderRepository.save(restingOrder);
@@ -116,7 +116,7 @@ public class OrderTradeService {
 
 	private void saveOrder(Order order, OrderBook book) {
 		if (order.isCompleted()) {
-			completedOrderRepository.save(CompletedOrder.from(order));
+			completedOrderRepository.save(CompletedOrder.setCompletedOrder(order));
 		} else {
 			orderRepository.save(order);
 			book.addOrder(order);
@@ -127,43 +127,35 @@ public class OrderTradeService {
 		if (executions.isEmpty())
 			return;
 
+		String stockCode = executions.get(0).getStockCode();
 		Map<String, Integer> assetDelta = new HashMap<>();
-		Map<String, List<TradeExecution>> buyerExecutions = new HashMap<>();
-		Map<String, Map<String, Integer>> sellerStockDelta = new HashMap<>();
-
+		Map<String, List<TradeExecution>> buyerExMap = new HashMap<>();
+		Map<String, Integer> sellerStockDelta = new HashMap<>();
 		for (TradeExecution ex : executions) {
-			int totalAmount = ex.getPrice() * ex.getQuantity();
-			assetDelta.merge(ex.getBuyerId(), -totalAmount, Integer::sum);
-			assetDelta.merge(ex.getSellerId(), totalAmount, Integer::sum);
-			buyerExecutions.computeIfAbsent(ex.getBuyerId(), k -> new ArrayList<>()).add(ex);
-			sellerStockDelta.computeIfAbsent(ex.getSellerId(), k -> new HashMap<>()).merge(ex.getStockCode(),
-					-ex.getQuantity(), Integer::sum);
+			int total = ex.getPrice() * ex.getQuantity();
+			assetDelta.merge(ex.getBuyerId(), -total, Integer::sum);
+			assetDelta.merge(ex.getSellerId(), total, Integer::sum);
+			buyerExMap.computeIfAbsent(ex.getBuyerId(), k -> new ArrayList<>()).add(ex);
+			sellerStockDelta.merge(ex.getSellerId(), -ex.getQuantity(), Integer::sum);
 		}
-		List<StockUser> users = stockUserRepository.findAllById(assetDelta.keySet());
-		Map<String, StockUser> userMap = users.stream().collect(Collectors.toMap(StockUser::getId, u -> u));
-
-
-		for (Map.Entry<String, Integer> entry : assetDelta.entrySet()) {
-			userMap.get(entry.getKey()).setAsset(userMap.get(entry.getKey()).getAsset() + entry.getValue());
-		}
-		stockUserRepository.saveAll(users);
-
-		// 한 번에 조회
-		String stockCode = executions.get(0).getStockCode(); // 단일 종목
+		// 유저 한 번 조회
+		Map<String, StockUser> userMap = stockUserRepository.findAllById(assetDelta.keySet()).stream()
+				.collect(Collectors.toMap(StockUser::getId, u -> u));
+		// 자산 반영
+		userMap.values().forEach(u -> u.setAsset(u.getAsset() + assetDelta.get(u.getId())));
+		stockUserRepository.saveAll(userMap.values());
+		// 보유주식 한 번 조회
 		Set<String> allUserIds = new HashSet<>();
-		allUserIds.addAll(buyerExecutions.keySet());
+		allUserIds.addAll(buyerExMap.keySet());
 		allUserIds.addAll(sellerStockDelta.keySet());
-
 		Map<String, HaveStock> haveStockMap = haveStockRepository.findByUserIdsAndStockCode(allUserIds, stockCode)
 				.stream().collect(Collectors.toMap(h -> h.getStockUser().getId(), h -> h));
-
-		// 매수자 주식 반영
 		List<HaveStock> toSave = new ArrayList<>();
-		for (Map.Entry<String, List<TradeExecution>> entry : buyerExecutions.entrySet()) {
-			StockUser buyer = userMap.get(entry.getKey());
+		// 매수자 - averagePrice 계산
+		for (Map.Entry<String, List<TradeExecution>> entry : buyerExMap.entrySet()) {
 			HaveStock hs = haveStockMap.computeIfAbsent(entry.getKey(), k -> {
 				HaveStock h = new HaveStock();
-				h.setStockUser(buyer);
+				h.setStockUser(userMap.get(k));
 				h.setStockCode(stockCode);
 				h.setQuantity(0);
 				return h;
@@ -173,19 +165,15 @@ public class OrderTradeService {
 			}
 			toSave.add(hs);
 		}
-
-		// 매도자 주식 반영
-		for (Map.Entry<String, Map<String, Integer>> sellerEntry : sellerStockDelta.entrySet()) {
-			HaveStock hs = haveStockMap.get(sellerEntry.getKey());
+		// 매도자 - 수량만 감소
+		for (Map.Entry<String, Integer> entry : sellerStockDelta.entrySet()) {
+			HaveStock hs = haveStockMap.get(entry.getKey());
 			if (hs == null)
 				throw new RuntimeException("매도자 보유 주식을 찾을 수 없습니다");
-			for (Map.Entry<String, Integer> stockEntry : sellerEntry.getValue().entrySet()) {
-				hs.setQuantity(hs.getQuantity() + stockEntry.getValue());
-			}
+			hs.setQuantity(hs.getQuantity() + entry.getValue()); // 음수 합산
 			toSave.add(hs);
 		}
-
-		haveStockRepository.saveAll(toSave); // 한 번에 저장
+		haveStockRepository.saveAll(toSave);
 	}
 
 	private void updateAveragePrice(HaveStock haveStock, int fillQty, int fillPrice) {
