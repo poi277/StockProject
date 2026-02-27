@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import Poi.Stock.DTO.user.TradeDTO;
 import Poi.Stock.features.CompletedOrder.CompletedOrder;
+import Poi.Stock.features.TradeHistory.TradeHistory;
 import Poi.Stock.features.User.HaveStock;
 import Poi.Stock.features.User.StockUser;
 import Poi.Stock.features.Websocket.OrderBookCache;
@@ -22,6 +23,7 @@ import Poi.Stock.repository.CompletedOrderRepository;
 import Poi.Stock.repository.HaveStockRepository;
 import Poi.Stock.repository.OrderRepository;
 import Poi.Stock.repository.StockUserRepository;
+import Poi.Stock.repository.TradeHistoryRepository;
 import Poi.Stock.util.EnumUtil.OrderStatus;
 import Poi.Stock.util.EnumUtil.tradeType;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +40,7 @@ public class OrderTradeService {
 	private final HaveStockRepository haveStockRepository;
 	private final WebSocketService webSocketService;
 	private final CompletedOrderRepository completedOrderRepository;
+	private final TradeHistoryRepository tradeHistoryRepository;
 
 	public Order setOrder(String userId, TradeDTO tradeDTO) {
 		Order order = new Order();
@@ -174,6 +177,8 @@ public class OrderTradeService {
 			toSave.add(hs);
 		}
 		haveStockRepository.saveAll(toSave);
+		List<TradeHistory> histories = executions.stream().map(TradeHistory::from).collect(Collectors.toList());
+		tradeHistoryRepository.saveAll(histories);
 	}
 
 	private void updateAveragePrice(HaveStock haveStock, int fillQty, int fillPrice) {
