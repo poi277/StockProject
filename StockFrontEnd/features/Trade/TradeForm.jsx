@@ -2,7 +2,7 @@
 
 import Trade from "./Trade";
 
-export default function TradeForm({ stockCode,selectedPrice}) {
+export default function TradeForm({ stockCode, selectedPrice, setSelectedPrice }) {
   const {
     tradeType,
     setTradeType,
@@ -11,7 +11,7 @@ export default function TradeForm({ stockCode,selectedPrice}) {
     message,
     error,
     handleSubmit,
-  } = Trade(selectedPrice,stockCode);
+  } = Trade(selectedPrice, stockCode);
 
   return (
     <form onSubmit={handleSubmit}>
@@ -27,6 +27,7 @@ export default function TradeForm({ stockCode,selectedPrice}) {
           <option value="SELL">매도</option>
         </select>
       </div>
+
       <div>
         <label>주식 ID </label>
         {stockCode}
@@ -43,8 +44,13 @@ export default function TradeForm({ stockCode,selectedPrice}) {
       </div>
 
       <div>
-         <label>선택가 </label>
-        {selectedPrice}
+        <label>선택가</label>
+        <input
+          type="number"
+          min="1"
+          value={selectedPrice || ''}
+          onChange={(e) => setSelectedPrice(Number(e.target.value))}
+        />
       </div>
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
