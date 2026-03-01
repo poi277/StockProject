@@ -14,10 +14,12 @@ import org.springframework.stereotype.Service;
 
 import Poi.Stock.DTO.user.TradeDTO;
 import Poi.Stock.features.CompletedOrder.CompletedOrder;
+import Poi.Stock.features.Stock.Stock;
 import Poi.Stock.features.TradeHistory.TradeHistory;
 import Poi.Stock.features.User.HaveStock;
 import Poi.Stock.features.User.StockUser;
 import Poi.Stock.features.Websocket.OrderBookCache;
+import Poi.Stock.features.Websocket.StockCache;
 import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.repository.CompletedOrderRepository;
 import Poi.Stock.repository.HaveStockRepository;
@@ -36,6 +38,7 @@ public class OrderTradeService {
 
 	private final OrderRepository orderRepository;
 	private final OrderBookCache orderBookCache;
+	private final StockCache stockCache;
 	private final StockUserRepository stockUserRepository;
 	private final HaveStockRepository haveStockRepository;
 	private final WebSocketService webSocketService;
@@ -55,20 +58,23 @@ public class OrderTradeService {
 		order.setPriority(System.nanoTime());
 		return order;
 	}
+	
 	/**
 	 * 체결 루프
+	 * 
+	 * @param book
 	 */
-	public Set<Integer> processMatching(Order order) {
+	public Set<Integer> processMatching(Order order, OrderBook book) {
 		Set<Integer> matchedPrices = new HashSet<>();
 		matchedPrices.add(order.getTradePrice());
 		List<TradeExecution> executions = new ArrayList<>();
-		OrderBook book = orderBookCache.get(order.getStockCode());
 		TreeMap<Integer, PriceLevel> oppositeBook = order.getTradeType() == tradeType.BUY ? book.getSellBook()
 				: book.getBuyBook();
 
 		matchLoop(order, oppositeBook, matchedPrices, executions);
 		settleAll(executions);
 		saveOrder(order, book);
+
 
 		return matchedPrices;
 	}
@@ -196,8 +202,7 @@ public class OrderTradeService {
 		return book.getSellBook().isEmpty() ? 0 : book.getSellBook().firstKey();
 	}
 
-	public void sendDeltaForPrice(String stockCode, Set<Integer> changedPrices) {
-		OrderBook book = orderBookCache.get(stockCode);
+	public void sendDeltaForPrice(String stockCode, Set<Integer> changedPrices, OrderBook book) {
 		for (int price : changedPrices) {
 			PriceLevel sellLevel = book.getSellBook().get(price);
 			PriceLevel buyLevel = book.getBuyBook().get(price);
@@ -206,6 +211,27 @@ public class OrderTradeService {
 			webSocketService.sendDelta(stockCode, tradeType.SELL, price, sellQty);
 			webSocketService.sendDelta(stockCode, tradeType.BUY, price, buyQty);
 		}
-		webSocketService.SendCurrentPrice(stockCode, book.getSellfirstKey());
+	}
+
+	public void updateStockPrice(String stockCode, int currentPrice) {
+		Stock stock = stockCache.get(stockCode);
+		if (stock == null)
+			return;
+		// 종가 업데이트
+		stock.setClosePrice(currentPrice);
+		// 고가 업데이트
+		if (stock.getHighPrice() == null || currentPrice > stock.getHighPrice()) {
+			stock.setHighPrice(currentPrice);
+		}
+		// 저가 업데이트
+		if (stock.getLowPrice() == null || currentPrice < stock.getLowPrice()) {
+			stock.setLowPrice(currentPrice);
+		}
+
+		// 변동폭/변동률 업데이트
+		if (stock.getOpenPrice() != null) {
+			stock.setChangeAmount(currentPrice - stock.getOpenPrice());
+			stock.setChangeRate((double) (currentPrice - stock.getOpenPrice()) / stock.getOpenPrice() * 100);
+		}
 	}
 }

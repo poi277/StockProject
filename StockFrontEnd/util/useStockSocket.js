@@ -16,6 +16,7 @@ export function useStockSocket(client, connected, stockCodes = [], initialStocks
 
     const subscriptions = codes.map(code =>
       client.subscribe(`/topic/stock/${code}`, message => {
+          console.log('RAW 메시지:', message.body); 
           const data = JSON.parse(message.body);
           setStocks(prev => ({
               ...prev,

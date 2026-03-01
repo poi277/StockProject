@@ -66,10 +66,16 @@ public class OrderService {
 	 */
 	@Transactional
 	public Order placeOrder(String userId, TradeDTO tradeDTO) {
-		// dto에서 변환
 		Order order = orderTradeService.setOrder(userId, tradeDTO);
-		Set<Integer> matchedPrices = orderTradeService.processMatching(order);
-		orderTradeService.sendDeltaForPrice(order.getStockCode(), matchedPrices);
+		OrderBook book = orderBookCache.get(order.getStockCode());
+		Set<Integer> matchedPrices = orderTradeService.processMatching(order, book);
+		orderTradeService.sendDeltaForPrice(order.getStockCode(), matchedPrices, book);
+
+		Integer currentPrice = book.getSellfirstKey();
+		if (currentPrice != null) { // null 체크
+			webSocketService.SendCurrentPrice(order.getStockCode(), currentPrice);
+			orderTradeService.updateStockPrice(order.getStockCode(), currentPrice);
+		}
 		return order;
 	}
 	public Map<String, Object> getOrderBook(String stockCode) {

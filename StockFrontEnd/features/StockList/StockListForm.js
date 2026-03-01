@@ -9,7 +9,8 @@ export default function StockListForm({ stocklist }) {
   const router = useRouter();
 
   const stockCodes = stocklist.map(stock => stock.stockCode);
-  const { connected, stocks } = StockList(stockCodes);
+  const initialStocks = Object.fromEntries(stocklist.map(s => [s.stockCode, s])); // ✅ 추가
+const { connected, stocks } = StockList(stockCodes, initialStocks);
 
   return (
     <>
