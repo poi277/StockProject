@@ -8,6 +8,7 @@ public class TradeDTO {
 	String stockCode;
 	Integer quantity;
 	Integer tradePrice;
+	private String userId;
 
 	public tradeType getTradeType() {
 		return tradeType;
@@ -38,6 +39,15 @@ public class TradeDTO {
 	public void setTradePrice(Integer tradePrice) {
 		this.tradePrice = tradePrice;
 	}
+
+	public String getUserId() {
+		return userId;
+	}
+
+	public void setUserId(String userId) {
+		this.userId = userId;
+	}
+
 }
 
 

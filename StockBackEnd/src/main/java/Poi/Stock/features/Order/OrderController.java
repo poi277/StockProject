@@ -18,7 +18,6 @@ import Poi.Stock.DTO.user.TradeDTO;
 import Poi.Stock.features.Websocket.OrderBookCache;
 import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.repository.OrderRepository;
-import Poi.Stock.util.EnumUtil.tradeType;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -40,12 +39,8 @@ public class OrderController {
 		// 검증 (트랜잭션 밖에서 미리 체크)
 		orderService.validateOrder(userId, tradeDTO);
 		// 주문 접수 (생성 ~ 정산 ~ 현재가 업데이트 모두 트랜잭션 안에서)
-		Order order = orderService.placeOrder(userId, tradeDTO);
-
-		String message = String.format("%s 주문 접수 - 종목: %s, 가격: %d원, 수량: %d주 (주문번호: %d)",
-				tradeDTO.getTradeType() == tradeType.BUY ? "매수" : "매도", tradeDTO.getStockCode(),
-				tradeDTO.getTradePrice(), tradeDTO.getQuantity(), order.getOrderId());
-		return ResponseEntity.ok(new ApiResponse(true, message));
+		orderService.placeOrder(userId, tradeDTO);
+		return ResponseEntity.ok(new ApiResponse(true, "주문 접수 완료"));
 	}
 
 	@GetMapping("/orders/{stockCode}")

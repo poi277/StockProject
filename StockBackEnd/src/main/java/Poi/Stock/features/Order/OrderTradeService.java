@@ -74,8 +74,6 @@ public class OrderTradeService {
 		matchLoop(order, oppositeBook, matchedPrices, executions);
 		settleAll(executions);
 		saveOrder(order, book);
-
-
 		return matchedPrices;
 	}
 

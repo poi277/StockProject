@@ -3,7 +3,6 @@ package Poi.Stock.features.Order;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +13,7 @@ import Poi.Stock.features.User.HaveStock;
 import Poi.Stock.features.User.StockUser;
 import Poi.Stock.features.Websocket.OrderBookCache;
 import Poi.Stock.features.Websocket.WebSocketService;
+import Poi.Stock.features.kafka.KafkaProducer;
 import Poi.Stock.repository.CompletedOrderRepository;
 import Poi.Stock.repository.HaveStockRepository;
 import Poi.Stock.repository.OrderRepository;
@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 public class OrderService {
 
 	private final OrderRepository orderRepository;
+	private final KafkaProducer kafkaProducer;
 	private final StockRepository stockRepository;
 	private final OrderBookCache orderBookCache;
 	private final StockUserRepository stockUserRepository;
@@ -64,20 +65,26 @@ public class OrderService {
 	/**
 	 * 주문 접수 (검증 → 생성 → 매칭 → 정산 → 현재가 업데이트)
 	 */
-	@Transactional
-	public Order placeOrder(String userId, TradeDTO tradeDTO) {
-		Order order = orderTradeService.setOrder(userId, tradeDTO);
-		OrderBook book = orderBookCache.get(order.getStockCode());
-		Set<Integer> matchedPrices = orderTradeService.processMatching(order, book);
-		orderTradeService.sendDeltaForPrice(order.getStockCode(), matchedPrices, book);
-
-		Integer currentPrice = book.getSellfirstKey();
-		if (currentPrice != null) { // null 체크
-			webSocketService.SendCurrentPrice(order.getStockCode(), currentPrice);
-			orderTradeService.updateStockPrice(order.getStockCode(), currentPrice);
-		}
-		return order;
+//	@Transactional
+//	public void placeOrder(String userId, TradeDTO tradeDTO) {
+//		Order order = orderTradeService.setOrder(userId, tradeDTO);
+//		OrderBook book = orderBookCache.get(order.getStockCode());
+//		Set<Integer> matchedPrices = orderTradeService.processMatching(order, book);
+//		orderTradeService.sendDeltaForPrice(order.getStockCode(), matchedPrices, book);
+//		Integer currentPrice = book.getSellfirstKey();
+//		if (currentPrice != null) { // null 체크
+//			webSocketService.SendCurrentPrice(order.getStockCode(), currentPrice);
+//			orderTradeService.updateStockPrice(order.getStockCode(), currentPrice);
+//		}
+//	}
+	/**
+	 * kafka 버전
+	 */
+	public void placeOrder(String userId, TradeDTO tradeDTO) {
+		tradeDTO.setUserId(userId);
+		kafkaProducer.sendOrder(tradeDTO);
 	}
+
 	public Map<String, Object> getOrderBook(String stockCode) {
 		List<Order> sellOrders = orderRepository.findByStockCodeAndTradeTypeAndStatusInOrderByTradePriceAscPriorityAsc(
 				stockCode, tradeType.SELL, List.of(OrderStatus.PENDING, OrderStatus.PARTIAL));
