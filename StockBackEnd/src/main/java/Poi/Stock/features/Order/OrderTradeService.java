@@ -11,6 +11,7 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import Poi.Stock.DTO.user.TradeDTO;
 import Poi.Stock.features.CompletedOrder.CompletedOrder;
@@ -30,7 +31,6 @@ import Poi.Stock.util.EnumUtil.OrderStatus;
 import Poi.Stock.util.EnumUtil.tradeType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -64,14 +64,17 @@ public class OrderTradeService {
 	 * 
 	 * @param book
 	 */
+	@Transactional
 	public Set<Integer> processMatching(Order order, OrderBook book) {
 		Set<Integer> matchedPrices = new HashSet<>();
+		// 지금의 가격도 웹소켓 변동에 전송해야하니 추가
 		matchedPrices.add(order.getTradePrice());
 		List<TradeExecution> executions = new ArrayList<>();
 		TreeMap<Integer, PriceLevel> oppositeBook = order.getTradeType() == tradeType.BUY ? book.getSellBook()
 				: book.getBuyBook();
-
+		// 매칭되는것들의 주식처리
 		matchLoop(order, oppositeBook, matchedPrices, executions);
+		// 결제 프로세스
 		settleAll(executions);
 		saveOrder(order, book);
 		return matchedPrices;
@@ -102,7 +105,7 @@ public class OrderTradeService {
 			String buyerId = order.getTradeType() == tradeType.BUY ? order.getUserId() : restingOrder.getUserId();
 			String sellerId = order.getTradeType() == tradeType.BUY ? restingOrder.getUserId() : order.getUserId();
 			executions.add(new TradeExecution(buyerId, sellerId, fillQty, fillPrice, order.getStockCode()));
-
+			// 데이터베이스에 저장
 			saveRestingOrder(restingOrder, level, oppositeBook, firstPrice);
 		}
 	}

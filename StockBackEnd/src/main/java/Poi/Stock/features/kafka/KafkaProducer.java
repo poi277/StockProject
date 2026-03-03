@@ -14,7 +14,10 @@ public class KafkaProducer {
 	private final KafkaTemplate<String, TradeDTO> kafkaTemplate;
 
 	public void sendOrder(TradeDTO tradeDTO) {
-		log.info("카프카 전송: {}", tradeDTO);
 		kafkaTemplate.send("order-topic", tradeDTO.getStockCode(), tradeDTO);
+	}
+
+	public void sendToDLT(TradeDTO tradeDTO) {
+		kafkaTemplate.send("order-topic.DLT", tradeDTO);
 	}
 }

@@ -3,6 +3,7 @@ package Poi.Stock.features.User;
 import java.util.ArrayList;
 import java.util.List;
 
+import Poi.Stock.features.WatchList.WatchList;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -21,6 +22,8 @@ public class StockUser {
 	// 사용자가 보유한 주식들
 	@OneToMany(mappedBy = "stockUser", cascade = CascadeType.ALL)
 	private List<HaveStock> holdings = new ArrayList<>();
+	@OneToMany(mappedBy = "stockUser", cascade = CascadeType.ALL)
+	private List<WatchList> watchLists = new ArrayList<>();
 
 	public Integer getAsset() {
 		return Asset;

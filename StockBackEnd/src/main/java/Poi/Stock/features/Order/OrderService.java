@@ -65,21 +65,23 @@ public class OrderService {
 	/**
 	 * 주문 접수 (검증 → 생성 → 매칭 → 정산 → 현재가 업데이트)
 	 */
-//	@Transactional
 //	public void placeOrder(String userId, TradeDTO tradeDTO) {
+//		stockLock.lock(tradeDTO.getStockCode());
 //		Order order = orderTradeService.setOrder(userId, tradeDTO);
 //		OrderBook book = orderBookCache.get(order.getStockCode());
 //		Set<Integer> matchedPrices = orderTradeService.processMatching(order, book);
+//	 웹소켓에 해당되는 주식의 호가를 재 갱신
 //		orderTradeService.sendDeltaForPrice(order.getStockCode(), matchedPrices, book);
 //		Integer currentPrice = book.getSellfirstKey();
 //		if (currentPrice != null) { // null 체크
+//	 웹소켓에 해당 주식의 현재가를 재 갱신
 //			webSocketService.SendCurrentPrice(order.getStockCode(), currentPrice);
+//	 cache에 주식의 가격들을 갱신
 //			orderTradeService.updateStockPrice(order.getStockCode(), currentPrice);
 //		}
+//	stockLock.unlock(tradeDTO.getStockCode());
 //	}
-	/**
-	 * kafka 버전
-	 */
+
 	public void placeOrder(String userId, TradeDTO tradeDTO) {
 		tradeDTO.setUserId(userId);
 		kafkaProducer.sendOrder(tradeDTO);
