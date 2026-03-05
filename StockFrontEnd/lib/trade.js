@@ -5,6 +5,7 @@ export async function tradeApi(tradeType,stockCode,quantity,tradePrice) {
   return await apiFetch(`${API_URL}/order/trade`,{
     method: 'POST',
     auth: true,
+    cookie: true,
     body: JSON.stringify({
           tradeType,
           stockCode,

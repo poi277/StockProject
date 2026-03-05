@@ -3,14 +3,14 @@
 import { getSessionCookie } from './cookieUtils';
 
 export async function apiFetch(url, options = {}) {
-  const { auth = false, ...fetchOptions } = options;  
+  const { cookie = false , auth = false, ...fetchOptions } = options;  
   try {
     let cookieHeader = null;
-    if (auth) {
+    if (cookie) {
       const session = await getSessionCookie();
       cookieHeader = session?.cookieHeader;
 
-      if (!cookieHeader) {
+      if (!cookieHeader && auth) {
         return {
           success: false,
           status: 401,

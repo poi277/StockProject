@@ -1,5 +1,7 @@
 package Poi.Stock.features.WatchList;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import Poi.Stock.features.User.StockUser;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -24,6 +26,7 @@ public class WatchList {
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "user_id")
+	@JsonIgnore
 	private StockUser stockUser;
 	private String stockCode;
 }

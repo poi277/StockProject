@@ -1,7 +1,15 @@
-import { getWatchListApi, removeWatchApi } from "../../lib/watchlist";
+"use client"
+
+import { useEffect, useState, useMemo } from "react";
+import { getWatchListApi } from "../../lib/watchlist";
+import { useRouter } from "next/navigation";
+import { useStockSocket } from "../../util/useStockSocket";
+import { useWebSocket } from "../../util/WebSocket";
 
 export default function useWatchList() {
     const [watchList, setWatchList] = useState([]);
+    const router = useRouter();
+    const { connected, client } = useWebSocket();
 
     useEffect(() => {
         fetchWatchList();
@@ -9,13 +17,27 @@ export default function useWatchList() {
 
     const fetchWatchList = async () => {
         const res = await getWatchListApi();
-        setWatchList(res.data);
+        console.log(res)
+        setWatchList(res.data ?? []);
     };
 
-    const handleRemove = async (stockCode) => {
-        await removeWatchApi(stockCode);
-        fetchWatchList();
+    const stockCodes = useMemo(() => watchList.map(item => item.stockCode), [watchList]);
+    const initialStocks = useMemo(() => Object.fromEntries(watchList.map(item => [item.stockCode, item])), [watchList]);
+
+    const { stocks } = useStockSocket(client, connected, stockCodes, initialStocks);
+
+    // ✅ 소켓 데이터로 watchList 업데이트
+    useEffect(() => {
+        if (Object.keys(stocks).length === 0) return;
+        setWatchList(prev => prev.map(item => ({
+            ...item,
+            ...stocks[item.stockCode],
+        })));
+    }, [stocks]);
+
+    const handleClick = (stockCode) => {
+        router.push(`/stock/${stockCode}`);
     };
 
-    return { watchList, handleRemove };
+    return { watchList, handleClick };
 }

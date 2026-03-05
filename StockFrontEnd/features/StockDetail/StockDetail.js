@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useStockSocket } from "../../util/useStockSocket";
 import { useWebSocket } from "../../util/WebSocket";
+import { addWatchApi } from '../../lib/watchlist'
+
 
 export function StockDetail(stockCode, initialStock) {
   const { connected, client } = useWebSocket();

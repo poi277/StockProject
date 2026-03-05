@@ -26,7 +26,7 @@ export default function UnderBarForm() {
       {/* 🔙 돌아가기 */}
       <button
         style={styles.button}
-        onClick={() => router.back()}
+        onClick={() => router.push('/')}
       >
         돌아가기
       </button>

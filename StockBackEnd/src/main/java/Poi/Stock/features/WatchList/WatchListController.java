@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import Poi.Stock.DTO.user.ApiResponse;
+import Poi.Stock.features.Stock.Stock;
 import lombok.RequiredArgsConstructor;
 @RestController
 @RequiredArgsConstructor
@@ -21,13 +22,13 @@ public class WatchListController {
 	private final WatchListService watchListService;
 
 	@PostMapping("/{stockCode}")
-	public ResponseEntity<?> addWatch(@PathVariable String stockCode, Authentication authentication) {
+	public ResponseEntity<?> addWatch(@PathVariable("stockCode") String stockCode, Authentication authentication) {
 		String userId = authentication.getName();
 		watchListService.addWatch(userId, stockCode);
 		return ResponseEntity.ok(new ApiResponse(true, "관심종목 즐겨찾기 완료"));
 	}
 	@DeleteMapping("/{stockCode}")
-	public ResponseEntity<?> removeWatch(@PathVariable String stockCode, Authentication authentication) {
+	public ResponseEntity<?> removeWatch(@PathVariable("stockCode") String stockCode, Authentication authentication) {
 		String userId = authentication.getName();
 		watchListService.removeWatch(userId, stockCode);
 		return ResponseEntity.ok(new ApiResponse(true, "관심종목 삭제 완료"));
@@ -36,7 +37,7 @@ public class WatchListController {
 	@GetMapping("/list")
 	public ResponseEntity<ApiResponse> getWatchList(Authentication authentication) {
 		String userId = authentication.getName();
-		List<WatchList> watchList = watchListService.getWatchList(userId);
+		List<Stock> watchList = watchListService.getWatchListWithPrice(userId);
 		return ResponseEntity.ok(new ApiResponse(true, "관심종목 조회 완료", watchList));
 	}
 }

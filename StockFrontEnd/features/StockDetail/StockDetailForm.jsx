@@ -4,12 +4,13 @@ import styles from '../../css/StockDetailForm.module.css';
 import HogaChart from './HogaChart';
 import TradeForm from '../Trade/TradeForm';
 import { StockDetail } from './StockDetail';
+import useWatch from '../watchList/useWatch';
 
-export default function StockDetailForm({ stock }) {
+export default function StockDetailForm({ stock,watched  }) {
   const { connected, stocks, selectedPrice, setSelectedPrice } = StockDetail(stock.stockCode, stock);
   const currentStock = stocks[stock.stockCode] || stock;
-  
-  // ✅ 시가 기준으로 변경
+ const { isWatched, handleWatchToggle, watchLoading } = useWatch(stock.stockCode, watched);
+
   const openPrice  = currentStock?.openPrice || 0;
   const closePrice = currentStock?.closePrice || 0;
   const changeAmt  = closePrice - openPrice;
@@ -39,6 +40,13 @@ export default function StockDetailForm({ stock }) {
                 {Math.abs(changeAmt).toLocaleString()}원
                 ({Math.abs(changeRate).toFixed(2)}%)
               </div>
+              <button
+                onClick={handleWatchToggle}
+                disabled={watchLoading}
+                className={styles.watchButton}
+              >
+                {isWatched ? '❤️' : '🤍'}
+              </button>
             </div>
           </div>
         </div>

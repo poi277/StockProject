@@ -5,17 +5,14 @@ import org.springframework.stereotype.Service;
 
 import Poi.Stock.DTO.user.UserRegisterDto;
 import Poi.Stock.repository.StockUserRepository;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
 	private final PasswordEncoder passwordEncoder;
 	private final StockUserRepository userRepository;
-
-	public UserService(PasswordEncoder passwordEncoder, StockUserRepository userRepository) {
-		this.passwordEncoder = passwordEncoder;
-		this.userRepository = userRepository;
-	}
 
 	public void registerUser(UserRegisterDto dto) {
 		try {

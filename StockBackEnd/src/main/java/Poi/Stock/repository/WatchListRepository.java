@@ -12,4 +12,6 @@ public interface WatchListRepository extends JpaRepository<WatchList, Long> {
 
 	List<WatchList> findByStockUserId(String userId);
 
+	boolean existsByStockUserIdAndStockCode(String userId, String stockCode);
+
 }
