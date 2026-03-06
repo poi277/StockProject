@@ -9,7 +9,6 @@ export function StockDetail(stockCode, initialStock) {
   const { stocks } = useStockSocket(client, connected, stockCode ? [stockCode] : [], 
     { [stockCode]: initialStock }  // ✅ 초기값으로 stock 넣기
   );
-
   const [selectedPrice, setSelectedPrice] = useState(null);
-  return { connected, stocks, selectedPrice, setSelectedPrice };
+  return { connected, stocks, selectedPrice, setSelectedPrice};
 }

@@ -1,7 +1,5 @@
 package Poi.Stock.features.kafka;
 
-import java.util.Set;
-
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
@@ -13,6 +11,7 @@ import Poi.Stock.features.Order.OrderBook;
 import Poi.Stock.features.Order.OrderTradeService;
 import Poi.Stock.features.Websocket.OrderBookCache;
 import Poi.Stock.features.Websocket.WebSocketService;
+import Poi.Stock.object.MatchingResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,8 +31,8 @@ public class KafkaConsumer {
 		try {
 			Order order = orderTradeService.setOrder(tradeDTO.getUserId(), tradeDTO);
 			OrderBook book = orderBookCache.get(order.getStockCode());
-			Set<Integer> matchedPrices = orderTradeService.processMatching(order, book);
-			orderTradeService.sendDeltaForPrice(order.getStockCode(), matchedPrices, book);
+			MatchingResult matchingResult = orderTradeService.processMatching(order, book);
+			orderTradeService.sendHogaQuntityAndPrice(order.getStockCode(), matchingResult, book);
 			Integer currentPrice = book.getSellfirstKey();
 			if (currentPrice != null) {
 				webSocketService.SendCurrentPrice(order.getStockCode(), currentPrice);

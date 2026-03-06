@@ -1,8 +1,8 @@
-package Poi.Stock.features.TradeHistory;
+package Poi.Stock.TreadeHistory;
 
 import java.time.LocalDateTime;
 
-import Poi.Stock.features.Order.TradeExecution;
+import Poi.Stock.object.TradeExecution;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;

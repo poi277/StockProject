@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import Poi.Stock.features.Order.Order; // ✅ 이게 맞음
 import Poi.Stock.features.Order.OrderBook;
 import Poi.Stock.features.Stock.Stock;
+import Poi.Stock.object.TradeExecution;
 import Poi.Stock.repository.OrderRepository;
 import Poi.Stock.repository.StockRepository;
 import Poi.Stock.util.EnumUtil.OrderStatus;
@@ -104,9 +105,9 @@ public class WebSocketService {
 		messagingTemplate.convertAndSend("/topic/stock/" + stockCode, payload);
 	}
 
-	public void sendDelta(String stockCode, tradeType side, int price, int qty) {
+	public void sendHoga(String stockCode, tradeType side, int price, int qty) {
 		Map<String, Object> payload = new HashMap<>();
-		payload.put("type", "DELTA");
+		payload.put("type", "hoga");
 		payload.put("side", side.name());
 		payload.put("price", price);
 		payload.put("qty", qty);
@@ -116,5 +117,16 @@ public class WebSocketService {
 		System.out.println("payload: " + payload);
 
 		messagingTemplate.convertAndSend("/topic/hoga/" + stockCode, payload);
+	}
+
+	public void sendExecution(String stockCode, TradeExecution execution) {
+		Map<String, Object> payload = new HashMap<>();
+		payload.put("type", "EXECUTION");
+		payload.put("tradeType", execution.getTradeType().name()); // BUY or SELL
+		payload.put("price", execution.getPrice());
+		payload.put("quantity", execution.getQuantity());
+		// buyerId, sellerId 제외
+
+		messagingTemplate.convertAndSend("/topic/execution/" + stockCode, payload);
 	}
 }

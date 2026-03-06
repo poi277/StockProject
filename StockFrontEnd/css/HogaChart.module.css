@@ -1,141 +1,146 @@
-.hogaWrap {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fff;
-  margin-top: 20px;
-  overflow: hidden;
-}
+.hogaWrap { width: 100%; font-size: 12px; }
 
 .hogaHeader {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
-  padding: 10px 14px;
-  border-bottom: 1px solid #eee;
-  background: #fafafa;
-}
-
-.currentPrice {
-  font-size: 26px;
-  font-weight: 800;
-}
-
-.changeText {
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.hogaBody {
-  display: flex;
-}
-
-.hogaTable {
-  flex: 1;
-}
-
-.hogaRow {
-  display: grid;
-  grid-template-columns: 70px 90px 56px;
   align-items: center;
-  height: 34px;
-  border-bottom: 1px solid #f5f5f5;
-  position: relative;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e0e0e0;
 }
 
-/* ✅ 핵심 수정: span 텍스트를 bar 위로 올림 */
-.qtyCell {
+.currentPrice { font-size: 22px; font-weight: 700; }
+.changeText   { font-size: 13px; }
+
+.hogaBody { display: flex; flex-direction: column; }
+
+/* 매도: [2fr | 1fr] */
+.sellSection {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  border-bottom: 2px solid #ddd;
+}
+
+/* 매도 왼쪽 - 행 단위 */
+.sellLeft {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #eee;
+}
+
+.sellRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.sellRow .cell { border-bottom: none; }
+
+/* 매수: [1fr | 2fr] */
+.buySection {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+}
+
+/* 매수 오른쪽 - 행 단위 */
+.buyRight {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #eee;
+}
+
+.buyRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.buyRow .cell { border-bottom: none; }
+
+/* 구분선 */
+.divider { height: 2px; background: #ddd; }
+
+/* 열 */
+.col {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #eee;
+}
+.col:last-child { border-right: none; }
+
+/* 기본 셀 */
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 30px;
+  padding: 2px 8px;
+  border-bottom: 1px solid #f0f0f0;
   font-size: 12px;
+  font-weight: 600;
+}
+
+/* 매도 잔량 셀 - 숫자 오른쪽, 바 배경 오른쪽부터 */
+.sellQtyCell {
   position: relative;
+  justify-content: flex-end;
   overflow: hidden;
 }
 
-.qtyCell span {
-  position: relative;
-  z-index: 1;
-}
-
-.right {
-  text-align: right;
-  padding-right: 6px;
-}
-
-.left {
-  text-align: left;
-  padding-left: 6px;
-}
-
-/* ✅ bar는 z-index: 0 으로 텍스트 뒤에 */
 .sellBar {
   position: absolute;
+  top: 4px;        /* 위아래 띄우기 */
+  bottom: 4px;
   right: 0;
-  top: 0;
-  height: 100%;
-  background: #dce8ff;
-  z-index: 0;
+  width: 0;        /* width는 inline style로 제어 */
+  height: auto;    /* height: 100% 제거 */
+  background: rgba(0, 86, 224, 0.2);
+  border-radius: 4px;  /* 둥근 사각형 */
+}
+
+.sellQtyText {
+  position: relative;
+  z-index: 1;
+  color: #0056e0;
+}
+
+/* 매수 잔량 셀 - 숫자 왼쪽, 바 배경 왼쪽부터 */
+.buyQtyCell {
+  position: relative;
+  justify-content: flex-start;
+  overflow: hidden;
 }
 
 .buyBar {
   position: absolute;
+  top: 4px;        /* 위아래 띄우기 */
+  bottom: 4px;
   left: 0;
-  top: 0;
-  height: 100%;
-  background: #ffe0e0;
-  z-index: 0;
+  width: 0;
+  height: auto;
+  background: rgba(255, 59, 48, 0.2);
+  border-radius: 4px;  /* 둥근 사각형 */
 }
-
-.priceCell {
-  text-align: center;
-  font-weight: 700;
-  font-size: 14px;
-  /* ✅ priceCell도 bar보다 위로 */
+.buyQtyText {
   position: relative;
   z-index: 1;
-}
-
-.pctCell {
-  font-size: 11px;
-  /* ✅ pctCell도 bar보다 위로 */
-  position: relative;
-  z-index: 1;
-}
-
-.sell {
   color: #ff3b30;
 }
 
-.buy {
-  color: #0056e0;
-}
-
-.hogaInfo {
-  width: 120px;
-  border-left: 1px solid #eee;
-  padding: 8px;
-  display: flex;
+/* 체결내역 셀 */
+.executionCell {
   flex-direction: column;
-  gap: 6px;
+  justify-content: center;
 }
 
-.infoRow {
-  display: flex;
-  justify-content: space-between;
-}
-
-.infoLabel {
-  font-size: 11px;
-  color: #888;
-}
-
-.infoVal {
-  font-size: 12px;
-  font-weight: 600;
-}
+/* 가격 셀 */
 .priceCell {
-  user-select: text;   /* 드래그 허용 */
+  flex-direction: column;
   cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 3px;
 }
-
-.selected {
-  background-color: rgba(255, 204, 0, 0.3);
-  font-weight: bold;
-}
+.priceCell:hover { background: rgba(0, 0, 0, 0.05); }
+.selected { background: #fff3cd !important; }
+.pct { font-size: 10px; font-weight: 400; }

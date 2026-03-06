@@ -5,11 +5,13 @@ import styles from '../../css/HogaChart.module.css';
 import { getOrdersApi } from '../../lib/trade';
 import { useHogaSocket } from '../../util/useHogaSocket';
 import { useWebSocket } from '../../util/WebSocket';
+import { useExecutionSocket } from '../../util/useExecutionSocket';
 
 export default function HogaChart({ currentStock, selectedPrice, setSelectedPrice }) {
 
   const { connected, client } = useWebSocket();
   const { data } = useHogaSocket(client, connected, currentStock?.stockCode);
+  const { executions } = useExecutionSocket(client, connected, currentStock?.stockCode);
 
   const [sellOrders, setSellOrders] = useState([]);
   const [buyOrders,  setBuyOrders]  = useState([]);
@@ -20,7 +22,6 @@ export default function HogaChart({ currentStock, selectedPrice, setSelectedPric
   const changeRate = currentStock?.changeRate   || 0;
   const isUp       = changeAmt >= 0;
 
-  // 초기 DB 로딩
   useEffect(() => {
     if (!currentStock?.stockCode) return;
     getOrdersApi(currentStock.stockCode)
@@ -36,36 +37,23 @@ export default function HogaChart({ currentStock, selectedPrice, setSelectedPric
           .sort((a, b) => b.price - a.price)
         );
       })
-      .catch(() => {
-        setSellOrders([]);
-        setBuyOrders([]);
-      });
+      .catch(() => { setSellOrders([]); setBuyOrders([]); });
   }, [currentStock?.stockCode]);
 
-  // 웹소켓 반영
   useEffect(() => {
     if (!data) return;
     const { side, price, qty } = data;
-
     if (side === 'SELL') {
       setSellOrders(prev => {
         const exists = prev.some(o => o.price === price);
-        if (exists) {
-          return prev
-            .map(o => o.price === price ? { ...o, qty } : o)
-            .filter(o => o.qty > 0);
-        }
+        if (exists) return prev.map(o => o.price === price ? { ...o, qty } : o).filter(o => o.qty > 0);
         if (qty === 0) return prev;
         return [...prev, { price, qty }].sort((a, b) => a.price - b.price);
       });
     } else {
       setBuyOrders(prev => {
         const exists = prev.some(o => o.price === price);
-        if (exists) {
-          return prev
-            .map(o => o.price === price ? { ...o, qty } : o)
-            .filter(o => o.qty > 0);
-        }
+        if (exists) return prev.map(o => o.price === price ? { ...o, qty } : o).filter(o => o.qty > 0);
         if (qty === 0) return prev;
         return [...prev, { price, qty }].sort((a, b) => b.price - a.price);
       });
@@ -74,9 +62,7 @@ export default function HogaChart({ currentStock, selectedPrice, setSelectedPric
 
   const priceColor = (price) => {
     if (!openPrice) return '#333';
-    return price > openPrice ? '#ff3b30'
-         : price < openPrice ? '#0056e0'
-         : '#333';
+    return price > openPrice ? '#ff3b30' : price < openPrice ? '#0056e0' : '#333';
   };
 
   const pct = (price) => {
@@ -85,14 +71,16 @@ export default function HogaChart({ currentStock, selectedPrice, setSelectedPric
     return (v > 0 ? '+' : '') + v + '%';
   };
 
-  const fmt     = (n) => Number(n).toLocaleString('ko-KR');
-  const displaySell = [...sellOrders].slice(0, 5).reverse(); // ✅ slice(-5) → slice(0, 5)
-const displayBuy  = [...buyOrders].slice(0, 5);
+  const fmt = (n) => Number(n).toLocaleString('ko-KR');
+  const displaySell = [...sellOrders].slice(0, 5).reverse();
+  const displayBuy  = [...buyOrders].slice(0, 5);
   const allQtys = [...displaySell.map(o => o.qty), ...displayBuy.map(o => o.qty)];
   const maxQty  = Math.max(...allQtys, 1);
 
   return (
     <div className={styles.hogaWrap}>
+
+      {/* 헤더 */}
       <div className={styles.hogaHeader}>
         <span className={styles.currentPrice} style={{ color: isUp ? '#ff3b30' : '#0056e0' }}>
           {fmt(closePrice)}
@@ -103,53 +91,99 @@ const displayBuy  = [...buyOrders].slice(0, 5);
       </div>
 
       <div className={styles.hogaBody}>
-        <div className={styles.hogaTable}>
 
-          {displaySell.map(o => {
-            const barW = Math.round((o.qty / maxQty) * 70) || 0;
-            return (
-              <div key={`sell-${o.price}`} className={styles.hogaRow}>
-                <div className={`${styles.qtyCell} ${styles.right}`}>
-                  <div className={styles.sellBar} style={{ width: barW }} />
-                  <span>{fmt(o.qty)}</span>
-                </div>
-                <div
-                  className={`${styles.priceCell} ${selectedPrice === o.price ? styles.selected : ''}`}
-                  style={{ color: priceColor(o.price) }}
-                  onClick={() => setSelectedPrice(o.price)}
-                >
-                  {fmt(o.price)}
-                </div>
-                <div className={styles.pctCell} style={{ color: priceColor(o.price) }}>
-                  {pct(o.price)}
-                </div>
-              </div>
-            );
-          })}
+        {/* ======= 매도 영역: [2fr(1:1) | 1fr] ======= */}
+        <div className={styles.sellSection}>
 
-          {displayBuy.map(o => {
-            const barW = Math.round((o.qty / maxQty) * 70) || 0;
-            return (
-              <div key={`buy-${o.price}`} className={styles.hogaRow}>
-                <div className={styles.pctCell} style={{ color: priceColor(o.price) }}>
-                  {pct(o.price)}
+          {/* 왼쪽 2/3: 행 단위로 잔량+바 | 가격 묶기 */}
+          <div className={styles.sellLeft}>
+            {displaySell.map(o => {
+              const barW = Math.round((o.qty / maxQty) * 100) || 0;
+              return (
+                <div key={`sell-row-${o.price}`} className={styles.sellRow}>
+
+                  {/* 잔량 + 바 (숫자 오른쪽, 바 배경) */}
+                  <div className={`${styles.cell} ${styles.sellQtyCell}`}>
+                    <div className={styles.sellBar} style={{ width: `${barW}%` }} />
+                    <span className={styles.sellQtyText}>{fmt(o.qty)}</span>
+                  </div>
+
+                  {/* 가격 */}
+                  <div
+                    className={`${styles.cell} ${styles.priceCell} ${selectedPrice === o.price ? styles.selected : ''}`}
+                    style={{ color: priceColor(o.price) }}
+                    onClick={() => setSelectedPrice(o.price)}
+                  >
+                    <span>{fmt(o.price)}</span>
+                    <span className={styles.pct}>{pct(o.price)}</span>
+                  </div>
+
                 </div>
-                <div
-                  className={`${styles.priceCell} ${selectedPrice === o.price ? styles.selected : ''}`}
-                  style={{ color: priceColor(o.price) }}
-                  onClick={() => setSelectedPrice(o.price)}
-                >
-                  {fmt(o.price)}
-                </div>
-                <div className={`${styles.qtyCell} ${styles.left}`}>
-                  <div className={styles.buyBar} style={{ width: barW }} />
-                  <span>{fmt(o.qty)}</span>
-                </div>
+              );
+            })}
+          </div>
+
+          {/* 오른쪽 1/3: 거래량 */}
+          <div className={styles.col}>
+            {displaySell.map(o => (
+              <div key={`sell-vol-${o.price}`} className={styles.cell}>
+                {/* 거래량 데이터 */}
               </div>
-            );
-          })}
+            ))}
+          </div>
 
         </div>
+
+        {/* 구분선 */}
+        <div className={styles.divider} />
+
+        {/* ======= 매수 영역: [1fr | 2fr(1:1)] ======= */}
+        <div className={styles.buySection}>
+
+          {/* 왼쪽 1/3: 체결내역 */}
+          <div className={styles.col}>
+            {executions.slice(0, 5).map((ex, i) => (
+              <div key={`ex-${i}`} className={`${styles.cell} ${styles.executionCell}`}>
+                <span style={{ color: ex.tradeType === 'BUY' ? '#ff3b30' : '#0056e0' }}>
+                  {fmt(ex.price)}
+                </span>
+                <span style={{ color: ex.tradeType === 'BUY' ? '#ff3b30' : '#0056e0' }}>
+                  {fmt(ex.quantity)}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* 오른쪽 2/3: 행 단위로 가격 | 잔량+바 묶기 */}
+          <div className={styles.buyRight}>
+            {displayBuy.map(o => {
+              const barW = Math.round((o.qty / maxQty) * 100) || 0;
+              return (
+                <div key={`buy-row-${o.price}`} className={styles.buyRow}>
+
+                  {/* 가격 */}
+                  <div
+                    className={`${styles.cell} ${styles.priceCell} ${selectedPrice === o.price ? styles.selected : ''}`}
+                    style={{ color: priceColor(o.price) }}
+                    onClick={() => setSelectedPrice(o.price)}
+                  >
+                    <span>{fmt(o.price)}</span>
+                    <span className={styles.pct}>{pct(o.price)}</span>
+                  </div>
+
+                  {/* 잔량 + 바 (숫자 왼쪽, 바 배경) */}
+                  <div className={`${styles.cell} ${styles.buyQtyCell}`}>
+                    <div className={styles.buyBar} style={{ width: `${barW}%` }} />
+                    <span className={styles.buyQtyText}>{fmt(o.qty)}</span>
+                  </div>
+
+                </div>
+              );
+            })}
+          </div>
+
+        </div>
+
       </div>
     </div>
   );

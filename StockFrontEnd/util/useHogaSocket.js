@@ -8,6 +8,8 @@ export function useHogaSocket(client, connected, stockCode) {
   useEffect(() => {
     if (!client || !connected || !stockCode) return;
 
+    console.log('호가 구독 시작:', stockCode);
+
     const sub = client.subscribe(`/topic/hoga/${stockCode}`, message => {
       try {
         const parsed = JSON.parse(message.body);

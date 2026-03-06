@@ -14,14 +14,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import Poi.Stock.DTO.user.TradeDTO;
+import Poi.Stock.TreadeHistory.TradeHistory;
 import Poi.Stock.features.CompletedOrder.CompletedOrder;
 import Poi.Stock.features.Stock.Stock;
-import Poi.Stock.features.TradeHistory.TradeHistory;
 import Poi.Stock.features.User.HaveStock;
 import Poi.Stock.features.User.StockUser;
 import Poi.Stock.features.Websocket.OrderBookCache;
 import Poi.Stock.features.Websocket.StockCache;
 import Poi.Stock.features.Websocket.WebSocketService;
+import Poi.Stock.object.MatchingResult;
+import Poi.Stock.object.TradeExecution;
 import Poi.Stock.repository.CompletedOrderRepository;
 import Poi.Stock.repository.HaveStockRepository;
 import Poi.Stock.repository.OrderRepository;
@@ -65,7 +67,7 @@ public class OrderTradeService {
 	 * @param book
 	 */
 	@Transactional
-	public Set<Integer> processMatching(Order order, OrderBook book) {
+	public MatchingResult processMatching(Order order, OrderBook book) {
 		Set<Integer> matchedPrices = new HashSet<>();
 		// 지금의 가격도 웹소켓 변동에 전송해야하니 추가
 		matchedPrices.add(order.getTradePrice());
@@ -77,7 +79,7 @@ public class OrderTradeService {
 		// 결제 프로세스
 		settleAll(executions);
 		saveOrder(order, book);
-		return matchedPrices;
+		return new MatchingResult(matchedPrices, executions);
 	}
 
 	private void matchLoop(Order order, TreeMap<Integer, PriceLevel> oppositeBook, Set<Integer> matchedPrices,
@@ -93,6 +95,7 @@ public class OrderTradeService {
 
 			PriceLevel level = oppositeBook.get(firstPrice);
 			Order restingOrder = level.peek();
+			// 최종 주문 체결이 되는 양
 			int fillQty = Math.min(order.getRemainingQuantity(), restingOrder.getRemainingQuantity());
 
 			order.decreaseRemainingQuantity(fillQty);
@@ -104,7 +107,8 @@ public class OrderTradeService {
 
 			String buyerId = order.getTradeType() == tradeType.BUY ? order.getUserId() : restingOrder.getUserId();
 			String sellerId = order.getTradeType() == tradeType.BUY ? restingOrder.getUserId() : order.getUserId();
-			executions.add(new TradeExecution(buyerId, sellerId, fillQty, fillPrice, order.getStockCode()));
+			executions.add(new TradeExecution(order.getTradeType(), buyerId, sellerId, fillQty, fillPrice,
+					order.getStockCode()));
 			// 데이터베이스에 저장
 			saveRestingOrder(restingOrder, level, oppositeBook, firstPrice);
 		}
@@ -203,14 +207,19 @@ public class OrderTradeService {
 		return book.getSellBook().isEmpty() ? 0 : book.getSellBook().firstKey();
 	}
 
-	public void sendDeltaForPrice(String stockCode, Set<Integer> changedPrices, OrderBook book) {
-		for (int price : changedPrices) {
+	public void sendHogaQuntityAndPrice(String stockCode, MatchingResult matchingResult, OrderBook book) {
+		// 1. 호가 잔량 전송 (기존 코드)
+		for (int price : matchingResult.getMatchedPrices()) {
 			PriceLevel sellLevel = book.getSellBook().get(price);
 			PriceLevel buyLevel = book.getBuyBook().get(price);
 			int sellQty = sellLevel == null ? 0 : sellLevel.getTotalQuantity();
 			int buyQty = buyLevel == null ? 0 : buyLevel.getTotalQuantity();
-			webSocketService.sendDelta(stockCode, tradeType.SELL, price, sellQty);
-			webSocketService.sendDelta(stockCode, tradeType.BUY, price, buyQty);
+			webSocketService.sendHoga(stockCode, tradeType.SELL, price, sellQty);
+			webSocketService.sendHoga(stockCode, tradeType.BUY, price, buyQty);
+		}
+		// 2. 체결 내역 전송
+		for (TradeExecution execution : matchingResult.getExecutions()) {
+			webSocketService.sendExecution(stockCode, execution);
 		}
 	}
 
