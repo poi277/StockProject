@@ -55,9 +55,9 @@ public class OrderController {
 	}
 
 	@GetMapping("/orderbook/{stockCode}")
-	public ResponseEntity<?> getOrderBook(@PathVariable("stockCode") String stockCode) {
+	public ResponseEntity<?> getOrderHoga(@PathVariable("stockCode") String stockCode) {
 		// 호가창 조회
-		Map<String, Object> orderBook = orderService.getOrderBook(stockCode);
+		Map<String, Object> orderBook = orderService.getOrderHoga(stockCode);
 		return ResponseEntity.ok(orderBook);
 	}
 

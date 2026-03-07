@@ -1,12 +1,13 @@
 package Poi.Stock.features.Order;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import Poi.Stock.DTO.user.HogaDTO;
 import Poi.Stock.DTO.user.TradeDTO;
 import Poi.Stock.features.Stock.StockService;
 import Poi.Stock.features.User.HaveStock;
@@ -87,18 +88,18 @@ public class OrderService {
 		kafkaProducer.sendOrder(tradeDTO);
 	}
 
-	public Map<String, Object> getOrderBook(String stockCode) {
-		List<Order> sellOrders = orderRepository.findByStockCodeAndTradeTypeAndStatusInOrderByTradePriceAscPriorityAsc(
-				stockCode, tradeType.SELL, List.of(OrderStatus.PENDING, OrderStatus.PARTIAL));
-		List<Order> buyOrders = orderRepository.findByStockCodeAndTradeTypeAndStatusInOrderByTradePriceDescPriorityAsc(
-				stockCode, tradeType.BUY, List.of(OrderStatus.PENDING, OrderStatus.PARTIAL));
-
-		Map<String, Object> orderBook = new HashMap<>();
-		orderBook.put("sellOrders", sellOrders);
-		orderBook.put("buyOrders", buyOrders);
-		return orderBook;
+	public Map<String, Object> getOrderHoga(String stockCode) {
+		OrderBook orderBook = orderBookCache.get(stockCode);
+		if (orderBook == null) {
+			return Map.of("sellOrders", List.of(), "buyOrders", List.of());
+		}
+		return Map.of("sellOrders", getTopOrders(orderBook.getSellBook()), "buyOrders",
+				getTopOrders(orderBook.getBuyBook()));
 	}
-
+	private List<HogaDTO> getTopOrders(NavigableMap<Integer, PriceLevel> book) {
+		return book.entrySet().stream().limit(5).map(e -> new HogaDTO(e.getKey(), e.getValue().getTotalQuantity()))
+				.toList();
+	}
 	/**
 	 * 주문 취소
 	 */

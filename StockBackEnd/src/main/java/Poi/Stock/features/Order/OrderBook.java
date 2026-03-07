@@ -24,7 +24,7 @@ public class OrderBook {
 
 		;
 
-		PriceLevel level = book.computeIfAbsent(order.getTradePrice(), PriceLevel::new);
+		PriceLevel level = book.computeIfAbsent(order.getTradePrice(), p -> new PriceLevel());
 
 		level.addOrder(order);
 	}

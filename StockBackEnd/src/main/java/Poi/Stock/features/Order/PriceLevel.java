@@ -5,13 +5,9 @@ import java.util.Deque;
 
 public class PriceLevel {
 
-	private final int price;
 	private int totalQuantity;
 	private final Deque<Order> orders = new ArrayDeque<>();
 
-	public PriceLevel(int price) {
-		this.price = price;
-	}
 
 	public void addOrder(Order order) {
 		orders.addLast(order);
@@ -48,11 +44,6 @@ public class PriceLevel {
 	public int getTotalQuantity() {
 		return totalQuantity;
 	}
-
-	public int getPrice() {
-		return price;
-	}
-
 	public Deque<Order> getOrders() {
 		return orders;
 	}

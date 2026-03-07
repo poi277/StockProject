@@ -10,11 +10,8 @@ import { useExecutionSocket } from '../../util/useExecutionSocket';
 export default function HogaChart({ currentStock, selectedPrice, setSelectedPrice }) {
 
   const { connected, client } = useWebSocket();
-  const { data } = useHogaSocket(client, connected, currentStock?.stockCode);
-  const { executions } = useExecutionSocket(client, connected, currentStock?.stockCode);
-
-  const [sellOrders, setSellOrders] = useState([]);
-  const [buyOrders,  setBuyOrders]  = useState([]);
+  const [initialSell, setInitialSell] = useState([]);
+  const [initialBuy,  setInitialBuy]  = useState([]);
 
   const openPrice  = currentStock?.openPrice   || 0;
   const closePrice = currentStock?.closePrice  || 0;
@@ -22,43 +19,23 @@ export default function HogaChart({ currentStock, selectedPrice, setSelectedPric
   const changeRate = currentStock?.changeRate   || 0;
   const isUp       = changeAmt >= 0;
 
-  useEffect(() => {
-    if (!currentStock?.stockCode) return;
-    getOrdersApi(currentStock.stockCode)
-      .then(res => {
-        const sellDb = res.data?.sellOrders || [];
-        const buyDb  = res.data?.buyOrders  || [];
-        setSellOrders(sellDb
-          .map(o => ({ price: o.tradePrice, qty: o.remainingQuantity }))
-          .sort((a, b) => a.price - b.price)
-        );
-        setBuyOrders(buyDb
-          .map(o => ({ price: o.tradePrice, qty: o.remainingQuantity }))
-          .sort((a, b) => b.price - a.price)
-        );
-      })
-      .catch(() => { setSellOrders([]); setBuyOrders([]); });
-  }, [currentStock?.stockCode]);
+  // DB 초기 로딩
+useEffect(() => {
+  if (!currentStock?.stockCode) return;
+  getOrdersApi(currentStock.stockCode)
+    .then(res => {
+      const sellDb = res.data?.sellOrders || [];
+      const buyDb  = res.data?.buyOrders  || [];
+      setInitialSell(sellDb.map(o => ({ price: o.tradePrice, qty: o.remainingQuantity })));
+      setInitialBuy(buyDb.map(o => ({ price: o.tradePrice, qty: o.remainingQuantity })));
+    })
+    .catch(() => { setInitialSell([]); setInitialBuy([]); });
+}, [currentStock?.stockCode]);
 
-  useEffect(() => {
-    if (!data) return;
-    const { side, price, qty } = data;
-    if (side === 'SELL') {
-      setSellOrders(prev => {
-        const exists = prev.some(o => o.price === price);
-        if (exists) return prev.map(o => o.price === price ? { ...o, qty } : o).filter(o => o.qty > 0);
-        if (qty === 0) return prev;
-        return [...prev, { price, qty }].sort((a, b) => a.price - b.price);
-      });
-    } else {
-      setBuyOrders(prev => {
-        const exists = prev.some(o => o.price === price);
-        if (exists) return prev.map(o => o.price === price ? { ...o, qty } : o).filter(o => o.qty > 0);
-        if (qty === 0) return prev;
-        return [...prev, { price, qty }].sort((a, b) => b.price - a.price);
-      });
-    }
-  }, [data]);
+  const { sellOrders, buyOrders } = useHogaSocket(
+    client, connected, currentStock?.stockCode, initialSell, initialBuy
+  );
+  const { executions } = useExecutionSocket(client, connected, currentStock?.stockCode);
 
   const priceColor = (price) => {
     if (!openPrice) return '#333';
@@ -97,12 +74,12 @@ export default function HogaChart({ currentStock, selectedPrice, setSelectedPric
 
           {/* 왼쪽 2/3: 행 단위로 잔량+바 | 가격 묶기 */}
           <div className={styles.sellLeft}>
-            {displaySell.map(o => {
+            {displaySell.map((o, i) => {
               const barW = Math.round((o.qty / maxQty) * 100) || 0;
               return (
-                <div key={`sell-row-${o.price}`} className={styles.sellRow}>
+                <div key={`sell-row-${i}`} className={styles.sellRow}>
 
-                  {/* 잔량 + 바 (숫자 오른쪽, 바 배경) */}
+                  {/* 잔량 + 바 */}
                   <div className={`${styles.cell} ${styles.sellQtyCell}`}>
                     <div className={styles.sellBar} style={{ width: `${barW}%` }} />
                     <span className={styles.sellQtyText}>{fmt(o.qty)}</span>
@@ -125,8 +102,8 @@ export default function HogaChart({ currentStock, selectedPrice, setSelectedPric
 
           {/* 오른쪽 1/3: 거래량 */}
           <div className={styles.col}>
-            {displaySell.map(o => (
-              <div key={`sell-vol-${o.price}`} className={styles.cell}>
+            {displaySell.map((o, i) => (
+              <div key={`sell-vol-${i}`} className={styles.cell}>
                 {/* 거래량 데이터 */}
               </div>
             ))}
@@ -156,10 +133,10 @@ export default function HogaChart({ currentStock, selectedPrice, setSelectedPric
 
           {/* 오른쪽 2/3: 행 단위로 가격 | 잔량+바 묶기 */}
           <div className={styles.buyRight}>
-            {displayBuy.map(o => {
+            {displayBuy.map((o, i) => {
               const barW = Math.round((o.qty / maxQty) * 100) || 0;
               return (
-                <div key={`buy-row-${o.price}`} className={styles.buyRow}>
+                <div key={`buy-row-${i}`} className={styles.buyRow}>
 
                   {/* 가격 */}
                   <div
@@ -171,7 +148,7 @@ export default function HogaChart({ currentStock, selectedPrice, setSelectedPric
                     <span className={styles.pct}>{pct(o.price)}</span>
                   </div>
 
-                  {/* 잔량 + 바 (숫자 왼쪽, 바 배경) */}
+                  {/* 잔량 + 바 */}
                   <div className={`${styles.cell} ${styles.buyQtyCell}`}>
                     <div className={styles.buyBar} style={{ width: `${barW}%` }} />
                     <span className={styles.buyQtyText}>{fmt(o.qty)}</span>
