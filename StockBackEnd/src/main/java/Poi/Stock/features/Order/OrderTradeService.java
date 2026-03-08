@@ -68,22 +68,30 @@ public class OrderTradeService {
 	 */
 	@Transactional
 	public MatchingResult processMatching(Order order, OrderBook book) {
-		Set<Integer> matchedPrices = new HashSet<>();
-		// 지금의 가격도 웹소켓 변동에 전송해야하니 추가
-		matchedPrices.add(order.getTradePrice());
 		List<TradeExecution> executions = new ArrayList<>();
+		Set<Integer> matchedPrices = new HashSet<>();
+		List<Order> completedResting = new ArrayList<>();
+		List<Order> partialResting = new ArrayList<>();
 		TreeMap<Integer, PriceLevel> oppositeBook = order.getTradeType() == tradeType.BUY ? book.getSellBook()
 				: book.getBuyBook();
 		// 매칭되는것들의 주식처리
-		matchLoop(order, oppositeBook, matchedPrices, executions);
+		matchLoop(order, oppositeBook, matchedPrices, executions, completedResting, partialResting);
+		if (executions.isEmpty()) {
+			// 지금의 가격도 웹소켓 변동에 전송해야하니 추가
+			matchedPrices.add(order.getTradePrice());
+			orderRepository.save(order);
+			return new MatchingResult(matchedPrices, executions);
+		}
 		// 결제 프로세스
 		settleAll(executions);
-		saveOrder(order, book);
+		saveTradeHistories(executions);
+		saveOrders(completedResting, partialResting, order);
 		return new MatchingResult(matchedPrices, executions);
 	}
 
 	private void matchLoop(Order order, TreeMap<Integer, PriceLevel> oppositeBook, Set<Integer> matchedPrices,
-			List<TradeExecution> executions) {
+			List<TradeExecution> executions, List<Order> completedResting, List<Order> partialResting) {
+
 		while (order.getRemainingQuantity() > 0) {
 			if (oppositeBook.isEmpty())
 				break;
@@ -92,12 +100,10 @@ public class OrderTradeService {
 					: firstPrice >= order.getTradePrice();
 			if (!priceMatch)
 				break;
-
 			PriceLevel level = oppositeBook.get(firstPrice);
 			Order restingOrder = level.peek();
-			// 최종 주문 체결이 되는 양
 			int fillQty = Math.min(order.getRemainingQuantity(), restingOrder.getRemainingQuantity());
-
+			// 메모리 상태 변경
 			order.decreaseRemainingQuantity(fillQty);
 			restingOrder.decreaseRemainingQuantity(fillQty);
 			level.reduceQuantity(fillQty);
@@ -107,89 +113,109 @@ public class OrderTradeService {
 
 			String buyerId = order.getTradeType() == tradeType.BUY ? order.getUserId() : restingOrder.getUserId();
 			String sellerId = order.getTradeType() == tradeType.BUY ? restingOrder.getUserId() : order.getUserId();
+
 			executions.add(new TradeExecution(order.getTradeType(), buyerId, sellerId, fillQty, fillPrice,
 					order.getStockCode()));
-			// 데이터베이스에 저장
-			saveRestingOrder(restingOrder, level, oppositeBook, firstPrice);
-		}
-	}
 
-	private void saveRestingOrder(Order restingOrder, PriceLevel level, TreeMap<Integer, PriceLevel> oppositeBook,
-			int firstPrice) {
-		if (restingOrder.isCompleted()) {
-			level.removeTopOrder();
-			completedOrderRepository.save(CompletedOrder.setCompletedOrder(restingOrder));
-			orderRepository.delete(restingOrder);
-		} else {
-			orderRepository.save(restingOrder);
-		}
-		if (level.isEmpty()) {
-			oppositeBook.remove(firstPrice);
-		}
-	}
-
-	private void saveOrder(Order order, OrderBook book) {
-		if (order.isCompleted()) {
-			completedOrderRepository.save(CompletedOrder.setCompletedOrder(order));
-		} else {
-			orderRepository.save(order);
-			book.addOrder(order);
+			// resting order 완료 여부만 분류 (DB 저장 X)
+			if (restingOrder.isCompleted()) {
+				level.removeTopOrder();
+				completedResting.add(restingOrder);
+			} else {
+				partialResting.add(restingOrder);
+			}
+			if (level.isEmpty()) {
+				oppositeBook.remove(firstPrice);
+			}
 		}
 	}
 
 	private void settleAll(List<TradeExecution> executions) {
-		if (executions.isEmpty())
-			return;
 
-		String stockCode = executions.get(0).getStockCode();
-		Map<String, Integer> assetDelta = new HashMap<>();
-		Map<String, List<TradeExecution>> buyerExMap = new HashMap<>();
-		Map<String, Integer> sellerStockDelta = new HashMap<>();
-		for (TradeExecution ex : executions) {
-			int total = ex.getPrice() * ex.getQuantity();
-			assetDelta.merge(ex.getBuyerId(), -total, Integer::sum);
-			assetDelta.merge(ex.getSellerId(), total, Integer::sum);
-			buyerExMap.computeIfAbsent(ex.getBuyerId(), k -> new ArrayList<>()).add(ex);
-			sellerStockDelta.merge(ex.getSellerId(), -ex.getQuantity(), Integer::sum);
-		}
-		// 유저 한 번 조회
-		Map<String, StockUser> userMap = stockUserRepository.findAllById(assetDelta.keySet()).stream()
-				.collect(Collectors.toMap(StockUser::getId, u -> u));
-		// 자산 반영
-		userMap.values().forEach(u -> u.setAsset(u.getAsset() + assetDelta.get(u.getId())));
-		stockUserRepository.saveAll(userMap.values());
-		// 보유주식 한 번 조회
-		Set<String> allUserIds = new HashSet<>();
-		allUserIds.addAll(buyerExMap.keySet());
-		allUserIds.addAll(sellerStockDelta.keySet());
-		Map<String, HaveStock> haveStockMap = haveStockRepository.findByUserIdsAndStockCode(allUserIds, stockCode)
-				.stream().collect(Collectors.toMap(h -> h.getStockUser().getId(), h -> h));
-		List<HaveStock> toSave = new ArrayList<>();
-		// 매수자 - averagePrice 계산
-		for (Map.Entry<String, List<TradeExecution>> entry : buyerExMap.entrySet()) {
-			HaveStock hs = haveStockMap.computeIfAbsent(entry.getKey(), k -> {
-				HaveStock h = new HaveStock();
-				h.setStockUser(userMap.get(k));
-				h.setStockCode(stockCode);
-				h.setQuantity(0);
-				return h;
-			});
-			for (TradeExecution ex : entry.getValue()) {
-				updateAveragePrice(hs, ex.getQuantity(), ex.getPrice());
-			}
-			toSave.add(hs);
-		}
-		// 매도자 - 수량만 감소
-		for (Map.Entry<String, Integer> entry : sellerStockDelta.entrySet()) {
-			HaveStock hs = haveStockMap.get(entry.getKey());
-			if (hs == null)
-				throw new RuntimeException("매도자 보유 주식을 찾을 수 없습니다");
-			hs.setQuantity(hs.getQuantity() + entry.getValue()); // 음수 합산
-			toSave.add(hs);
-		}
-		haveStockRepository.saveAll(toSave);
-		List<TradeHistory> histories = executions.stream().map(TradeHistory::from).collect(Collectors.toList());
-		tradeHistoryRepository.saveAll(histories);
+	    if (executions.isEmpty()) return;
+
+	    String stockCode = executions.get(0).getStockCode();
+
+	    Map<String, Integer> assetDelta = new HashMap<>();
+	    Map<String, List<TradeExecution>> buyerExMap = new HashMap<>();
+	    Map<String, Integer> sellerStockDelta = new HashMap<>();
+
+	    for (TradeExecution ex : executions) {
+	        int total = ex.getPrice() * ex.getQuantity();
+	        assetDelta.merge(ex.getBuyerId(), -total, Integer::sum);
+	        assetDelta.merge(ex.getSellerId(), total, Integer::sum);
+	        buyerExMap.computeIfAbsent(ex.getBuyerId(), k -> new ArrayList<>()).add(ex);
+	        sellerStockDelta.merge(ex.getSellerId(), -ex.getQuantity(), Integer::sum);
+	    }
+
+	    applyAssetChanges(assetDelta, buyerExMap, sellerStockDelta, stockCode);
+	}
+
+	private void applyAssetChanges(Map<String, Integer> assetDelta,
+	        Map<String, List<TradeExecution>> buyerExMap,
+	        Map<String, Integer> sellerStockDelta, String stockCode) {
+
+	    // 유저 자산 반영
+	    Map<String, StockUser> userMap = stockUserRepository.findAllById(assetDelta.keySet())
+	            .stream().collect(Collectors.toMap(StockUser::getId, u -> u));
+	    userMap.values().forEach(u -> u.setAsset(u.getAsset() + assetDelta.get(u.getId())));
+	    stockUserRepository.saveAll(userMap.values());
+
+	    // 보유 주식 반영
+	    Set<String> allUserIds = new HashSet<>();
+	    allUserIds.addAll(buyerExMap.keySet());
+	    allUserIds.addAll(sellerStockDelta.keySet());
+
+	    Map<String, HaveStock> haveStockMap = haveStockRepository
+	            .findByUserIdsAndStockCode(allUserIds, stockCode)
+	            .stream().collect(Collectors.toMap(h -> h.getStockUser().getId(), h -> h));
+
+	    List<HaveStock> toSave = new ArrayList<>();
+
+	    for (Map.Entry<String, List<TradeExecution>> entry : buyerExMap.entrySet()) {
+	        HaveStock hs = haveStockMap.computeIfAbsent(entry.getKey(), k -> {
+	            HaveStock h = new HaveStock();
+	            h.setStockUser(userMap.get(k));
+	            h.setStockCode(stockCode);
+	            h.setQuantity(0);
+	            return h;
+	        });
+	        entry.getValue().forEach(ex -> updateAveragePrice(hs, ex.getQuantity(), ex.getPrice()));
+	        toSave.add(hs);
+	    }
+
+	    for (Map.Entry<String, Integer> entry : sellerStockDelta.entrySet()) {
+	        HaveStock hs = haveStockMap.get(entry.getKey());
+	        if (hs == null) throw new RuntimeException("매도자 보유 주식을 찾을 수 없습니다");
+	        hs.setQuantity(hs.getQuantity() + entry.getValue());
+	        toSave.add(hs);
+	    }
+
+	    haveStockRepository.saveAll(toSave);
+	}
+
+	private void saveTradeHistories(List<TradeExecution> executions) {
+	    tradeHistoryRepository.saveAll(
+	            executions.stream().map(TradeHistory::from).toList());
+	}
+
+	private void saveOrders(List<Order> completedResting, List<Order> partialResting,
+	        Order incomingOrder) {
+
+	    if (!completedResting.isEmpty()) {
+	        completedOrderRepository.saveAll(
+	                completedResting.stream().map(CompletedOrder::setCompletedOrder).toList());
+	        orderRepository.deleteAll(completedResting);	    
+	 }
+	    if (!partialResting.isEmpty()) {
+	        orderRepository.saveAll(partialResting);
+	    }
+	    if (incomingOrder.isCompleted()) {
+	        completedOrderRepository.save(CompletedOrder.setCompletedOrder(incomingOrder));
+	        orderRepository.delete(incomingOrder);
+	    } else {
+	        orderRepository.save(incomingOrder);
+	    }
 	}
 
 	private void updateAveragePrice(HaveStock haveStock, int fillQty, int fillPrice) {
