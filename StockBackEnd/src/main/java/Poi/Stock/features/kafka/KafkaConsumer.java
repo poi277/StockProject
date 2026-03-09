@@ -34,10 +34,11 @@ public class KafkaConsumer {
 			MatchingResult matchingResult = orderTradeService.processMatching(order, book);
 			orderTradeService.sendHogaQuntityAndPrice(order.getStockCode(), matchingResult, book);
 			Integer currentPrice = book.getSellfirstKey();
-			if (currentPrice != null) {
-				webSocketService.SendCurrentPrice(order.getStockCode(), currentPrice);
-				orderTradeService.updateStockPrice(order.getStockCode(), currentPrice);
+			if (currentPrice == null) {
+				currentPrice = 0;
 			}
+			webSocketService.SendCurrentPrice(order.getStockCode(), currentPrice);
+			orderTradeService.updateStockPrice(order.getStockCode(), currentPrice);
 		} catch (Exception e) {
 			log.error("주문 처리 실패: {}", e.getMessage());
 			kafkaProducer.sendToDLT(tradeDTO); // DLT로 보내기

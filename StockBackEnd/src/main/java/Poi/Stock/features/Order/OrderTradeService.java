@@ -68,66 +68,59 @@ public class OrderTradeService {
 	 */
 	@Transactional
 	public MatchingResult processMatching(Order order, OrderBook book) {
-		List<TradeExecution> executions = new ArrayList<>();
-		Set<Integer> matchedPrices = new HashSet<>();
-		List<Order> completedResting = new ArrayList<>();
-		List<Order> partialResting = new ArrayList<>();
-		TreeMap<Integer, PriceLevel> oppositeBook = order.getTradeType() == tradeType.BUY ? book.getSellBook()
-				: book.getBuyBook();
-		// 매칭되는것들의 주식처리
-		matchLoop(order, oppositeBook, matchedPrices, executions, completedResting, partialResting);
-		if (executions.isEmpty()) {
-			// 지금의 가격도 웹소켓 변동에 전송해야하니 추가
-			matchedPrices.add(order.getTradePrice());
-			orderRepository.save(order);
-			return new MatchingResult(matchedPrices, executions);
-		}
-		// 결제 프로세스
-		settleAll(executions);
-		saveTradeHistories(executions);
-		saveOrders(completedResting, partialResting, order);
-		return new MatchingResult(matchedPrices, executions);
+		MatchingResult result = matchLoop(order, book);
+		settleAll(result.getExecutions());
+		saveTradeHistories(result.getExecutions());
+		saveOrders(result, order);
+		return result;
 	}
 
-	private void matchLoop(Order order, TreeMap<Integer, PriceLevel> oppositeBook, Set<Integer> matchedPrices,
-			List<TradeExecution> executions, List<Order> completedResting, List<Order> partialResting) {
+	private MatchingResult matchLoop(Order order, OrderBook book) {
+		MatchingResult result = new MatchingResult();
+		TreeMap<Integer, PriceLevel> oppositeBook = order.getTradeType() == tradeType.BUY ? book.getSellBook()
+				: book.getBuyBook();
 
-		while (order.getRemainingQuantity() > 0) {
-			if (oppositeBook.isEmpty())
-				break;
+		while (!order.isCompleted() && !oppositeBook.isEmpty()) {
 			Integer firstPrice = oppositeBook.firstKey();
 			boolean priceMatch = order.getTradeType() == tradeType.BUY ? firstPrice <= order.getTradePrice()
 					: firstPrice >= order.getTradePrice();
 			if (!priceMatch)
 				break;
+
 			PriceLevel level = oppositeBook.get(firstPrice);
 			Order restingOrder = level.peek();
 			int fillQty = Math.min(order.getRemainingQuantity(), restingOrder.getRemainingQuantity());
-			// 메모리 상태 변경
+
 			order.decreaseRemainingQuantity(fillQty);
 			restingOrder.decreaseRemainingQuantity(fillQty);
 			level.reduceQuantity(fillQty);
 
 			int fillPrice = restingOrder.getTradePrice();
-			matchedPrices.add(fillPrice);
+			result.getMatchedPrices().add(fillPrice);
 
 			String buyerId = order.getTradeType() == tradeType.BUY ? order.getUserId() : restingOrder.getUserId();
 			String sellerId = order.getTradeType() == tradeType.BUY ? restingOrder.getUserId() : order.getUserId();
 
-			executions.add(new TradeExecution(order.getTradeType(), buyerId, sellerId, fillQty, fillPrice,
+			result.getExecutions().add(new TradeExecution(order.getTradeType(), buyerId, sellerId, fillQty, fillPrice,
 					order.getStockCode()));
 
-			// resting order 완료 여부만 분류 (DB 저장 X)
 			if (restingOrder.isCompleted()) {
 				level.removeTopOrder();
-				completedResting.add(restingOrder);
+				result.getCompletedResting().add(restingOrder);
 			} else {
-				partialResting.add(restingOrder);
+				result.getPartialResting().add(restingOrder);
 			}
-			if (level.isEmpty()) {
+			if (level.isEmpty())
 				oppositeBook.remove(firstPrice);
-			}
 		}
+
+		if (!order.isCompleted()) {
+			if (result.getExecutions().isEmpty()) {
+				result.getMatchedPrices().add(order.getTradePrice());
+			}
+			book.addOrder(order);
+		}
+		return result;
 	}
 
 	private void settleAll(List<TradeExecution> executions) {
@@ -155,7 +148,7 @@ public class OrderTradeService {
 	        Map<String, List<TradeExecution>> buyerExMap,
 	        Map<String, Integer> sellerStockDelta, String stockCode) {
 
-	    // 유저 자산 반영
+		// 유저 자산 반영
 	    Map<String, StockUser> userMap = stockUserRepository.findAllById(assetDelta.keySet())
 	            .stream().collect(Collectors.toMap(StockUser::getId, u -> u));
 	    userMap.values().forEach(u -> u.setAsset(u.getAsset() + assetDelta.get(u.getId())));
@@ -166,8 +159,7 @@ public class OrderTradeService {
 	    allUserIds.addAll(buyerExMap.keySet());
 	    allUserIds.addAll(sellerStockDelta.keySet());
 
-	    Map<String, HaveStock> haveStockMap = haveStockRepository
-	            .findByUserIdsAndStockCode(allUserIds, stockCode)
+		Map<String, HaveStock> haveStockMap = haveStockRepository.findByUserIdsAndStockCode(allUserIds, stockCode)
 	            .stream().collect(Collectors.toMap(h -> h.getStockUser().getId(), h -> h));
 
 	    List<HaveStock> toSave = new ArrayList<>();
@@ -195,24 +187,23 @@ public class OrderTradeService {
 	}
 
 	private void saveTradeHistories(List<TradeExecution> executions) {
+		if (executions.isEmpty())
+			return;
 	    tradeHistoryRepository.saveAll(
 	            executions.stream().map(TradeHistory::from).toList());
 	}
 
-	private void saveOrders(List<Order> completedResting, List<Order> partialResting,
-	        Order incomingOrder) {
-
-	    if (!completedResting.isEmpty()) {
+	private void saveOrders(MatchingResult result, Order incomingOrder) {
+		if (!result.getCompletedResting().isEmpty()) {
 	        completedOrderRepository.saveAll(
-	                completedResting.stream().map(CompletedOrder::setCompletedOrder).toList());
-	        orderRepository.deleteAll(completedResting);	    
-	 }
-	    if (!partialResting.isEmpty()) {
-	        orderRepository.saveAll(partialResting);
+					result.getCompletedResting().stream().map(CompletedOrder::setCompletedOrder).toList());
+			orderRepository.deleteAll(result.getCompletedResting());
+		}
+		if (!result.getPartialResting().isEmpty()) {
+			orderRepository.saveAll(result.getPartialResting());
 	    }
 	    if (incomingOrder.isCompleted()) {
 	        completedOrderRepository.save(CompletedOrder.setCompletedOrder(incomingOrder));
-	        orderRepository.delete(incomingOrder);
 	    } else {
 	        orderRepository.save(incomingOrder);
 	    }
