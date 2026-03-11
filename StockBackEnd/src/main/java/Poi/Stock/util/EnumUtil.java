@@ -10,4 +10,8 @@ public class EnumUtil {
 		COMPLETED, // 전량 체결
 		CANCELLED // 취소됨
 	}
+
+	public enum BotType {
+		MARKET_MAKER, RANDOM, TREND
+	}
 }
