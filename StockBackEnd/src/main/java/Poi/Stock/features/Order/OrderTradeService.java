@@ -51,9 +51,9 @@ public class OrderTradeService {
 	private final TradeHistoryRepository tradeHistoryRepository;
 	private final BotCache botCache;
 
-	public Order setOrder(String userId, TradeDTO tradeDTO) {
+	public Order setOrder(TradeDTO tradeDTO) {
 		Order order = new Order();
-		order.setUserId(userId);
+		order.setUserId(tradeDTO.getUserId());
 		order.setStockCode(tradeDTO.getStockCode());
 		order.setTradeType(tradeDTO.getTradeType());
 		order.setQuantity(tradeDTO.getQuantity());
@@ -205,33 +205,29 @@ public class OrderTradeService {
 
 	private void saveOrders(MatchingResult result, Order incomingOrder) {
 		boolean incomingIsBot = isBot(incomingOrder.getUserId());
-
 		if (!result.getCompletedResting().isEmpty()) {
+			// 체결(CompletedOrder)은 봇vs봇이면 저장 안함
 			List<Order> completedToSave = result.getCompletedResting().stream()
-					.filter(o -> !isBot(o.getUserId()) || !incomingIsBot)
-					.toList();
+					.filter(o -> !isBot(o.getUserId()) || !incomingIsBot).toList();
 			if (!completedToSave.isEmpty()) {
-				completedOrderRepository.saveAll(
-						completedToSave.stream().map(CompletedOrder::setCompletedOrder).toList());
-				orderRepository.deleteAll(completedToSave);
+				completedOrderRepository
+						.saveAll(completedToSave.stream().map(CompletedOrder::setCompletedOrder).toList());
 			}
+			// 주문(Order) 삭제는 봇 포함 전부
+			orderRepository.deleteAll(result.getCompletedResting());
 		}
-
 		if (!result.getPartialResting().isEmpty()) {
-			List<Order> partialToSave = result.getPartialResting().stream()
-					.filter(o -> !isBot(o.getUserId()) || !incomingIsBot)
-					.toList();
-			if (!partialToSave.isEmpty()) {
-				orderRepository.saveAll(partialToSave);
-			}
+			// 주문(Order) 저장은 봇 포함 전부
+			orderRepository.saveAll(result.getPartialResting());
 		}
-
-		if (!incomingIsBot) {
-			if (incomingOrder.isCompleted()) {
+		if (incomingOrder.isCompleted()) {
+			// 체결(CompletedOrder)은 봇vs봇이면 저장 안함
+			if (!incomingIsBot || !result.getCompletedResting().stream().allMatch(o -> isBot(o.getUserId()))) {
 				completedOrderRepository.save(CompletedOrder.setCompletedOrder(incomingOrder));
-			} else {
-				orderRepository.save(incomingOrder);
 			}
+			orderRepository.delete(incomingOrder);
+		} else {
+			orderRepository.save(incomingOrder);
 		}
 	}
 

@@ -6,12 +6,10 @@ import org.springframework.stereotype.Component;
 
 import Poi.Stock.DTO.user.TradeDTO;
 import Poi.Stock.features.Lock.StockLock;
-import Poi.Stock.features.Order.Order;
-import Poi.Stock.features.Order.OrderBook;
+import Poi.Stock.features.Order.OrderService;
 import Poi.Stock.features.Order.OrderTradeService;
 import Poi.Stock.features.Websocket.OrderBookCache;
 import Poi.Stock.features.Websocket.WebSocketService;
-import Poi.Stock.object.MatchingResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 public class KafkaConsumer {
 
 	private final OrderTradeService orderTradeService;
+	private final OrderService orderService;
 	private final OrderBookCache orderBookCache;
 	private final WebSocketService webSocketService;
 	private final StockLock stockLock;
@@ -29,16 +28,7 @@ public class KafkaConsumer {
 	public void consumeOrder(@Payload TradeDTO tradeDTO) {
 		stockLock.lock(tradeDTO.getStockCode());
 		try {
-			Order order = orderTradeService.setOrder(tradeDTO.getUserId(), tradeDTO);
-			OrderBook book = orderBookCache.get(order.getStockCode());
-			MatchingResult matchingResult = orderTradeService.processMatching(order, book);
-			orderTradeService.sendHogaQuntityAndPrice(order.getStockCode(), matchingResult, book);
-			Integer currentPrice = book.getSellfirstKey();
-			if (currentPrice == null) {
-				currentPrice = 0;
-			}
-			webSocketService.SendCurrentPrice(order.getStockCode(), currentPrice);
-			orderTradeService.updateStockPrice(order.getStockCode(), currentPrice);
+			orderService.processOrder(tradeDTO);
 		} catch (Exception e) {
 			log.error("주문 처리 실패: {}", e.getMessage());
 			kafkaProducer.sendToDLT(tradeDTO); // DLT로 보내기

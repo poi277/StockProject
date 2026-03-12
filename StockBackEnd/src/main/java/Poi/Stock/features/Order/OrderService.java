@@ -15,6 +15,7 @@ import Poi.Stock.features.User.StockUser;
 import Poi.Stock.features.Websocket.OrderBookCache;
 import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.features.kafka.KafkaProducer;
+import Poi.Stock.object.MatchingResult;
 import Poi.Stock.repository.CompletedOrderRepository;
 import Poi.Stock.repository.HaveStockRepository;
 import Poi.Stock.repository.OrderRepository;
@@ -61,6 +62,18 @@ public class OrderService {
 						tradeDTO.getQuantity()));
 			}
 		}
+	}
+
+	public void processOrder(TradeDTO tradeDTO) {
+		Order order = orderTradeService.setOrder(tradeDTO);
+		OrderBook book = orderBookCache.get(order.getStockCode());
+		MatchingResult result = orderTradeService.processMatching(order, book);
+		orderTradeService.sendHogaQuntityAndPrice(order.getStockCode(), result, book);
+		Integer currentPrice = book.getSellfirstKey();
+		if (currentPrice == null)
+			currentPrice = 0;
+		webSocketService.SendCurrentPrice(order.getStockCode(), currentPrice);
+		orderTradeService.updateStockPrice(order.getStockCode(), currentPrice);
 	}
 
 	/**
