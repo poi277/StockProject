@@ -3,12 +3,12 @@ package Poi.Stock.features.Order;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import Poi.Stock.features.Websocket.OrderBookCache;
 import Poi.Stock.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -18,32 +18,37 @@ public class OrderCancelService {
 	private final OrderBookCache orderBookCache;
 
 	// 단건 취소 (유저/봇 공통)
+	@Transactional
 	public void cancelOrder(Order order) {
 		OrderBook book = orderBookCache.get(order.getStockCode());
-		// 메모리에서 제거
 		book.removeOrder(order);
-		// DB에서 제거
 		orderRepository.delete(order);
 		log.info("주문 취소: {} / {} / {}", order.getUserId(), order.getStockCode(), order.getTradePrice());
 	}
 
 	// 특정 유저의 특정 종목 주문 전체 취소 (봇용)
+	@Transactional
 	public void cancelAllOrders(String userId, String stockCode) {
 		List<Order> orders = orderRepository.findByUserIdAndStockCode(userId, stockCode);
+		if (orders.isEmpty())
+			return;
 		OrderBook book = orderBookCache.get(stockCode);
 		orders.forEach(order -> book.removeOrder(order));
-		orderRepository.deleteAll(orders);
-		log.info("전체 주문 취소: {} / {}", userId, stockCode);
+		orderRepository.deleteAllInBatch(orders);
+		log.info("전체 주문 취소: {} / {} / {}건", userId, stockCode, orders.size());
 	}
 
 	// 특정 유저의 전체 종목 주문 취소
+	@Transactional
 	public void cancelAllOrders(String userId) {
 		List<Order> orders = orderRepository.findByUserId(userId);
+		if (orders.isEmpty())
+			return;
 		orders.forEach(order -> {
 			OrderBook book = orderBookCache.get(order.getStockCode());
 			book.removeOrder(order);
 		});
-		orderRepository.deleteAll(orders);
-		log.info("전체 주문 취소: {}", userId);
+		orderRepository.deleteAllInBatch(orders);
+		log.info("전체 주문 취소: {} / {}건", userId, orders.size());
 	}
 }

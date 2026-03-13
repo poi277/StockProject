@@ -197,10 +197,22 @@ public class OrderTradeService {
 		return bot != null && bot.getBotType() != null;
 	}
 
+//	private void saveTradeHistories(List<TradeExecution> executions) {
+//		if (executions.isEmpty())
+//			return;
+//		tradeHistoryRepository.saveAll(executions.stream().map(TradeHistory::from).toList());
+//	}
 	private void saveTradeHistories(List<TradeExecution> executions) {
-		if (executions.isEmpty()) return;
-		tradeHistoryRepository.saveAll(
-				executions.stream().map(TradeHistory::from).toList());
+
+		if (executions.isEmpty())
+			return;
+
+		List<TradeHistory> histories = executions.stream()
+				.filter(ex -> !(isBot(ex.getBuyerId()) && isBot(ex.getSellerId()))).map(TradeHistory::from).toList();
+
+		if (!histories.isEmpty()) {
+			tradeHistoryRepository.saveAll(histories);
+		}
 	}
 
 	private void saveOrders(MatchingResult result, Order incomingOrder) {
@@ -214,7 +226,7 @@ public class OrderTradeService {
 						.saveAll(completedToSave.stream().map(CompletedOrder::setCompletedOrder).toList());
 			}
 			// 주문(Order) 삭제는 봇 포함 전부
-			orderRepository.deleteAll(result.getCompletedResting());
+			orderRepository.deleteAllInBatch(result.getCompletedResting());
 		}
 		if (!result.getPartialResting().isEmpty()) {
 			// 주문(Order) 저장은 봇 포함 전부
@@ -261,6 +273,8 @@ public class OrderTradeService {
 	}
 
 	public void updateStockPrice(String stockCode, int currentPrice) {
+		if (currentPrice <= 0)
+			return;
 		Stock stock = stockCache.get(stockCode);
 		if (stock == null) return;
 		stock.setClosePrice(currentPrice);

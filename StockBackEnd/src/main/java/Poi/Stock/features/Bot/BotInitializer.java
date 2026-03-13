@@ -2,6 +2,7 @@ package Poi.Stock.features.Bot;
 
 import java.util.List;
 
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import Poi.Stock.features.Websocket.StockCache;
@@ -12,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
+@DependsOn("webSocketService")
 @RequiredArgsConstructor
 public class BotInitializer {
 
