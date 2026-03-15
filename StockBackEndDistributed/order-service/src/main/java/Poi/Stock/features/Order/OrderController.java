@@ -1,0 +1,88 @@
+package Poi.Stock.features.Order;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import Poi.Stock.DTO.user.ApiResponse;
+import Poi.Stock.DTO.user.TradeDTO;
+import Poi.Stock.features.Websocket.WebSocketService;
+import Poi.Stock.repository.OrderRepository;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequestMapping("/order")
+@RequiredArgsConstructor
+public class OrderController {
+
+    private final OrderService orderService;
+    private final OrderRepository orderRepository;
+    private final OrderBookCache orderBookCache;
+    private final WebSocketService webSocketService;
+
+    @PostMapping("/trade")
+    public ResponseEntity<ApiResponse> stockTrade(
+            @RequestBody TradeDTO tradeDTO,
+            Authentication authentication,
+            HttpServletRequest request) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ApiResponse(false, "세션에 값이 필요합니다"));
+        }
+        String userId = authentication.getName();
+        String accessToken = resolveToken(request);
+
+        // user-service로 검증
+        orderService.validateOrder(userId, tradeDTO, accessToken);
+        orderService.placeOrder(userId, tradeDTO);
+        return ResponseEntity.ok(new ApiResponse(true, "주문 접수 완료"));
+    }
+
+    @GetMapping("/orders/{stockCode}")
+    public ResponseEntity<?> getOrders(
+            @PathVariable("stockCode") String stockCode,
+            Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ApiResponse(false, "인증이 필요합니다"));
+        }
+        String userId = authentication.getName();
+        List<Order> myOrders = orderRepository
+            .findByUserIdAndStockCodeOrderByCreatedAtDesc(userId, stockCode);
+        return ResponseEntity.ok(myOrders);
+    }
+
+    @GetMapping("/orderbook/{stockCode}")
+    public ResponseEntity<?> getOrderHoga(@PathVariable("stockCode") String stockCode) {
+        Map<String, Object> orderBook = orderService.getOrderHoga(stockCode);
+        return ResponseEntity.ok(orderBook);
+    }
+
+    @PostMapping("/cancel/{orderId}")
+    public ResponseEntity<ApiResponse> cancelOrder(
+            @PathVariable("orderId") Long orderId,
+            Authentication authentication,
+            HttpServletRequest request) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ApiResponse(false, "인증이 필요합니다"));
+        }
+        String userId = authentication.getName();
+        String accessToken = resolveToken(request);
+        orderService.cancelOrder(userId, orderId, accessToken);
+        return ResponseEntity.ok(new ApiResponse(true, "주문 취소 완료"));
+    }
+
+    private String resolveToken(HttpServletRequest request) {
+        String bearer = request.getHeader("Authorization");
+        if (bearer != null && bearer.startsWith("Bearer ")) {
+            return bearer.substring(7);
+        }
+        return null;
+    }
+}

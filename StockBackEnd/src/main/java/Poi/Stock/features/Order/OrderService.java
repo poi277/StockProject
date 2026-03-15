@@ -9,22 +9,18 @@ import org.springframework.transaction.annotation.Transactional;
 
 import Poi.Stock.DTO.user.HogaDTO;
 import Poi.Stock.DTO.user.TradeDTO;
-import Poi.Stock.features.Stock.StockService;
-import Poi.Stock.features.User.HaveStock;
-import Poi.Stock.features.User.StockUser;
-import Poi.Stock.features.Websocket.OrderBookCache;
+import Poi.Stock.features.User.UserAssetService;
 import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.features.kafka.KafkaProducer;
 import Poi.Stock.object.MatchingResult;
 import Poi.Stock.repository.CompletedOrderRepository;
-import Poi.Stock.repository.HaveStockRepository;
 import Poi.Stock.repository.OrderRepository;
 import Poi.Stock.repository.StockRepository;
-import Poi.Stock.repository.StockUserRepository;
 import Poi.Stock.util.EnumUtil.OrderStatus;
 import Poi.Stock.util.EnumUtil.tradeType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -34,34 +30,19 @@ public class OrderService {
 	private final KafkaProducer kafkaProducer;
 	private final StockRepository stockRepository;
 	private final OrderBookCache orderBookCache;
-	private final StockUserRepository stockUserRepository;
-	private final HaveStockRepository haveStockRepository;
-	private final StockService stockService;
 	private final WebSocketService webSocketService;
 	private final CompletedOrderRepository completedOrderRepository;
 	private final OrderTradeService orderTradeService;
+	private final UserAssetService userAssetService; // ← StockUserRepository, HaveStockRepository 대체
+
+	// StockUserRepository, HaveStockRepository, StockService 제거 ←
 
 	/**
-	 * 자산/보유주식 검증
+	 * 자산/보유주식 검증 추후 user-service 분리 시 UserAssetService → HTTP Client로 교체
 	 */
 	public void validateOrder(String userId, TradeDTO tradeDTO) {
-		StockUser user = stockUserRepository.findById(userId).orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
-
-		if (tradeDTO.getTradeType() == tradeType.BUY) {
-			int totalCost = tradeDTO.getTradePrice() * tradeDTO.getQuantity();
-			if (user.getAsset() < totalCost) {
-				throw new RuntimeException(String.format("자산이 부족합니다. 필요: %d원, 보유: %d원", totalCost, user.getAsset()));
-			}
-		}
-
-		if (tradeDTO.getTradeType() == tradeType.SELL) {
-			HaveStock haveStock = haveStockRepository.findByStockUserAndStockCode(user, tradeDTO.getStockCode())
-					.orElseThrow(() -> new RuntimeException("보유한 주식이 없습니다."));
-			if (haveStock.getQuantity() < tradeDTO.getQuantity()) {
-				throw new RuntimeException(String.format("보유 수량이 부족합니다. 보유: %d주, 매도 요청: %d주", haveStock.getQuantity(),
-						tradeDTO.getQuantity()));
-			}
-		}
+		userAssetService.validateOrder(userId, tradeDTO.getTradeType(), tradeDTO.getStockCode(),
+				tradeDTO.getTradePrice(), tradeDTO.getQuantity());
 	}
 
 	public void processOrder(TradeDTO tradeDTO) {
@@ -69,32 +50,10 @@ public class OrderService {
 		OrderBook book = orderBookCache.get(order.getStockCode());
 		MatchingResult result = orderTradeService.processMatching(order, book);
 		orderTradeService.sendHogaQuntityAndPrice(order.getStockCode(), result, book);
-		Integer currentPrice = book.getSellfirstKey();
-		if (currentPrice == null)
-			currentPrice = 0;
+		Integer currentPrice = result.getLastExecutionPrice();
 		webSocketService.SendCurrentPrice(order.getStockCode(), currentPrice);
 		orderTradeService.updateStockPrice(order.getStockCode(), currentPrice);
 	}
-
-	/**
-	 * 주문 접수 (검증 → 생성 → 매칭 → 정산 → 현재가 업데이트)
-	 */
-//	public void placeOrder(String userId, TradeDTO tradeDTO) {
-//		stockLock.lock(tradeDTO.getStockCode());
-//		Order order = orderTradeService.setOrder(userId, tradeDTO);
-//		OrderBook book = orderBookCache.get(order.getStockCode());
-//		Set<Integer> matchedPrices = orderTradeService.processMatching(order, book);
-//	 웹소켓에 해당되는 주식의 호가를 재 갱신
-//		orderTradeService.sendDeltaForPrice(order.getStockCode(), matchedPrices, book);
-//		Integer currentPrice = book.getSellfirstKey();
-//		if (currentPrice != null) { // null 체크
-//	 웹소켓에 해당 주식의 현재가를 재 갱신
-//			webSocketService.SendCurrentPrice(order.getStockCode(), currentPrice);
-//	 cache에 주식의 가격들을 갱신
-//			orderTradeService.updateStockPrice(order.getStockCode(), currentPrice);
-//		}
-//	stockLock.unlock(tradeDTO.getStockCode());
-//	}
 
 	public void placeOrder(String userId, TradeDTO tradeDTO) {
 		tradeDTO.setUserId(userId);
@@ -109,12 +68,14 @@ public class OrderService {
 		return Map.of("sellOrders", getTopOrders(orderBook.getSellBook()), "buyOrders",
 				getTopOrders(orderBook.getBuyBook()));
 	}
+
 	private List<HogaDTO> getTopOrders(NavigableMap<Integer, PriceLevel> book) {
 		return book.entrySet().stream().limit(5).map(e -> new HogaDTO(e.getKey(), e.getValue().getTotalQuantity()))
 				.toList();
 	}
+
 	/**
-	 * 주문 취소
+	 * 주문 취소 매수 취소 시 자산 환불 → UserAssetService 위임
 	 */
 	@Transactional
 	public void cancelOrder(String userId, Long orderId) {
@@ -124,13 +85,9 @@ public class OrderService {
 			throw new RuntimeException("본인의 주문만 취소할 수 있습니다");
 		}
 
-		// completed는 이미 orders 테이블에 없으므로 PARTIAL/PENDING만 여기 도달
 		if (order.getTradeType() == tradeType.BUY) {
-			StockUser user = stockUserRepository.findById(userId)
-					.orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
 			int refundAmount = order.getTradePrice() * order.getRemainingQuantity();
-			user.setAsset(user.getAsset() + refundAmount);
-			stockUserRepository.save(user);
+			userAssetService.refundAsset(userId, refundAmount);
 		}
 
 		order.setStatus(OrderStatus.CANCELLED);

@@ -1,35 +1,65 @@
 'use server';
 
-import { getSessionCookie } from './cookieUtils';
+import { getAccessToken, setTokenCookies, clearTokenCookies, getRefreshToken } from './cookieUtils';
+import { API_URL,USER_URL } from './URLconfig';
 
 export async function apiFetch(url, options = {}) {
-  const { cookie = false , auth = false, ...fetchOptions } = options;  
-  try {
-    let cookieHeader = null;
-    if (cookie) {
-      const session = await getSessionCookie();
-      cookieHeader = session?.cookieHeader;
+  const { auth = false, ...fetchOptions } = options;
 
-      if (!cookieHeader && auth) {
-        return {
-          success: false,
-          status: 401,
-          message: '로그인이 필요합니다.',
-        };
-      }
+  try {
+    const accessToken = await getAccessToken();
+
+    if (!accessToken && auth) {
+      return {
+        success: false,
+        status: 401,
+        message: '로그인이 필요합니다.',
+      };
     }
-    
+
     const isFormData = fetchOptions.body instanceof FormData;
 
     const res = await fetch(url, {
       ...fetchOptions,
-      credentials: 'include',
       headers: {
         ...(!isFormData && { 'Content-Type': 'application/json' }),
-        ...(cookieHeader && { Cookie: cookieHeader }),
+        ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
         ...fetchOptions.headers,
       },
     });
+
+    // accessToken 만료 시 → refreshToken으로 재발급 후 재시도
+    if (res.status === 401) {
+      const refreshed = await tryRefresh();
+      if (refreshed) {
+        const newToken = await getAccessToken();
+        const retryRes = await fetch(url, {
+          ...fetchOptions,
+          headers: {
+            ...(!isFormData && { 'Content-Type': 'application/json' }),
+            Authorization: `Bearer ${newToken}`,
+            ...fetchOptions.headers,
+          },
+        });
+        const retryData = await retryRes.json().catch(() => null);
+        if (!retryRes.ok || retryData?.success === false) {
+          return {
+            success: false,
+            status: retryRes.status,
+            message: retryData?.message || `요청 실패 (${retryRes.status})`,
+          };
+        }
+        return {
+          success: true,
+          status: retryRes.status,
+          data: retryData?.data ?? retryData,
+          message: retryData?.message,
+        };
+      }
+      // refresh도 실패 → 로그아웃
+      await clearTokenCookies();
+      return { success: false, status: 401, message: '로그인이 필요합니다.' };
+    }
 
     const data = await res.json().catch(() => null);
 
@@ -54,5 +84,30 @@ export async function apiFetch(url, options = {}) {
       status: 500,
       message: error.message || '네트워크 오류',
     };
+  }
+}
+
+// accessToken 만료 시 refreshToken으로 재발급
+async function tryRefresh() {
+  try {
+    const refreshToken = await getRefreshToken();
+    if (!refreshToken) return false;
+
+    const res = await fetch(`${USER_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!res.ok) return false;
+
+    const data = await res.json();
+    if (data?.data?.accessToken) {
+      await setTokenCookies(data.data.accessToken, data.data.refreshToken);
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
   }
 }
