@@ -1,3 +1,5 @@
+'use client'
+
 import useProfile from "./useProfile";
 
 export default function ProfileForm() {

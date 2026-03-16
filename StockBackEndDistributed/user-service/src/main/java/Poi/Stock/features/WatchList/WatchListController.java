@@ -37,9 +37,8 @@ public class WatchListController {
 
     @GetMapping("/list")
     public ResponseEntity<ApiResponse> getWatchList(Authentication authentication) {
-        String userId = authentication.getName();
-        // stockCode 목록 반환 (stock-service 분리 후 프론트에서 각 종목 조회)
-        List<String> stockCodes = watchListService.getWatchListStockCodes(userId);
-        return ResponseEntity.ok(new ApiResponse(true, "관심종목 조회 완료", stockCodes));
+		// stock-service에서 주식 상세 정보까지 포함해서 반환
+		List<Object> watchList = watchListService.getWatchListWithStockInfo(authentication.getName());
+		return ResponseEntity.ok(new ApiResponse(true, "관심종목 조회 완료", watchList));
     }
 }

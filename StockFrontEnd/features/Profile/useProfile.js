@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect, useState } from "react";
 import { getProfileApi } from "../../lib/profile";
 
@@ -9,8 +11,12 @@ export default function useProfile() {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const data = await getProfileApi();
-                setProfile(data);
+                const res = await getProfileApi();
+                if (res.success) {
+                    setProfile(res.data); 
+                } else {
+                    setError(res.message);
+                }
             } catch (err) {
                 setError(err.message || "프로필을 불러오지 못했습니다.");
             } finally {

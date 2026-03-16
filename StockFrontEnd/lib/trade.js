@@ -1,8 +1,8 @@
 import { apiFetch } from '../util/apiClient';
-import { API_URL } from '../util/URLconfig';
+import { API_URL,ORDER_API_URL } from '../util/URLconfig';
 
 export async function tradeApi(tradeType,stockCode,quantity,tradePrice) {
-  return await apiFetch(`${API_URL}/order/trade`,{
+  return await apiFetch(`${ORDER_API_URL}/order/trade`,{
     method: 'POST',
     auth: true,
     cookie: true,
@@ -15,5 +15,5 @@ export async function tradeApi(tradeType,stockCode,quantity,tradePrice) {
     })
 }
 export async function getOrdersApi(stockCode) {
-   return await apiFetch(`${API_URL}/order/orderbook/${stockCode}`)
+   return await apiFetch(`${ORDER_API_URL}/order/orderbook/${stockCode}`)
 }

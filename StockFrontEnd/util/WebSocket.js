@@ -4,6 +4,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
+import { WEBSOCKET_API_URL } from '../util/URLconfig';
 
 const WebSocketContext = createContext(null);
 
@@ -17,7 +18,7 @@ export function WebSocketProvider({ children }) {
     const client = new Client({
       webSocketFactory: () => {
         console.log('🏭 SockJS 생성');
-        return new SockJS('http://localhost:8080/ws');
+        return new SockJS(`${WEBSOCKET_API_URL}/ws`);
       },
 
       reconnectDelay: 5000,

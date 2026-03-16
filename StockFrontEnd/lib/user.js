@@ -1,3 +1,4 @@
+import { apiFetch } from '../util/apiClient';
 import { API_URL,USER_URL } from '../util/URLconfig';
 
 export async function RegisterSumbitApi(formData) {
@@ -8,8 +9,4 @@ export async function RegisterSumbitApi(formData) {
     },
     body: JSON.stringify(formData)
   });
-}
-
-export async function getAssetApi() {
-  return await apiFetch(`${USER_URL}/stock/myAsset`,{auth: true});
 }

@@ -10,7 +10,7 @@ export default async function StockDetail({ params }) {
     }
     return (
         <div>
-            <StockDetailForm stock={res.data.stock} watched={res.data.watched} />
+            <StockDetailForm stock={res.data} />
         </div>
     );
 }

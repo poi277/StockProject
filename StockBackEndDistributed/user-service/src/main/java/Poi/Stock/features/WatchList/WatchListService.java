@@ -3,20 +3,27 @@ package Poi.Stock.features.WatchList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import Poi.Stock.features.User.StockUser;
 import Poi.Stock.repository.StockUserRepository;
 import Poi.Stock.repository.WatchListRepository;
 import lombok.RequiredArgsConstructor;
-
+import lombok.extern.slf4j.Slf4j;
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class WatchListService {
 
     private final WatchListRepository watchListRepository;
     private final StockUserRepository stockUserRepository;
+	private final RestTemplate restTemplate;
+	@Value("${stock.service.url}")
+	private String stockServiceUrl;
 
     // StockService 제거 - getWatchListWithPrice는 stockCode 목록만 반환
     // stock-service 분리 후 프론트에서 stockCode로 직접 조회하거나
@@ -44,11 +51,20 @@ public class WatchListService {
         return watchListRepository.existsByStockUserIdAndStockCode(userId, stockCode);
     }
 
-    // stockCode 목록 반환 (stock-service 분리 전 임시)
-    public List<String> getWatchListStockCodes(String userId) {
-        return watchListRepository.findByStockUserId(userId)
-                .stream()
-                .map(WatchList::getStockCode)
-                .collect(Collectors.toList());
-    }
+	public List<Object> getWatchListWithStockInfo(String userId) {
+		List<String> stockCodes = watchListRepository.findByStockUserId(userId).stream().map(WatchList::getStockCode)
+				.collect(Collectors.toList());
+		;
+		return stockCodes.stream().map(stockCode -> {
+			try {
+				ResponseEntity<Object> response = restTemplate
+						.getForEntity(stockServiceUrl + "/stock/watch/" + stockCode,
+						Object.class);
+				return response.getBody();
+			} catch (Exception e) {
+				log.error("stock-service 조회 실패: {} / {}", stockCode, e.getMessage());
+				return java.util.Map.of("stockCode", stockCode);
+			}
+		}).collect(Collectors.toList());
+	}
 }
