@@ -12,6 +12,7 @@
 실시간 주식 주문 매칭 엔진을 구현한 풀스택 프로젝트입니다.  
 매수/매도 주문을 시간 우선 원칙으로 매칭하며, Kafka 기반 비동기 처리와 WebSocket 실시간 시세 제공을 합니다.  
 모놀리스로 시작하여 MSA로 전환하는 전 과정을 직접 구현했습니다.
+(보안상 aplication.properties는 제외하였습니다.)
 
 ## 주요 기능
 
@@ -40,9 +41,11 @@
 ## 프로젝트 구조
 - StockBackEnd : 백엔드의 모놀리스
 - StockBackEndDistributed : MSA이후 백엔드
-- StockBackEndMonoless : MSA이전 백엔드의 백업용
+- StockBackEndMonoless : MSA이전 작업 백엔드의 백업용
 - StockFrontEnd : 프론트엔드
 - docker : 도커 실행 파일
+
+백엔드
 ```
 ├── order-service (8081)     # 주문, 매칭 엔진, 봇, Kafka, WebSocket
 │   ├── features/Order       # 주문 처리 및 매칭
@@ -66,6 +69,14 @@
     ├── docker-compose.prod.yml  # 전체 Docker 실행
     ├── nginx.dev.conf           # 개발용 (host.docker.internal)
     └── nginx.prod.conf          # 운영용 (컨테이너 이름)
+```
+프론트
+```
+├── StockFrontEnd            # 프론트엔드
+│   ├── context              # 로그인 로직
+│   ├── features             # 페이지 별 기능
+│   ├── lib                  # 라우트
+│   └── util                 # 유틸리티 파일
 ```
 
 ## 기술 스택
