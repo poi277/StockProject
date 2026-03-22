@@ -38,7 +38,11 @@
 - 서비스 간 HTTP 통신 및 Kafka 이벤트 기반 데이터 동기화
 
 ## 프로젝트 구조
-
+- StockBackEnd : 백엔드의 모놀리스
+- StockBackEndDistributed : MSA이후 백엔드
+- StockBackEndMonoless : MSA이전 백엔드의 백업용
+- StockFrontEnd : 프론트엔드
+- docker : 도커 실행 파일
 ```
 ├── order-service (8081)     # 주문, 매칭 엔진, 봇, Kafka, WebSocket
 │   ├── features/Order       # 주문 처리 및 매칭
