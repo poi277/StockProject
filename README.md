@@ -47,20 +47,21 @@
 
 백엔드
 ```
-├── order-service (8081)     # 주문, 매칭 엔진, 봇, Kafka, WebSocket
+├── user-service (8081)      # 인증, 유저, 자산, 관심종목
+│   ├── features/Auth        # JWT 인증
+│   ├── features/User        # 유저 및 자산 관리
+│   └── features/WatchList   # 관심종목
+│
+├── stock-service (8082)     # 주식 데이터, 현재가 캐시, KIS API
+│   ├── features/Stock       # 주식 데이터 및 캐시
+│   └── config/kis           # 한국투자증권 Open API 연동
+│
+├── order-service (8083)     # 주문, 매칭 엔진, 봇, Kafka, WebSocket
 │   ├── features/Order       # 주문 처리 및 매칭
 │   ├── features/Bot         # 자동 매매 봇
 │   ├── features/kafka       # Kafka Producer/Consumer
 │   └── features/Websocket   # 실시간 시세 전송
 │
-├── user-service (8082)      # 인증, 유저, 자산, 관심종목
-│   ├── features/Auth        # JWT 인증
-│   ├── features/User        # 유저 및 자산 관리
-│   └── features/WatchList   # 관심종목
-│
-├── stock-service (8083)     # 주식 데이터, 현재가 캐시, KIS API
-│   ├── features/Stock       # 주식 데이터 및 캐시
-│   └── config/kis           # 한국투자증권 Open API 연동
 │
 ├── frontend (Next.js 16)    # 실시간 주식 거래 UI
 │
@@ -115,9 +116,9 @@
 docker compose up zookeeper kafka nginx
 
 # 각 서비스는 Eclipse에서 직접 실행
-# user-service  → 8082
-# stock-service → 8083
-# order-service → 8081
+# user-service  → 8081
+# stock-service → 8082
+# order-service → 8083
 ```
 
 ### 전체 Docker 실행
@@ -149,10 +150,10 @@ npm run dev
 프론트(3000)
     ↓
 Nginx(80) - API Gateway
-    ├── /auth, /user, /watch  → user-service(8082)
-    ├── /stock                → stock-service(8083)
-    ├── /order                → order-service(8081)
-    └── /ws                   → order-service(8081) WebSocket
+    ├── /auth, /user, /watch  → user-service(8081)
+    ├── /stock                → stock-service(8082)
+    ├── /order                → order-service(8083)
+    └── /ws                   → order-service(8083) WebSocket
 
 order-service
     └── Kafka → settlement-topic → user-service (체결 정산)
@@ -160,3 +161,47 @@ order-service
 stock-service
     └── HTTP → user-service (자산 조회)
 ```
+
+## 트러블슈팅
+
+### 1. OrderBook 동시성 문제
+**문제**: 여러 주문이 동시에 들어올 때 OrderBook 데이터 불일치 발생
+**원인**: 멀티스레드 환경에서 OrderBook 접근 시 race condition 발생
+**해결**: 종목별 StockLock을 설계하여 같은 종목의 주문은 순차 처리되도록 구현
+
+---
+
+### 2. 봇 주문 DB 과적재 문제
+**문제**: 봇끼리 체결 시 불필요한 DB 저장으로 과적재 발생
+**원인**: 봇vs봇 체결도 유저와 동일하게 CompletedOrder, TradeHistory 저장
+**해결**: isBot() 메서드로 봇 여부를 판별하여 봇vs봇 체결은 DB 저장 제외
+
+---
+
+### 3. 현재가 0 문제
+**문제**: 매도 호가가 없을 때 현재가가 0으로 업데이트되어 봇이 멈춤
+**원인**: 현재가를 매도 1호가(getSellfirstKey())로 계산하여 호가 없으면 0 반환
+**해결**: 현재가를 마지막 체결가(LastExecutionPrice)로 변경하고 0이면 업데이트 제외
+
+---
+
+### 4. 매도 잔량 0 표시 버그
+**문제**: 미체결/부분체결 시 매도 잔량이 0으로 표시
+**원인**: matchLoop에서 미체결 주문을 OrderBook에 다시 추가하지 않음
+**해결**: order.isCompleted()가 false일 때 book.addOrder(order) 호출 추가
+
+---
+
+### 5. 봇 스케줄러 미실행 문제
+**문제**: @Scheduled 봇이 5초마다 실행되지 않고 멈춤
+**원인**: processMatching의 @Transactional로 인해 insert가 즉시 커밋되지 않아 순서 꼬임
+**해결**: updateStockPrice에서 currentPrice <= 0이면 업데이트 제외 처리
+
+---
+
+### 6. BotInitializer 초기화 순서 문제
+**문제**: 서버 시작 시 BotHaveStock이 DB에 저장되지 않음
+**원인**: StockCache 초기화 전에 BotInitializer가 먼저 실행됨
+**해결**: @DependsOn("webSocketService")로 초기화 순서 보장
+
+---
