@@ -32,6 +32,7 @@ public class StockController {
 		return ResponseEntity.ok(new ApiResponse(true, "주식 불러오기 완료", stock));
     }
 
+	// 이는 userserivce로 보냄
 	@GetMapping("/watch/{stockId}")
 	public ResponseEntity<Stock> getWatchStock(@PathVariable("stockId") String stockId) {
 		Stock stock = stockService.getStock(stockId);

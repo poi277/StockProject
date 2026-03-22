@@ -6,7 +6,6 @@ export default function useWatch(stockCode, initialWatched = false) {
     const [isWatched, setIsWatched] = useState(initialWatched);
     const [watchLoading, setWatchLoading] = useState(false);
 
-    // useEffect로 별도 조회 필요 없음 ✅
 
     const handleWatchToggle = async () => {
         if (watchLoading) return;

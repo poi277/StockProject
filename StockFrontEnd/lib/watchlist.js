@@ -10,3 +10,6 @@ export async function addWatchApi(stockCode) {
 export async function removeWatchApi(stockCode) {
     return await apiFetch(`${USER_URL}/watch/${stockCode}`, { auth: true, method: "DELETE" });
 }
+export async function isWatchedApi(stockCode) {
+    return await apiFetch(`${USER_URL}/watch/${stockCode}`, { auth: true });
+}

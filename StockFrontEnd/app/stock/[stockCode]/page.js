@@ -1,16 +1,17 @@
 import StockDetailForm from "../../../features/StockDetail/StockDetailForm";
-import { StockDetailApi } from "../../../lib/stock";
+import { StockDetailApi, } from "../../../lib/stock";
+import { isWatchedApi } from "../../../lib/watchlist";
 
 export default async function StockDetail({ params }) {
-    const {stockCode} = await params;
-    const res = await StockDetailApi(stockCode)
-    console.log(res)
-    if (!res?.success) {
-        throw new Error(res.message);
-    }
+    const { stockCode } = await params;
+    const [res, watchRes] = await Promise.all([
+        StockDetailApi(stockCode),
+        isWatchedApi(stockCode),
+    ]);
+
     return (
         <div>
-            <StockDetailForm stock={res.data} />
+            <StockDetailForm stock={res.data} watched={watchRes.data ?? false} />
         </div>
     );
 }

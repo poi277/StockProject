@@ -38,7 +38,16 @@ public class WatchListController {
     @GetMapping("/list")
     public ResponseEntity<ApiResponse> getWatchList(Authentication authentication) {
 		// stock-service에서 주식 상세 정보까지 포함해서 반환
+		System.out.println("ddd");
 		List<Object> watchList = watchListService.getWatchListWithStockInfo(authentication.getName());
+		System.out.println(watchList);
 		return ResponseEntity.ok(new ApiResponse(true, "관심종목 조회 완료", watchList));
     }
+
+	@GetMapping("/{stockCode}")
+	public ResponseEntity<ApiResponse> isWatched(@PathVariable("stockCode") String stockCode,
+			Authentication authentication) {
+		boolean watched = watchListService.isWatched(authentication.getName(), stockCode);
+		return ResponseEntity.ok(new ApiResponse(true, "조회 완료", watched));
+	}
 }
