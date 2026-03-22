@@ -27,7 +27,6 @@ export async function apiFetch(url, options = {}) {
         ...fetchOptions.headers,
       },
     });
-
     // accessToken 만료 시 → refreshToken으로 재발급 후 재시도
     if (res.status === 401) {
       const refreshed = await tryRefresh();

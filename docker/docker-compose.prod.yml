@@ -1,0 +1,47 @@
+version: '3'
+services:
+
+  nginx:
+    ports:
+    - "80:80"
+    volumes:
+      - ./nginx.prod.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - user-service
+      - stock-service
+      - order-service
+    networks:
+      - stock-network
+      
+      
+
+  user-service:
+    build: ../StockBackEndDistributed/user-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - kafka
+    networks:
+      - stock-network
+
+  stock-service:
+    build: ../StockBackEndDistributed/stock-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - stock-network
+
+  order-service:
+    build: ../StockBackEndDistributed/order-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - kafka
+      - user-service
+      - stock-service
+    networks:
+      - stock-network
+
+networks:
+  stock-network:
+    driver: bridge

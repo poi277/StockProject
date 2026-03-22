@@ -1,5 +1,7 @@
+#docker bulid할떄 nginx사용시 주석 제거
+
 version: '3'
-services:
+services: 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
@@ -9,7 +11,7 @@ services:
     ports:
       - "2181:2181"
     networks:
-      - stock-network 
+      - stock-network
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -33,15 +35,61 @@ services:
     networks:
       - stock-network
 
-  app:
-    build: ../StockBackEnd
-    container_name: stock-app
+  # docker 컨테이너로 실행할떄 사용 -> nginx에서도 수정 필요
+  # user-service:
+  #   build: ../StockBackEndDistributed/user-service
+  #   container_name: user-service
+  #   ports:
+  #     - "8082:8082"
+  #   environment:
+  #     - SPRING_PROFILES_ACTIVE=docker
+  #     - KAFKA_BOOTSTRAP=kafka:9092
+  #     - STOCK_SERVICE_URL=http://stock-service:8083
+  #   depends_on:
+  #     - kafka
+  #   networks:
+  #     - stock-network
+
+  # stock-service:
+  #   build: ../StockBackEndDistributed/stock-service
+  #   container_name: stock-service
+  #   ports:
+  #     - "8083:8083"
+  #   environment:
+  #     - SPRING_PROFILES_ACTIVE=docker
+  #     - USER_SERVICE_URL=http://user-service:8082
+  #   networks:
+  #     - stock-network
+
+  # order-service:
+  #   build: ../StockBackEndDistributed/order-service
+  #   container_name: order-service
+  #   ports:
+  #     - "8081:8081"
+  #   environment:
+  #     - SPRING_PROFILES_ACTIVE=docker
+  #     - KAFKA_BOOTSTRAP=kafka:9092
+  #     - USER_SERVICE_URL=http://user-service:8082
+  #     - STOCK_SERVICE_URL=http://stock-service:8083
+  #   depends_on:
+  #     - kafka
+  #     - user-service
+  #     - stock-service
+  #   networks:
+  #     - stock-network
+
+  # Nginx
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
     ports:
-      - "8080:8080"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-    depends_on:
-      - kafka
+      - "80:80"
+    volumes:
+      - ./nginx.dev.conf:/etc/nginx/nginx.conf:ro
+    # depends_on:
+    #   - user-service
+    #   - stock-service
+    #   - order-service
     networks:
       - stock-network
 
