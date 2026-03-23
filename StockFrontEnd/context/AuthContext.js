@@ -1,26 +1,22 @@
 'use client';
 import { createContext, useContext, useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
 import { loginHandler, logoutHandler, checkSession } from '../lib/auth';
-import { useRouter } from 'next/navigation';
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const pathname = usePathname();
 
   useEffect(() => {
     loadUser();
-  }, [pathname]);
+  }, []);
 
   const loadUser = async () => {
     try {
       const res = await checkSession();
       if (res.success) {
-        setUser(res.data); // userId (String)
+        setUser(res.data);
       } else {
         setUser(null);
       }
@@ -36,7 +32,7 @@ export function AuthProvider({ children }) {
     try {
       const res = await loginHandler(id, password);
       if (res.success) {
-        setUser(res.data); // userId (String)
+        setUser(res.data);
       }
       return res;
     } catch (error) {

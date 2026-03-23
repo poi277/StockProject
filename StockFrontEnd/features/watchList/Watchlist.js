@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { useStockSocket } from "../../util/useStockSocket";
 import { useWebSocket } from "../../util/WebSocket";
 
-export default function useWatchList() {
-    const [watchList, setWatchList] = useState([]);
+export default function useWatchList(initialWatchList) {
+    const [watchList, setWatchList] = useState(initialWatchList);
     const router = useRouter();
     const { connected, client } = useWebSocket();
 

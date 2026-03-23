@@ -3,8 +3,8 @@
 import { useRouter } from 'next/navigation';
 import useWatchList from "./Watchlist";
 
-export default function WatchListForm() {
-    const { watchList, handleClick } = useWatchList();
+export default function WatchListForm({ initialWatchList }) {
+    const { watchList, handleClick } = useWatchList(initialWatchList);
     const router = useRouter();
 
     return (

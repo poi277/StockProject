@@ -1,13 +1,6 @@
 'use client'
 
-import useProfile from "./useProfile";
-
-export default function ProfileForm() {
-    const { profile, loading, error } = useProfile();
-
-    if (loading) return <div>로딩 중...</div>;
-    if (error)   return <div style={{ color: 'red' }}>{error}</div>;
-
+export default function ProfileForm({ profile }) {
     return (
         <div style={{ padding: '20px', maxWidth: '400px', margin: '0 auto' }}>
             <h2>프로필</h2>
