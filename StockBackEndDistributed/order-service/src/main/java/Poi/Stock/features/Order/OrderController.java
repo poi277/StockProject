@@ -6,13 +6,19 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import Poi.Stock.DTO.user.ApiResponse;
 import Poi.Stock.DTO.user.TradeDTO;
 import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.repository.OrderRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -27,13 +33,15 @@ public class OrderController {
 
     @PostMapping("/trade")
     public ResponseEntity<ApiResponse> stockTrade(
-            @RequestBody TradeDTO tradeDTO,
+			@RequestBody @Valid TradeDTO tradeDTO,
             Authentication authentication,
             HttpServletRequest request) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(new ApiResponse(false, "세션에 값이 필요합니다"));
         }
+		System.out.println(tradeDTO.getTradePrice());
+		System.out.println(tradeDTO.getQuantity());
         String userId = authentication.getName();
         String accessToken = resolveToken(request);
 

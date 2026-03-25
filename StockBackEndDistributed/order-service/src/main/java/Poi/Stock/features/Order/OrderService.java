@@ -5,10 +5,13 @@ import java.util.Map;
 import java.util.NavigableMap;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.http.*;
 
 import Poi.Stock.DTO.user.HogaDTO;
 import Poi.Stock.DTO.user.TradeDTO;
@@ -63,17 +66,18 @@ public class OrderService {
     }
 
     public void processOrder(TradeDTO tradeDTO) {
-        Order order = orderTradeService.setOrder(tradeDTO);
-        OrderBook book = orderBookCache.get(order.getStockCode());
-        MatchingResult result = orderTradeService.processMatching(order, book);
-        orderTradeService.sendHogaQuntityAndPrice(order.getStockCode(), result, book);
-        Integer currentPrice = result.getLastExecutionPrice();
-        webSocketService.SendCurrentPrice(order.getStockCode(), currentPrice);
-        orderTradeService.updateStockPrice(order.getStockCode(), currentPrice);
+		Order order = orderTradeService.setOrder(tradeDTO);
+		OrderBook book = orderBookCache.get(order.getStockCode());
+		MatchingResult result = orderTradeService.processMatching(order, book);
+		orderTradeService.sendHogaQuntityAndPrice(order.getStockCode(), result, book);
+		Integer currentPrice = result.getLastExecutionPrice();
+		webSocketService.SendCurrentPrice(order.getStockCode(), currentPrice);
+		orderTradeService.updateStockPrice(order.getStockCode(), currentPrice);
     }
 
     public void placeOrder(String userId, TradeDTO tradeDTO) {
         tradeDTO.setUserId(userId);
+		tradeDTO.setUserId("qwewqewf");
         kafkaProducer.sendOrder(tradeDTO);
     }
 

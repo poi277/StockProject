@@ -133,4 +133,9 @@ public class WebSocketService {
 
 		messagingTemplate.convertAndSend("/topic/execution/" + stockCode, payload);
 	}
+
+	public void sendError(String userId, String message) {
+		System.out.println(message);
+		messagingTemplate.convertAndSend("/topic/error/" + userId, message);
+	}
 }

@@ -14,4 +14,8 @@ public class EnumUtil {
 	public enum BotType {
 		MARKET_MAKER, RANDOM, TREND
 	}
+
+	public enum FailStatus {
+		PENDING_REVIEW, PERMANENT_FAIL
+	}
 }
