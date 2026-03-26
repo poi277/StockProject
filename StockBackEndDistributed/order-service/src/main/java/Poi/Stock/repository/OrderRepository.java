@@ -30,6 +30,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
 	List<Order> findByUserIdAndStockCode(String userId, String stockCode);
 
+	List<Order> findByUserIdOrderByCreatedAtDesc(String userId);
+
 	// 매도 호가 GROUP BY
 //	@Query("SELECT o.tradePrice as tradePrice, SUM(o.remainingQuantity) as remainingQuantity " + "FROM Order o "
 //			+ "WHERE o.stockCode = :stockCode " + "AND o.tradeType = :tradeType " + "AND o.status IN :statuses "

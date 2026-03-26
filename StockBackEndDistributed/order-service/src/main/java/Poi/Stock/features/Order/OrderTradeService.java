@@ -82,30 +82,25 @@ public class OrderTradeService {
 	 */
 	private SettlementEvent buildSettlementEvent(List<TradeExecution> executions) {
 		String stockCode = executions.get(0).getStockCode();
-
 		Map<String, Integer> assetDelta = new HashMap<>();
 		List<StockChange> stockChanges = new ArrayList<>();
-
 		for (TradeExecution ex : executions) {
 			boolean buyerIsBot = isBot(ex.getBuyerId());
 			boolean sellerIsBot = isBot(ex.getSellerId());
 			int total = ex.getPrice() * ex.getQuantity();
-
 			if (!buyerIsBot) {
-				assetDelta.merge(ex.getBuyerId(), -total, Integer::sum);
-				// 매수: 수량 증가
+				// 매수자: 현금 차감 제거 (주문 시 이미 차감됨)
+				// 주식 수량 증가만
 				stockChanges.add(new StockChange(ex.getBuyerId(), stockCode, ex.getQuantity(), ex.getPrice()));
 			}
 			if (!sellerIsBot) {
+				// 매도자: 현금 증가만
 				assetDelta.merge(ex.getSellerId(), total, Integer::sum);
-				// 매도: 수량 감소
-				stockChanges.add(new StockChange(ex.getSellerId(), stockCode, -ex.getQuantity(), ex.getPrice()));
+				// 주식 수량 감소 제거 (주문 시 이미 차감됨)
 			}
 		}
-
 		List<AssetChange> assetChanges = assetDelta.entrySet().stream()
 				.map(e -> new AssetChange(e.getKey(), e.getValue())).toList();
-
 		return new SettlementEvent(stockCode, assetChanges, stockChanges);
 	}
 

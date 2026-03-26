@@ -13,6 +13,7 @@ export default function UnderBarForm() {
   const menuItems = [
     { label: "관심종목", path: "/watchlist" },
     { label: "자산", path: "/asset" },
+    { label: "내 주문", path: "/myorder" },
     { label: "내 자신", path: "/profile" }
   ];
 

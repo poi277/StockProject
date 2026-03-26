@@ -3,7 +3,6 @@ package Poi.Stock.features.Order;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,15 +35,8 @@ public class OrderController {
 			@RequestBody @Valid TradeDTO tradeDTO,
             Authentication authentication,
             HttpServletRequest request) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(new ApiResponse(false, "세션에 값이 필요합니다"));
-        }
-		System.out.println(tradeDTO.getTradePrice());
-		System.out.println(tradeDTO.getQuantity());
         String userId = authentication.getName();
         String accessToken = resolveToken(request);
-
         // user-service로 검증
         orderService.validateOrder(userId, tradeDTO, accessToken);
         orderService.placeOrder(userId, tradeDTO);
@@ -52,13 +44,9 @@ public class OrderController {
     }
 
     @GetMapping("/orders/{stockCode}")
-    public ResponseEntity<?> getOrders(
+	public ResponseEntity<?> getOrders(
             @PathVariable("stockCode") String stockCode,
             Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(new ApiResponse(false, "인증이 필요합니다"));
-        }
         String userId = authentication.getName();
         List<Order> myOrders = orderRepository
             .findByUserIdAndStockCodeOrderByCreatedAtDesc(userId, stockCode);
@@ -71,15 +59,18 @@ public class OrderController {
         return ResponseEntity.ok(orderBook);
     }
 
+	@GetMapping("/myOrder")
+	public ResponseEntity<ApiResponse> getMyOrder(Authentication authentication) {
+		String userId = authentication.getName();
+		List<Order> data = orderRepository.findByUserIdOrderByCreatedAtDesc(userId);
+		return ResponseEntity.ok(new ApiResponse(true, "조회완료", data));
+	}
+
     @PostMapping("/cancel/{orderId}")
     public ResponseEntity<ApiResponse> cancelOrder(
             @PathVariable("orderId") Long orderId,
             Authentication authentication,
             HttpServletRequest request) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(new ApiResponse(false, "인증이 필요합니다"));
-        }
         String userId = authentication.getName();
         String accessToken = resolveToken(request);
         orderService.cancelOrder(userId, orderId, accessToken);

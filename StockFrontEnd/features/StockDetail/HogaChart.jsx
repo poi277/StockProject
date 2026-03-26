@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import styles from '../../css/HogaChart.module.css';
-import { getOrdersApi } from '../../lib/trade';
+import { getOrderbookApi } from '../../lib/trade';
 import { useHogaSocket } from '../../util/useHogaSocket';
 import { useWebSocket } from '../../util/WebSocket';
 import { useExecutionSocket } from '../../util/useExecutionSocket';
@@ -22,7 +22,7 @@ export default function HogaChart({ currentStock, selectedPrice, setSelectedPric
   // DB 초기 로딩
 useEffect(() => {
   if (!currentStock?.stockCode) return;
-  getOrdersApi(currentStock.stockCode)
+  getOrderbookApi(currentStock.stockCode)
     .then(res => {
       const sellDb = res.data?.sellOrders || [];
       const buyDb  = res.data?.buyOrders  || [];

@@ -21,7 +21,6 @@ import Poi.Stock.object.MatchingResult;
 import Poi.Stock.repository.CompletedOrderRepository;
 import Poi.Stock.repository.OrderRepository;
 import Poi.Stock.util.EnumUtil.OrderStatus;
-import Poi.Stock.util.EnumUtil.tradeType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -77,7 +76,6 @@ public class OrderService {
 
     public void placeOrder(String userId, TradeDTO tradeDTO) {
         tradeDTO.setUserId(userId);
-		tradeDTO.setUserId("qwewqewf");
         kafkaProducer.sendOrder(tradeDTO);
     }
 
@@ -102,22 +100,18 @@ public class OrderService {
     public void cancelOrder(String userId, Long orderId, String accessToken) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다"));
-
         if (!order.getUserId().equals(userId)) {
             throw new RuntimeException("본인의 주문만 취소할 수 있습니다");
         }
-
-        if (order.getTradeType() == tradeType.BUY) {
-            int refundAmount = order.getTradePrice() * order.getRemainingQuantity();
-            // user-service에 환불 요청
-            String url = userServiceUrl + "/user/refund";
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer " + accessToken);
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            restTemplate.exchange(url, HttpMethod.POST,
-                new HttpEntity<>(Map.of("refundAmount", refundAmount), headers), Void.class);
-        }
-
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("Authorization", "Bearer " + accessToken);
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		restTemplate.exchange(userServiceUrl + "/user/cancel-reserve", HttpMethod.POST,
+				new HttpEntity<>(Map.of("tradeType", order.getTradeType().name(), "stockCode", order.getStockCode(),
+						"price", order.getTradePrice(), "quantity", order.getRemainingQuantity()), headers),
+				Void.class);
+		OrderBook book = orderBookCache.get(order.getStockCode());
+		book.removeOrder(order);
         order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
     }

@@ -1,4 +1,3 @@
-// app/watchlist/page.js (서버 컴포넌트)
 import WatchListForm from "../../features/watchList/WatchlistForm";
 import { getWatchListApi } from "../../lib/watchlist";
 

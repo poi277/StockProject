@@ -1,13 +1,18 @@
 package Poi.Stock.features.User;
 
+import java.util.Map;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import Poi.Stock.DTO.user.getAssetDTO;
 import Poi.Stock.util.EnumUtil.tradeType;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/user")
@@ -37,12 +42,11 @@ public class UserAssetController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/refund")
-    public ResponseEntity<Void> refund(
-            Authentication authentication,
-            @RequestBody Map<String, Object> body) {
+	@PostMapping("/cancel-reserve")
+	public ResponseEntity<Void> cancelReserve(Authentication authentication, @RequestBody Map<String, Object> body) {
         String userId = authentication.getName();
-        userAssetService.refundAsset(userId, (Integer) body.get("refundAmount"));
+		userAssetService.cancelReserve(userId, tradeType.valueOf((String) body.get("tradeType")),
+				(String) body.get("stockCode"), (Integer) body.get("price"), (Integer) body.get("quantity"));
         return ResponseEntity.ok().build();
     }
 }

@@ -23,26 +23,44 @@ public class UserAssetService {
 
 	public void validateOrder(String userId, tradeType type, String stockCode, int price, int quantity) {
 		StockUser user = stockUserRepository.findById(userId).orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
+
 		if (type == tradeType.BUY) {
 			int totalCost = price * quantity;
-			if (user.getAsset() < totalCost)
-				throw new RuntimeException(String.format("자산이 부족합니다. 필요: %d원, 보유: %d원", totalCost, user.getAsset()));
+			if (user.getAvailableAsset() < totalCost)
+				throw new RuntimeException(
+						String.format("자산이 부족합니다. 필요: %d원, 보유: %d원", totalCost, user.getAvailableAsset()));
+			user.setAvailableAsset(user.getAvailableAsset() - totalCost); // 차감
 		}
+
 		if (type == tradeType.SELL) {
 			HaveStock haveStock = haveStockRepository.findByStockUserAndStockCode(user, stockCode)
 					.orElseThrow(() -> new RuntimeException("보유한 주식이 없습니다."));
-			if (haveStock.getQuantity() < quantity)
+			if (haveStock.getAvailableQuantity() < quantity)
 				throw new RuntimeException(
-						String.format("보유 수량이 부족합니다. 보유: %d주, 매도 요청: %d주", haveStock.getQuantity(), quantity));
+						String.format("보유 수량이 부족합니다. 보유: %d주, 매도 요청: %d주", haveStock.getAvailableQuantity(), quantity));
+			haveStock.setAvailableQuantity(haveStock.getAvailableQuantity() - quantity); // 차감
+			haveStockRepository.save(haveStock);
 		}
+
+		stockUserRepository.save(user);
 	}
 
 	@Transactional
-	public void refundAsset(String userId, int refundAmount) {
+	public void cancelReserve(String userId, tradeType type, String stockCode, int price, int quantity) {
 		StockUser user = stockUserRepository.findById(userId).orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
-		user.setAsset(user.getAsset() + refundAmount);
-		stockUserRepository.save(user);
-		log.info("자산 환불: userId={}, amount={}", userId, refundAmount);
+
+		if (type == tradeType.BUY) {
+			int refundAmount = price * quantity;
+			user.setAvailableAsset(user.getAvailableAsset() + refundAmount);
+			stockUserRepository.save(user);
+		}
+
+		if (type == tradeType.SELL) {
+			HaveStock haveStock = haveStockRepository.findByStockUserAndStockCode(user, stockCode)
+					.orElseThrow(() -> new RuntimeException("보유한 주식이 없습니다."));
+			haveStock.setAvailableQuantity(haveStock.getAvailableQuantity() + quantity);
+			haveStockRepository.save(haveStock);
+		}
 	}
 
 	public List<HaveStock> getMyStocks(String userId) {

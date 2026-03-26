@@ -7,9 +7,13 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "HaveStock")
+@Getter
+@Setter
 public class HaveStock {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,48 +26,7 @@ public class HaveStock {
 	private String stockCode; // "005930" (삼성전자)
 	// 몇 주 보유하고 있는지
 	private Integer quantity;
+	private Integer availableQuantity;
 	// 평균 매수가
 	private double averagePrice;
-
-	public String getStockCode() {
-		return stockCode;
-	}
-
-	public void setStockCode(String stockCode) {
-		this.stockCode = stockCode;
-	}
-
-	public Long getId() {
-		return id;
-	}
-
-	public void setId(Long id) {
-		this.id = id;
-	}
-
-	public StockUser getStockUser() {
-		return stockUser;
-	}
-
-	public void setStockUser(StockUser stockUser) {
-		this.stockUser = stockUser;
-	}
-
-	public Integer getQuantity() {
-		return quantity;
-	}
-
-	public void setQuantity(Integer quantity) {
-		this.quantity = quantity;
-	}
-
-	public Double getAveragePrice() {
-		return averagePrice;
-	}
-
-	public void setAveragePrice(double averagePrice) {
-		this.averagePrice = averagePrice;
-	}
-
-
 }

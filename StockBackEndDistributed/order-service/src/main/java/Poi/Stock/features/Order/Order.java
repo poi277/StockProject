@@ -9,9 +9,13 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "orders")
+@Getter
+@Setter
 public class Order {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,80 +30,6 @@ public class Order {
 	private OrderStatus status; // PENDING, PARTIAL, COMPLETED, CANCELLED
 	private LocalDateTime createdAt;
 	private Long priority; // 시간 우선 순위
-
-	public Long getOrderId() {
-		return orderId;
-	}
-	public void setOrderId(Long orderId) {
-		this.orderId = orderId;
-	}
-
-	public String getUserId() {
-		return userId;
-	}
-	public void setUserId(String userId) {
-		this.userId = userId;
-	}
-
-	public String getStockCode() {
-		return stockCode;
-	}
-	public void setStockCode(String stockCode) {
-		this.stockCode = stockCode;
-	}
-
-	public tradeType getTradeType() {
-		return tradeType;
-	}
-	public void setTradeType(tradeType tradeType) {
-		this.tradeType = tradeType;
-	}
-
-	public Integer getQuantity() {
-		return quantity;
-	}
-	public void setQuantity(Integer quantity) {
-		this.quantity = quantity;
-	}
-
-	public Integer getRemainingQuantity() {
-		return remainingQuantity;
-	}
-	public void setRemainingQuantity(Integer remainingQuantity) {
-		this.remainingQuantity = remainingQuantity;
-	}
-
-	public Integer getTradePrice() {
-		return tradePrice;
-	}
-
-	public void setTradePrice(Integer tradePrice) {
-		this.tradePrice = tradePrice;
-	}
-
-	public OrderStatus getStatus() {
-		return status;
-	}
-
-	public void setStatus(OrderStatus status) {
-		this.status = status;
-	}
-
-	public LocalDateTime getCreatedAt() {
-		return createdAt;
-	}
-
-	public void setCreatedAt(LocalDateTime createdAt) {
-		this.createdAt = createdAt;
-	}
-
-	public Long getPriority() {
-		return priority;
-	}
-
-	public void setPriority(Long priority) {
-		this.priority = priority;
-	}
 
 	public void decreaseRemainingQuantity(int qty) {
 		if (qty <= 0)

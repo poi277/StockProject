@@ -42,11 +42,9 @@ public class SettlementConsumer {
 	private void applyAssetChanges(List<AssetChange> changes) {
 		if (changes.isEmpty())
 			return;
-
 		List<String> userIds = changes.stream().map(AssetChange::getUserId).toList();
 		Map<String, StockUser> userMap = stockUserRepository.findAllById(userIds).stream()
 				.collect(Collectors.toMap(StockUser::getId, u -> u));
-
 		for (AssetChange change : changes) {
 			StockUser user = userMap.get(change.getUserId());
 			if (user == null) {
@@ -54,6 +52,11 @@ public class SettlementConsumer {
 				continue;
 			}
 			user.setAsset(user.getAsset() + change.getDelta());
+			// 매도 체결(delta > 0)이면 availableAsset도 증가
+			if (change.getDelta() > 0) {
+				user.setAvailableAsset(user.getAvailableAsset() + change.getDelta());
+			}
+			// 매수 체결(delta < 0)이면 availableAsset은 이미 차감됐으므로 건드리지 않음
 		}
 		stockUserRepository.saveAll(userMap.values());
 	}
@@ -61,29 +64,27 @@ public class SettlementConsumer {
 	private void applyStockChanges(List<StockChange> changes, String stockCode) {
 		if (changes.isEmpty())
 			return;
-
 		List<String> userIds = changes.stream().map(StockChange::getUserId).toList();
 		Map<String, StockUser> userMap = stockUserRepository.findAllById(userIds).stream()
 				.collect(Collectors.toMap(StockUser::getId, u -> u));
-
 		Map<String, HaveStock> haveStockMap = haveStockRepository.findByUserIdsAndStockCode(userIds, stockCode).stream()
 				.collect(Collectors.toMap(h -> h.getStockUser().getId(), h -> h));
-
 		for (StockChange change : changes) {
 			HaveStock hs = haveStockMap.computeIfAbsent(change.getUserId(), k -> {
 				HaveStock h = new HaveStock();
 				h.setStockUser(userMap.get(k));
 				h.setStockCode(stockCode);
 				h.setQuantity(0);
+				h.setAvailableQuantity(0);
 				h.setAveragePrice(0);
 				return h;
 			});
-
 			if (change.getQuantityDelta() > 0) {
-				// 매수: 평균가 재계산
+				// 매수 체결: quantity + availableQuantity 둘 다 증가
 				updateAveragePrice(hs, change.getQuantityDelta(), change.getFillPrice());
+				hs.setAvailableQuantity(hs.getAvailableQuantity() + change.getQuantityDelta());
 			} else {
-				// 매도: 수량 감소
+				// 매도 체결: quantity만 감소 (availableQuantity는 주문 시 이미 차감)
 				hs.setQuantity(hs.getQuantity() + change.getQuantityDelta());
 			}
 		}
