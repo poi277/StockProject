@@ -59,6 +59,7 @@ public class OrderTradeService {
 		order.setStatus(OrderStatus.PENDING);
 		order.setCreatedAt(LocalDateTime.now());
 		order.setPriority(System.nanoTime());
+		order.setStockName(stockCache.get(tradeDTO.getStockCode()).getStockName());
 		return order;
 	}
 
@@ -89,14 +90,12 @@ public class OrderTradeService {
 			boolean sellerIsBot = isBot(ex.getSellerId());
 			int total = ex.getPrice() * ex.getQuantity();
 			if (!buyerIsBot) {
-				// 매수자: 현금 차감 제거 (주문 시 이미 차감됨)
-				// 주식 수량 증가만
 				stockChanges.add(new StockChange(ex.getBuyerId(), stockCode, ex.getQuantity(), ex.getPrice()));
+				assetDelta.merge(ex.getBuyerId(), -total, Integer::sum); // 추가: 매수자 asset 차감
 			}
 			if (!sellerIsBot) {
-				// 매도자: 현금 증가만
+				stockChanges.add(new StockChange(ex.getSellerId(), stockCode, -ex.getQuantity(), ex.getPrice()));
 				assetDelta.merge(ex.getSellerId(), total, Integer::sum);
-				// 주식 수량 감소 제거 (주문 시 이미 차감됨)
 			}
 		}
 		List<AssetChange> assetChanges = assetDelta.entrySet().stream()

@@ -14,7 +14,8 @@ export default function UnderBarForm() {
     { label: "관심종목", path: "/watchlist" },
     { label: "자산", path: "/asset" },
     { label: "내 주문", path: "/myorder" },
-    { label: "내 자신", path: "/profile" }
+    { label: "내 완료된 주문", path: "/mycompletedorder" },
+    { label: "내 자신", path: "/profile" },
   ];
 
   const handleLogout = async () => {

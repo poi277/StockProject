@@ -3,6 +3,7 @@ package Poi.Stock.features.Order;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -15,12 +16,14 @@ import org.springframework.web.client.RestTemplate;
 
 import Poi.Stock.DTO.user.HogaDTO;
 import Poi.Stock.DTO.user.TradeDTO;
+import Poi.Stock.DTO.user.myOrderDTO;
+import Poi.Stock.features.CompletedOrder.CompletedOrder;
 import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.features.kafka.KafkaProducer;
 import Poi.Stock.object.MatchingResult;
 import Poi.Stock.repository.CompletedOrderRepository;
 import Poi.Stock.repository.OrderRepository;
-import Poi.Stock.util.EnumUtil.OrderStatus;
+import Poi.Stock.util.EnumUtil.tradeType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -110,9 +113,34 @@ public class OrderService {
 				new HttpEntity<>(Map.of("tradeType", order.getTradeType().name(), "stockCode", order.getStockCode(),
 						"price", order.getTradePrice(), "quantity", order.getRemainingQuantity()), headers),
 				Void.class);
+
 		OrderBook book = orderBookCache.get(order.getStockCode());
 		book.removeOrder(order);
-        order.setStatus(OrderStatus.CANCELLED);
-        orderRepository.save(order);
+
+		// 취소된 가격의 남은 수량 계산 후 웹소켓 전송
+		PriceLevel level = order.getTradeType() == tradeType.BUY ? book.getBuyBook().get(order.getTradePrice())
+				: book.getSellBook().get(order.getTradePrice());
+		int remainingQty = level == null ? 0 : level.getTotalQuantity();
+		webSocketService.sendHoga(order.getStockCode(), order.getTradeType(), order.getTradePrice(), remainingQty);
+
+		CompletedOrder completedOrder = CompletedOrder.fromCancelledOrder(order);
+		completedOrderRepository.save(completedOrder);
+		orderRepository.delete(order);
     }
+
+	public List<myOrderDTO> getMyOrder(String userId) {
+		List<Order> orders = orderRepository.findByUserIdOrderByCreatedAtDesc(userId);
+		return orders.stream().map(order -> {
+			myOrderDTO dto = new myOrderDTO();
+			dto.setOrderId(order.getOrderId());
+			dto.setStockName(order.getStockName());
+			dto.setTradeType(order.getTradeType());
+			dto.setQuantity(order.getQuantity());
+			dto.setRemainingQuantity(order.getRemainingQuantity());
+			dto.setTradePrice(order.getTradePrice());
+			dto.setStatus(order.getStatus());
+			dto.setCreatedAt(order.getCreatedAt());
+			return dto;
+		}).collect(Collectors.toList());
+	}
 }

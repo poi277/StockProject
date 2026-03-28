@@ -3,6 +3,7 @@ package Poi.Stock.features.CompletedOrder;
 import java.time.LocalDateTime;
 
 import Poi.Stock.features.Order.Order;
+import Poi.Stock.util.EnumUtil.OrderStatus;
 import Poi.Stock.util.EnumUtil.tradeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -27,10 +28,12 @@ public class CompletedOrder {
 	private String stockCode;
 	private String userId;
 	private int tradePrice;
-	private int quantity;
+	private int filledQuantity; // 체결된 수량
 
 	@Enumerated(EnumType.STRING)
 	private tradeType tradeType; // BUY or SELL
+	@Enumerated(EnumType.STRING)
+	private OrderStatus status; // 추가
 
 	private LocalDateTime completedAt;
 
@@ -40,8 +43,23 @@ public class CompletedOrder {
 		co.stockCode = order.getStockCode();
 		co.userId = order.getUserId();
 		co.tradePrice = order.getTradePrice();
-		co.quantity = order.getQuantity();
+		co.filledQuantity = order.getQuantity();
 		co.tradeType = order.getTradeType();
+		co.status = OrderStatus.COMPLETED; // 추가
+		co.completedAt = LocalDateTime.now();
+		return co;
+	}
+
+	// 취소용 신규
+	public static CompletedOrder fromCancelledOrder(Order order) {
+		CompletedOrder co = new CompletedOrder();
+		co.orderId = order.getOrderId();
+		co.stockCode = order.getStockCode();
+		co.userId = order.getUserId();
+		co.tradePrice = order.getTradePrice();
+		co.filledQuantity = order.getQuantity() - order.getRemainingQuantity();
+		co.tradeType = order.getTradeType();
+		co.status = OrderStatus.CANCELLED;
 		co.completedAt = LocalDateTime.now();
 		return co;
 	}

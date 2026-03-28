@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import Poi.Stock.DTO.user.ApiResponse;
 import Poi.Stock.DTO.user.TradeDTO;
+import Poi.Stock.DTO.user.myOrderDTO;
 import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.repository.OrderRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -59,10 +60,10 @@ public class OrderController {
         return ResponseEntity.ok(orderBook);
     }
 
-	@GetMapping("/myOrder")
+	@GetMapping("/myorder")
 	public ResponseEntity<ApiResponse> getMyOrder(Authentication authentication) {
 		String userId = authentication.getName();
-		List<Order> data = orderRepository.findByUserIdOrderByCreatedAtDesc(userId);
+		List<myOrderDTO> data = orderService.getMyOrder(userId);
 		return ResponseEntity.ok(new ApiResponse(true, "조회완료", data));
 	}
 

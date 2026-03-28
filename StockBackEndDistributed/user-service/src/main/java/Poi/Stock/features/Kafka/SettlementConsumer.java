@@ -1,4 +1,4 @@
-package Poi.Stock.features.User;
+package Poi.Stock.features.Kafka;
 
 import java.util.List;
 import java.util.Map;
@@ -9,6 +9,8 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import Poi.Stock.features.User.HaveStock;
+import Poi.Stock.features.User.StockUser;
 import Poi.Stock.repository.HaveStockRepository;
 import Poi.Stock.repository.StockUserRepository;
 import Poi.Stock.shared.event.SettlementEvent;
@@ -52,11 +54,11 @@ public class SettlementConsumer {
 				continue;
 			}
 			user.setAsset(user.getAsset() + change.getDelta());
-			// 매도 체결(delta > 0)이면 availableAsset도 증가
 			if (change.getDelta() > 0) {
+				// 매도 체결: availableAsset도 증가
 				user.setAvailableAsset(user.getAvailableAsset() + change.getDelta());
 			}
-			// 매수 체결(delta < 0)이면 availableAsset은 이미 차감됐으므로 건드리지 않음
+			// 매수 체결(delta < 0): asset은 위에서 차감됨, availableAsset은 주문 시 이미 차감됐으므로 건드리지 않음
 		}
 		stockUserRepository.saveAll(userMap.values());
 	}

@@ -22,6 +22,7 @@ public class Order {
 	private Long orderId;
 
 	private String userId; // 주문한 사용자
+	private String stockName;
 	private String stockCode; // 종목코드
 	private tradeType tradeType; // BUY or SELL
 	private Integer quantity; // 주문 수량

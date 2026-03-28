@@ -5,7 +5,6 @@ export async function tradeApi(tradeType,stockCode,quantity,tradePrice) {
   return await apiFetch(`${ORDER_API_URL}/order/trade`,{
     method: 'POST',
     auth: true,
-    cookie: true,
     body: JSON.stringify({
           tradeType,
           stockCode,
@@ -19,5 +18,9 @@ export async function getOrderbookApi(stockCode) {
 }
 
 export async function getMyOrder() {
-   return await apiFetch(`${ORDER_API_URL}/order/myOrder}`,{auth:true})
+   return await apiFetch(`${ORDER_API_URL}/order/myorder`,{auth:true})
+}
+
+export async function cancelOrder(orderId) {
+   return await apiFetch(`${ORDER_API_URL}/order/cancel/${orderId}`, { auth: true, method: 'POST' })
 }
