@@ -30,7 +30,7 @@ public class Stock {
 	private Integer highPrice; // 고가
 	private Integer lowPrice; // 저가
 	private Integer closePrice; // 종가
-	private Long volume; // 거래량
+	private Long totalvolume; // 거래량
 	private Long value; // 거래대금
 	// 계산 필드들 (선택사항)
 	private Integer changeAmount;
@@ -51,5 +51,15 @@ public class Stock {
 		if (price < 500000)
 			return 500;
 		return 1000;
+	}
+
+	public double calcChangeRate(int price) {
+		if (openPrice == null || openPrice == 0)
+			return 0.0;
+		return (double) (price - openPrice) / openPrice * 100;
+	}
+
+	public long fillTotalvolume(int fillVolume) {
+		return totalvolume + fillVolume;
 	}
 }

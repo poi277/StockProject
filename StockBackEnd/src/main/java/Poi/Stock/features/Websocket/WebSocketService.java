@@ -85,7 +85,7 @@ public class WebSocketService {
 			newRecord.setHighPrice(cachedStock.getHighPrice());
 			newRecord.setLowPrice(cachedStock.getLowPrice());
 			newRecord.setClosePrice(cachedStock.getClosePrice());
-			newRecord.setVolume(cachedStock.getVolume());
+			newRecord.setTotalvolume(cachedStock.getTotalvolume());
 			newRecord.setValue(cachedStock.getValue());
 			newRecord.setChangeAmount(cachedStock.getChangeAmount());
 			newRecord.setChangeRate(cachedStock.getChangeRate());

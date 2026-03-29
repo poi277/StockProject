@@ -30,6 +30,7 @@ public class OrderController {
     private final OrderRepository orderRepository;
     private final OrderBookCache orderBookCache;
     private final WebSocketService webSocketService;
+	private final OrderCancelService orderCancelService;
 
     @PostMapping("/trade")
     public ResponseEntity<ApiResponse> stockTrade(
@@ -74,7 +75,7 @@ public class OrderController {
             HttpServletRequest request) {
         String userId = authentication.getName();
         String accessToken = resolveToken(request);
-        orderService.cancelOrder(userId, orderId, accessToken);
+		orderCancelService.cancelOrder(userId, orderId, accessToken);
         return ResponseEntity.ok(new ApiResponse(true, "주문 취소 완료"));
     }
 

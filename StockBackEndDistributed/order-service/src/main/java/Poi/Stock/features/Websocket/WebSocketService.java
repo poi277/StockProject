@@ -85,7 +85,7 @@ public class WebSocketService {
 			newRecord.setHighPrice(cachedStock.getHighPrice());
 			newRecord.setLowPrice(cachedStock.getLowPrice());
 			newRecord.setClosePrice(cachedStock.getClosePrice());
-			newRecord.setVolume(cachedStock.getVolume());
+			newRecord.setTotalvolume(cachedStock.getTotalvolume());
 			newRecord.setValue(cachedStock.getValue());
 			newRecord.setChangeAmount(cachedStock.getChangeAmount());
 			newRecord.setChangeRate(cachedStock.getChangeRate());
@@ -126,11 +126,12 @@ public class WebSocketService {
 	public void sendExecution(String stockCode, TradeExecution execution) {
 		Map<String, Object> payload = new HashMap<>();
 		payload.put("type", "EXECUTION");
-		payload.put("tradeType", execution.getTradeType().name()); // BUY or SELL
 		payload.put("price", execution.getPrice());
 		payload.put("quantity", execution.getQuantity());
-		// buyerId, sellerId 제외
-
+		payload.put("changeRate", execution.getChangeRate());
+		payload.put("totalVolume", execution.getTotalVolume());
+		payload.put("time", execution.getTime().toString());
+		log.info("체결 전송 - stockCode: {}, payload: {}", stockCode, payload);
 		messagingTemplate.convertAndSend("/topic/execution/" + stockCode, payload);
 	}
 
@@ -138,4 +139,5 @@ public class WebSocketService {
 		System.out.println(message);
 		messagingTemplate.convertAndSend("/topic/error/" + userId, message);
 	}
+
 }

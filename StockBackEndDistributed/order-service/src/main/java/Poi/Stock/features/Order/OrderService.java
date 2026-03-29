@@ -17,13 +17,11 @@ import org.springframework.web.client.RestTemplate;
 import Poi.Stock.DTO.user.HogaDTO;
 import Poi.Stock.DTO.user.TradeDTO;
 import Poi.Stock.DTO.user.myOrderDTO;
-import Poi.Stock.features.CompletedOrder.CompletedOrder;
 import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.features.kafka.KafkaProducer;
 import Poi.Stock.object.MatchingResult;
 import Poi.Stock.repository.CompletedOrderRepository;
 import Poi.Stock.repository.OrderRepository;
-import Poi.Stock.util.EnumUtil.tradeType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -67,14 +65,16 @@ public class OrderService {
         }
     }
 
+    @Transactional
     public void processOrder(TradeDTO tradeDTO) {
-		Order order = orderTradeService.setOrder(tradeDTO);
-		OrderBook book = orderBookCache.get(order.getStockCode());
-		MatchingResult result = orderTradeService.processMatching(order, book);
-		orderTradeService.sendHogaQuntityAndPrice(order.getStockCode(), result, book);
-		Integer currentPrice = result.getLastExecutionPrice();
-		webSocketService.SendCurrentPrice(order.getStockCode(), currentPrice);
-		orderTradeService.updateStockPrice(order.getStockCode(), currentPrice);
+        Order order = orderTradeService.setOrder(tradeDTO);
+        OrderBook book = orderBookCache.get(order.getStockCode());
+        MatchingResult result = orderTradeService.matchLoop(order, book);
+        orderTradeService.saveTradeHistories(result.getExecutions());
+        orderTradeService.saveOrders(result, order);
+        orderTradeService.settlement(result);        // DB 저장 후 Kafka 발행
+		orderTradeService.updateStock(order.getStockCode(), result);
+        orderTradeService.sendWebSocket(order.getStockCode(), result, book);
     }
 
     public void placeOrder(String userId, TradeDTO tradeDTO) {
@@ -97,35 +97,6 @@ public class OrderService {
             .limit(5)
             .map(e -> new HogaDTO(e.getKey(), e.getValue().getTotalQuantity()))
             .toList();
-    }
-
-    @Transactional
-    public void cancelOrder(String userId, Long orderId, String accessToken) {
-        Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다"));
-        if (!order.getUserId().equals(userId)) {
-            throw new RuntimeException("본인의 주문만 취소할 수 있습니다");
-        }
-		HttpHeaders headers = new HttpHeaders();
-		headers.set("Authorization", "Bearer " + accessToken);
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		restTemplate.exchange(userServiceUrl + "/user/cancel-reserve", HttpMethod.POST,
-				new HttpEntity<>(Map.of("tradeType", order.getTradeType().name(), "stockCode", order.getStockCode(),
-						"price", order.getTradePrice(), "quantity", order.getRemainingQuantity()), headers),
-				Void.class);
-
-		OrderBook book = orderBookCache.get(order.getStockCode());
-		book.removeOrder(order);
-
-		// 취소된 가격의 남은 수량 계산 후 웹소켓 전송
-		PriceLevel level = order.getTradeType() == tradeType.BUY ? book.getBuyBook().get(order.getTradePrice())
-				: book.getSellBook().get(order.getTradePrice());
-		int remainingQty = level == null ? 0 : level.getTotalQuantity();
-		webSocketService.sendHoga(order.getStockCode(), order.getTradeType(), order.getTradePrice(), remainingQty);
-
-		CompletedOrder completedOrder = CompletedOrder.fromCancelledOrder(order);
-		completedOrderRepository.save(completedOrder);
-		orderRepository.delete(order);
     }
 
 	public List<myOrderDTO> getMyOrder(String userId) {

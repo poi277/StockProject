@@ -32,4 +32,8 @@ public class MatchingResult {
 			return null;
 		return executions.get(executions.size() - 1).getPrice();
 	}
+
+	public int getTotalFilledQty() {
+		return executions.stream().mapToInt(TradeExecution::getQuantity).sum();
+	}
 }

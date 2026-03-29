@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import Poi.Stock.DTO.user.TradeDTO;
 import Poi.Stock.TreadeHistory.TradeHistory;
@@ -44,9 +43,9 @@ public class OrderTradeService {
 	private final CompletedOrderRepository completedOrderRepository;
 	private final TradeHistoryRepository tradeHistoryRepository;
 	private final BotCache botCache;
-	private final SettlementProducer settlementProducer; // ← 추가
+	private final SettlementProducer settlementProducer;
 
-	// StockUserRepository, HaveStockRepository 제거 ←
+	// StockUserRepository, HaveStockRepository 제거
 
 	public Order setOrder(TradeDTO tradeDTO) {
 		Order order = new Order();
@@ -63,24 +62,12 @@ public class OrderTradeService {
 		return order;
 	}
 
-	@Transactional
-	public MatchingResult processMatching(Order order, OrderBook book) {
-		MatchingResult result = matchLoop(order, book);
-
-		// settleAll() 제거 → Kafka 이벤트 발행으로 교체
+	public void settlement(MatchingResult result) {
 		if (!result.getExecutions().isEmpty()) {
 			SettlementEvent event = buildSettlementEvent(result.getExecutions());
 			settlementProducer.sendSettlement(event);
 		}
-
-		saveTradeHistories(result.getExecutions());
-		saveOrders(result, order);
-		return result;
 	}
-
-	/**
-	 * 기존 settleAll + applyAssetChanges 로직을 SettlementEvent 빌드로 변환 봇 간 거래는 이벤트에서 제외
-	 */
 	private SettlementEvent buildSettlementEvent(List<TradeExecution> executions) {
 		String stockCode = executions.get(0).getStockCode();
 		Map<String, Integer> assetDelta = new HashMap<>();
@@ -103,33 +90,32 @@ public class OrderTradeService {
 		return new SettlementEvent(stockCode, assetChanges, stockChanges);
 	}
 
-	private MatchingResult matchLoop(Order order, OrderBook book) {
+	public MatchingResult matchLoop(Order order, OrderBook book) {
 		MatchingResult result = new MatchingResult();
+		Stock stock = stockCache.get(order.getStockCode());
+		// 거래량은 아직 정산이 안되기 떄문에 여기서 임의로 증가시켜줘야함
+		Long fillTotalvolume = stock.getTotalvolume();
 		TreeMap<Integer, PriceLevel> oppositeBook = order.getTradeType() == tradeType.BUY ? book.getSellBook()
 				: book.getBuyBook();
-
 		while (!order.isCompleted() && !oppositeBook.isEmpty()) {
 			Integer firstPrice = oppositeBook.firstKey();
 			boolean priceMatch = order.getTradeType() == tradeType.BUY ? firstPrice <= order.getTradePrice()
 					: firstPrice >= order.getTradePrice();
 			if (!priceMatch) break;
-
 			PriceLevel level = oppositeBook.get(firstPrice);
 			Order restingOrder = level.peek();
 			int fillQty = Math.min(order.getRemainingQuantity(), restingOrder.getRemainingQuantity());
-
+			fillTotalvolume += fillQty;
 			order.decreaseRemainingQuantity(fillQty);
 			restingOrder.decreaseRemainingQuantity(fillQty);
 			level.reduceQuantity(fillQty);
-
 			int fillPrice = restingOrder.getTradePrice();
 			result.getMatchedPrices().add(fillPrice);
-
 			String buyerId = order.getTradeType() == tradeType.BUY ? order.getUserId() : restingOrder.getUserId();
 			String sellerId = order.getTradeType() == tradeType.BUY ? restingOrder.getUserId() : order.getUserId();
 			result.getExecutions().add(new TradeExecution(order.getTradeType(), buyerId, sellerId, fillQty, fillPrice,
-					order.getStockCode()));
-
+					order.getStockCode(), stock.calcChangeRate(fillPrice), fillTotalvolume,
+					LocalDateTime.now()));
 			if (restingOrder.isCompleted()) {
 				level.removeTopOrder();
 				result.getCompletedResting().add(restingOrder);
@@ -148,7 +134,7 @@ public class OrderTradeService {
 		return result;
 	}
 
-	private void saveTradeHistories(List<TradeExecution> executions) {
+	public void saveTradeHistories(List<TradeExecution> executions) {
 		if (executions.isEmpty()) return;
 		List<TradeHistory> histories = executions.stream()
 				.filter(ex -> !(isBot(ex.getBuyerId()) && isBot(ex.getSellerId()))).map(TradeHistory::from).toList();
@@ -157,7 +143,7 @@ public class OrderTradeService {
 		}
 	}
 
-	private void saveOrders(MatchingResult result, Order incomingOrder) {
+	public void saveOrders(MatchingResult result, Order incomingOrder) {
 		boolean incomingIsBot = isBot(incomingOrder.getUserId());
 		if (!result.getCompletedResting().isEmpty()) {
 			List<Order> completedToSave = result.getCompletedResting().stream()
@@ -191,7 +177,7 @@ public class OrderTradeService {
 		return book.getSellBook().isEmpty() ? 0 : book.getSellBook().firstKey();
 	}
 
-	public void sendHogaQuntityAndPrice(String stockCode, MatchingResult matchingResult, OrderBook book) {
+	public void sendWebSocket(String stockCode, MatchingResult matchingResult, OrderBook book) {
 		for (int price : matchingResult.getMatchedPrices()) {
 			PriceLevel sellLevel = book.getSellBook().get(price);
 			PriceLevel buyLevel = book.getBuyBook().get(price);
@@ -203,14 +189,20 @@ public class OrderTradeService {
 		for (TradeExecution execution : matchingResult.getExecutions()) {
 			webSocketService.sendExecution(stockCode, execution);
 		}
+		// 현재가 전송 추가
+		Integer currentPrice = matchingResult.getLastExecutionPrice();
+		webSocketService.SendCurrentPrice(stockCode, currentPrice);
 	}
 
-	public void updateStockPrice(String stockCode, Integer currentPrice) {
+	public void updateStock(String stockCode, MatchingResult result) {
+		Integer currentPrice = result.getLastExecutionPrice();
 		if (currentPrice == null || currentPrice <= 0)
 			return;
+
 		Stock stock = stockCache.get(stockCode);
 		if (stock == null)
 			return;
+
 		stock.setClosePrice(currentPrice);
 		if (stock.getHighPrice() == null || currentPrice > stock.getHighPrice())
 			stock.setHighPrice(currentPrice);
@@ -218,7 +210,8 @@ public class OrderTradeService {
 			stock.setLowPrice(currentPrice);
 		if (stock.getOpenPrice() != null) {
 			stock.setChangeAmount(currentPrice - stock.getOpenPrice());
-			stock.setChangeRate((double) (currentPrice - stock.getOpenPrice()) / stock.getOpenPrice() * 100);
+			stock.setChangeRate(stock.calcChangeRate(currentPrice));
 		}
+		stock.setTotalvolume(stock.getTotalvolume() + result.getTotalFilledQty());
 	}
 }
