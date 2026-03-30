@@ -5,6 +5,7 @@ import HogaChart from './HogaChart';
 import TradeForm from '../Trade/TradeForm';
 import { StockDetail } from './StockDetail';
 import useWatch from '../watchList/useWatch';
+import ExecutionList from '../execution/ExecutionList';
 
 export default function StockDetailForm({ stock,watched  }) {
   const { connected, stocks, selectedPrice, setSelectedPrice } = StockDetail(stock.stockCode, stock);
@@ -57,6 +58,7 @@ export default function StockDetailForm({ stock,watched  }) {
           selectedPrice={selectedPrice}
           setSelectedPrice={setSelectedPrice}
         />
+        <ExecutionList stockCode={stock.stockCode} />
       </div>
     </>
   );

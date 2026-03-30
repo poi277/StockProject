@@ -213,5 +213,6 @@ public class OrderTradeService {
 			stock.setChangeRate(stock.calcChangeRate(currentPrice));
 		}
 		stock.setTotalvolume(stock.getTotalvolume() + result.getTotalFilledQty());
+		System.out.println(stock.getTotalvolume());
 	}
 }
