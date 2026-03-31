@@ -13,6 +13,7 @@ import Poi.Stock.DTO.user.TradeDTO;
 import Poi.Stock.TreadeHistory.TradeHistory;
 import Poi.Stock.features.Bot.Bot;
 import Poi.Stock.features.Bot.BotCache;
+import Poi.Stock.features.Candle.CandleSchedulerService;
 import Poi.Stock.features.CompletedOrder.CompletedOrder;
 import Poi.Stock.features.Stock.Stock;
 import Poi.Stock.features.Stock.StockCache;
@@ -44,6 +45,7 @@ public class OrderTradeService {
 	private final TradeHistoryRepository tradeHistoryRepository;
 	private final BotCache botCache;
 	private final SettlementProducer settlementProducer;
+	private final CandleSchedulerService candleSchedulerService;
 
 	// StockUserRepository, HaveStockRepository 제거
 
@@ -191,18 +193,17 @@ public class OrderTradeService {
 		}
 		// 현재가 전송 추가
 		Integer currentPrice = matchingResult.getLastExecutionPrice();
-		webSocketService.SendCurrentPrice(stockCode, currentPrice);
+		LocalDateTime TradeTime = matchingResult.getLastExecutionTime();
+		webSocketService.SendCurrentPrice(stockCode, currentPrice, TradeTime);
 	}
 
-	public void updateStock(String stockCode, MatchingResult result) {
+	public void updateStockCache(String stockCode, MatchingResult result) {
 		Integer currentPrice = result.getLastExecutionPrice();
 		if (currentPrice == null || currentPrice <= 0)
 			return;
-
 		Stock stock = stockCache.get(stockCode);
 		if (stock == null)
 			return;
-
 		stock.setClosePrice(currentPrice);
 		if (stock.getHighPrice() == null || currentPrice > stock.getHighPrice())
 			stock.setHighPrice(currentPrice);
@@ -214,5 +215,14 @@ public class OrderTradeService {
 		}
 		stock.setTotalvolume(stock.getTotalvolume() + result.getTotalFilledQty());
 		System.out.println(stock.getTotalvolume());
+	}
+
+	public void updateCurrentCandle(String stockCode, MatchingResult result) {
+		Integer currentPrice = result.getLastExecutionPrice();
+		int filledQty = result.getTotalFilledQty();
+		LocalDateTime lastExecutiontime = result.getLastExecutionTime();
+		if (currentPrice != null && currentPrice > 0) {
+			candleSchedulerService.saveCurrentCandle(stockCode, currentPrice, filledQty, lastExecutiontime);
+		}
 	}
 }

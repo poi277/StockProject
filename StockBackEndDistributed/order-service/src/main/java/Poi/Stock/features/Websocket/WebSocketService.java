@@ -1,5 +1,6 @@
 package Poi.Stock.features.Websocket;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,12 +30,13 @@ public class WebSocketService {
 
 //	-------------------------------
 	// 가격 업데이트 및 WebSocket 전송
-	public void SendCurrentPrice(String stockCode, Integer currentPrice) {
+	public void SendCurrentPrice(String stockCode, Integer currentPrice, LocalDateTime tradeTime) {
 		if (currentPrice == null || currentPrice <= 0)
 			return;
 		Map<String, Object> payload = new HashMap<>();
 		payload.put("stockCode", stockCode);
 		payload.put("currentPrice", currentPrice);
+		payload.put("tradeTime", tradeTime);
 		System.out.println(payload);
 		messagingTemplate.convertAndSend("/topic/stock/" + stockCode, payload);
 	}

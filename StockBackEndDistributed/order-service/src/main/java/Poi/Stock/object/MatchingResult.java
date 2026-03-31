@@ -1,5 +1,6 @@
 package Poi.Stock.object;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -35,5 +36,9 @@ public class MatchingResult {
 
 	public int getTotalFilledQty() {
 		return executions.stream().mapToInt(TradeExecution::getQuantity).sum();
+	}
+
+	public LocalDateTime getLastExecutionTime() {
+		return executions.get(executions.size() - 1).getTime();
 	}
 }

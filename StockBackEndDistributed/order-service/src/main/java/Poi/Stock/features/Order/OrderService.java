@@ -17,6 +17,7 @@ import org.springframework.web.client.RestTemplate;
 import Poi.Stock.DTO.user.HogaDTO;
 import Poi.Stock.DTO.user.TradeDTO;
 import Poi.Stock.DTO.user.myOrderDTO;
+import Poi.Stock.features.Candle.CandleService;
 import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.features.kafka.KafkaProducer;
 import Poi.Stock.object.MatchingResult;
@@ -37,6 +38,7 @@ public class OrderService {
     private final CompletedOrderRepository completedOrderRepository;
     private final OrderTradeService orderTradeService;
     private final RestTemplate restTemplate;
+	private final CandleService candleService;
 
     @Value("${user.service.url}")
     private String userServiceUrl;
@@ -72,8 +74,9 @@ public class OrderService {
         MatchingResult result = orderTradeService.matchLoop(order, book);
         orderTradeService.saveTradeHistories(result.getExecutions());
         orderTradeService.saveOrders(result, order);
-        orderTradeService.settlement(result);        // DB 저장 후 Kafka 발행
-		orderTradeService.updateStock(order.getStockCode(), result);
+		orderTradeService.settlement(result);
+		orderTradeService.updateStockCache(order.getStockCode(), result);
+		orderTradeService.updateCurrentCandle(order.getStockCode(), result);
         orderTradeService.sendWebSocket(order.getStockCode(), result, book);
     }
 
