@@ -36,7 +36,7 @@ public class BotOrderService {
 			tradeDTO.setQuantity(quantity);
 			orderService.processOrder(tradeDTO);
 		} catch (Exception e) {
-			log.error("봇 주문 처리 실패: {} / {}", botId, e.getMessage());
+			log.error("봇 주문 처리 실패: {} / {}", botId, e.getMessage(), e);
 		} finally {
 			stockLock.unlock(stockCode);
 		}

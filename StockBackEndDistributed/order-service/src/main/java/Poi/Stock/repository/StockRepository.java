@@ -21,6 +21,8 @@ public interface StockRepository extends JpaRepository<Stock, StockDailyPriceId>
 	// 특정 종목의 기간별 데이터
 	List<Stock> findByStockCodeAndDateBetweenOrderByDateDesc(String stockCode, LocalDate startDate, LocalDate endDate);
 
+	List<Stock> findByStockCodeAndDateBetweenOrderByDateAsc(String stockCode, LocalDate fromDate, LocalDate toDate);
+
 	// 특정 날짜의 모든 종목
 	List<Stock> findByDate(LocalDate date);
 
@@ -30,4 +32,5 @@ public interface StockRepository extends JpaRepository<Stock, StockDailyPriceId>
 	List<Stock> findLatestStocks();
 
 	List<Stock> findByStockCodeOrderByDateAsc(String stockCode);
+
 }

@@ -221,7 +221,7 @@ public class OrderTradeService {
 		Integer currentPrice = result.getLastExecutionPrice();
 		int filledQty = result.getTotalFilledQty();
 		LocalDateTime lastExecutiontime = result.getLastExecutionTime();
-		if (currentPrice != null && currentPrice > 0) {
+		if (currentPrice != null && currentPrice > 0 && lastExecutiontime != null) {
 			candleSchedulerService.saveCurrentCandle(stockCode, currentPrice, filledQty, lastExecutiontime);
 		}
 	}

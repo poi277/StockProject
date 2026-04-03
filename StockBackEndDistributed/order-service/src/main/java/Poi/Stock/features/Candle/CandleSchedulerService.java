@@ -27,17 +27,25 @@ public class CandleSchedulerService {
 	private final StockRepository stockRepository;
 	private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
 	// Lua Script (원자성 + TTL)
-	private static final String UPDATE_CANDLE_SCRIPT = "local key = KEYS[1] " + "local price = tonumber(ARGV[1]) "
-			+ "local qty = tonumber(ARGV[2]) " + "local exists = redis.call('EXISTS', key) " + "if exists == 0 then "
-			+ "  redis.call('HSET', key, 'open', price, 'high', price, 'low', price, 'close', price, 'volume', qty) "
-			+ "  redis.call('EXPIRE', key, 120) " + // 2분 TTL
-			"else " + "  local high = tonumber(redis.call('HGET', key, 'high')) "
-			+ "  local low = tonumber(redis.call('HGET', key, 'low')) "
-			+ "  local volume = tonumber(redis.call('HGET', ke,y, 'volume')) "
-			+ "  if price > high then redis.call('HSET', key 'high', price) end "
-			+ "  if price < low then redis.call('HSET', key, 'low', price) end "
-			+ "  redis.call('HSET', key, 'close', price) " + "  redis.call('HSET', key, 'volume', volume + qty) "
-			+ "end " + "return 1";
+	private static final String UPDATE_CANDLE_SCRIPT = """
+			local key = KEYS[1]
+			local price = tonumber(ARGV[1])
+			local qty = tonumber(ARGV[2])
+			local exists = redis.call('EXISTS', key)
+			if exists == 0 then
+			  redis.call('HSET', key, 'open', price, 'high', price, 'low', price, 'close', price, 'volume', qty)
+			  redis.call('EXPIRE', key, 120)
+			else
+			  local high = tonumber(redis.call('HGET', key, 'high'))
+			  local low = tonumber(redis.call('HGET', key, 'low'))
+			  local volume = tonumber(redis.call('HGET', key, 'volume'))
+			  if price > high then redis.call('HSET', key, 'high', price) end
+			  if price < low then redis.call('HSET', key, 'low', price) end
+			  redis.call('HSET', key, 'close', price)
+			  redis.call('HSET', key, 'volume', volume + qty)
+			end
+			return 1
+			""";
 
 	// 체결 시 호출
 	// 분리시 카프카로 호출
@@ -85,7 +93,7 @@ public class CandleSchedulerService {
 	}
 	public void saveDailyStock() {
 		LocalDate yesterday = LocalDate.now().minusDays(1);
-		List<String> stockCodes = candleMinuteRepository.findDistinctStockCode();
+		List<String> stockCodes = candleMinuteRepository.findDistinctStockCodes();
 		for (String stockCode : stockCodes) {
 			List<CandleMinute> minutes = candleMinuteRepository.findByStockCodeAndTimeBetweenOrderByTimeAsc(stockCode,
 					yesterday.atStartOfDay(), yesterday.plusDays(1).atStartOfDay());

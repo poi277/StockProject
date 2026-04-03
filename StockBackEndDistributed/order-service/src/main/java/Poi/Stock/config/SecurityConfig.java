@@ -39,6 +39,7 @@ public class SecurityConfig {
 				// ── 기존 permitAll 경로 그대로 유지 ──
 				.authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 						.requestMatchers("/", "/hello", "/user/register", "/stock/**", "/ws/**", "/auth/**",
+								"/candle/**",
 								"/order/orderbook/*", "/api/kis/stock/**")
 						.permitAll().anyRequest().authenticated())
 				// ── JWT 필터 (세션 필터 대체) ──

@@ -39,6 +39,8 @@ public class MatchingResult {
 	}
 
 	public LocalDateTime getLastExecutionTime() {
+		if (executions.isEmpty())
+			return null;
 		return executions.get(executions.size() - 1).getTime();
 	}
 }
