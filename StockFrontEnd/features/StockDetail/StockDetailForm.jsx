@@ -7,7 +7,7 @@ import TradeForm from '../Trade/TradeForm';
 import { StockDetail } from './StockDetail';
 import useWatch from '../watchList/useWatch';
 import ExecutionList from '../execution/ExecutionList';
-import CandleForm from '../candle/candleForm';
+import CandleForm from '../candle/CandleForm';
 
 export default function StockDetailForm({ stock, watched }) {
   const { connected, stocks, selectedPrice, setSelectedPrice } = StockDetail(stock.stockCode, stock);
@@ -22,7 +22,6 @@ export default function StockDetailForm({ stock, watched }) {
 
   return (
     <div style={{ padding: "16px", maxWidth: 1400, margin: "0 auto", fontFamily: "sans-serif" }}>
-
       {/* 상단: 종목명 + 현재가 + 연결상태 */}
       <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 12 }}>
         <div>
@@ -52,7 +51,6 @@ export default function StockDetailForm({ stock, watched }) {
 
       {/* 메인 레이아웃: [차트+체결 | 호가 | 거래] */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 280px 280px", gap: 12, alignItems: "start" }}>
-
         {/* 1번: 캔들 차트 + 체결내역 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <CandleForm stockCode={stock.stockCode} />

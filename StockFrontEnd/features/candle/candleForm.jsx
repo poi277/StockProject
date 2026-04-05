@@ -1,7 +1,8 @@
-// CandleForm.jsx
-import { useState, useRef } from "react";
+"use client "
+
+import { useEffect, useRef, useState } from "react";
 import useCandle from "./useCandle";
-import CandleChart from "./CandleChart";
+import CandleChart from './candleChart/CandleChart'
 
 const INTERVALS = [
   { label: "1분",  value: "ONE_MINUTE" },
@@ -15,39 +16,19 @@ const INTERVALS = [
 
 function getInitialRange() {
   const now   = new Date();
-  const start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const start = new Date(now.getTime() - 24 * 60 * 60 * 10000);
   return { start: start.toISOString(), end: now.toISOString() };
 }
 
 export default function CandleForm({ stockCode }) {
-  const [type,      setType]      = useState("ONE_MINUTE");
-  const [startTime, setStartTime] = useState(() => getInitialRange().start);
-  const [endTime,   setEndTime]   = useState(() => getInitialRange().end);
-
-  // ✅ 문제1: 기존 데이터 유지하며 앞에 합치기
+  const [type,       setType]       = useState("ONE_MINUTE");
+  const [startTime,  setStartTime]  = useState(() => getInitialRange().start);
+  const [endTime,    setEndTime]    = useState(() => getInitialRange().end);
   const [allCandles, setAllCandles] = useState([]);
   const isLoadingMore = useRef(false);
 
   const { candles } = useCandle(stockCode, type, startTime, endTime);
 
-  // candles가 새로 오면 기존 데이터 앞에 합치기
-  useState(() => {
-    if (!candles.length) return;
-    setAllCandles(prev => {
-      if (!prev.length) return candles;
-      // 중복 제거 후 합치기 (시간 기준)
-      const prevTimes = new Set(prev.map(c => c.time));
-      const newOnes   = candles.filter(c => !prevTimes.has(c.time));
-      if (!newOnes.length) return prev;
-      return [...newOnes, ...prev].sort(
-        (a, b) => new Date(a.time) - new Date(b.time)
-      );
-    });
-    isLoadingMore.current = false;
-  }, [candles]);
-
-  // ✅ useEffect로 교체
-  const { useEffect } = require("react");
   useEffect(() => {
     if (!candles.length) return;
     setAllCandles(prev => {
@@ -79,7 +60,8 @@ export default function CandleForm({ stockCode }) {
     setType(newType);
     setStartTime(start);
     setEndTime(end);
-    setAllCandles([]); // 분 단위 바뀌면 초기화
+    setAllCandles([]);
+    isLoadingMore.current = false;
   };
 
   return (
