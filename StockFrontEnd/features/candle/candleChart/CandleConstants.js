@@ -11,3 +11,4 @@ export const INTERVAL_MS = {
 export const LABEL_MULTIPLES = [1,2,5,10,15,30,60,120,240,360,720,1440].map(m => m * 60_000);
 export const DEFAULT_VIEW = 100;
 export const RIGHT_PAD    = 20;
+

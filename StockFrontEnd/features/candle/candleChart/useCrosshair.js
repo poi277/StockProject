@@ -1,6 +1,9 @@
 // CandleChart/useCrosshair.js
 import { formatTime } from "./utils";
 
+const UP_COLOR   = "#ef5350"; // 빨강 (상승)
+const DOWN_COLOR = "#0056e0"; // 파랑 (하락)
+
 export function useCrosshair({ crossRef, mainRef, stateRef, getIv, setOhlc }) {
 
   const drawCross = (cx, cy) => {
@@ -29,7 +32,9 @@ export function useCrosshair({ crossRef, mainRef, stateRef, getIv, setOhlc }) {
     const { minV, maxV } = s;
 
     // 크로스헤어 선
-    cctx.strokeStyle = "rgba(200,200,200,0.4)"; cctx.lineWidth = 0.5; cctx.setLineDash([4, 4]);
+    cctx.strokeStyle = "rgba(200,200,200,0.6)";
+    cctx.lineWidth   = 1.5;
+    cctx.setLineDash([4, 4]);
     cctx.beginPath(); cctx.moveTo(cx, padT);  cctx.lineTo(cx, H - padB); cctx.stroke();
     cctx.beginPath(); cctx.moveTo(padL, cy);  cctx.lineTo(W - padR, cy); cctx.stroke();
     cctx.setLineDash([]);

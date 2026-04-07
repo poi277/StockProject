@@ -1,38 +1,91 @@
 .container {
-  padding: 20px;
-  max-width: 800px;
+  padding: 16px;
+  max-width: 1400px;
   margin: 0 auto;
+  font-family: sans-serif;
+
+  /* ⭐ 다크 테마 */
+  background-color: #121212;
+  color: #ffffff;
 }
 
-.status {
-  padding: 10px;
-  border-radius: 5px;
-  color: white;
-  font-weight: 600;
-}
-
-.card {
-  margin-top: 20px;
-  border: 1px solid #ddd;
-  padding: 20px;
-  border-radius: 8px;
-  background: white;
-}
-
-.headerRow {
+/* 상단 영역 */
+.topBar {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
 }
 
+.stockInfo h2 {
+  margin: 0;
+}
+
+.stockCode {
+  font-size: 13px;
+  color: #aaa;
+}
+
+/* 가격 영역 */
 .priceBox {
+  margin-left: auto;
   text-align: right;
 }
 
 .price {
-  font-size: 28px;
-  font-weight: bold;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.up {
+  color: #ff4d4f;
+}
+
+.down {
+  color: #4da6ff;
 }
 
 .change {
-  font-weight: bold;
+  font-size: 13px;
+}
+
+/* 버튼 */
+.watchBtn {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: white;
+}
+
+/* 연결 상태 */
+.status {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.connected {
+  background: #2e7d32;
+  color: #fff;
+}
+
+.disconnected {
+  background: #8b0000;
+  color: #fff;
+}
+
+/* 메인 레이아웃 */
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1fr 280px 280px;
+  gap: 12px;
+  align-items: start;
+}
+
+/* 왼쪽 영역 */
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }

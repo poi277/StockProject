@@ -1,0 +1,139 @@
+/* 1. Global Reset & Base Variables */
+body {
+    --_1qbk1cx7: 49.7px;
+    background-color: var(--wts-adaptive-background, #101013);
+    color: var(--wts-adaptive-grey700);
+    min-height: 100vh;
+    margin: 0;
+}
+
+.tw3v-n7og3x0 {
+    /* 폰트 및 굵기 변수 통합 */
+    --tw-font-family: "Toss Product Sans", "Tossface", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    --tw-font-weight-regular: normal;
+    --tw-font-weight-medium: 500;
+    --tw-font-weight-semibold: 600;
+    --tw-font-weight-bold: bold;
+    
+    font-family: var(--tw-font-family);
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* 2. Universal 초기화 */
+:where(.tw3v-n7og3x0) * {
+    font-family: inherit;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* 리스트 및 박스 태그 초기화 */
+:where(.tw3v-n7og3x0) :is(div, ul, ol, li, main) {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    unicode-bidi: isolate;
+}
+
+/* 링크 스타일 초기화 */
+:where(.tw3v-n7og3x0) a:where(a, :hover, :visited, :any-link) {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    background-color: transparent;
+    cursor: pointer;
+}
+
+/* 3. Layout Engine (전체 뼈대) */
+.ho2myi0 {
+    display: flex;
+    position: relative;
+    z-index: 0;
+    isolation: isolate; 
+}
+
+/* 반응형 우측 패딩 (모바일/데스크톱 대응) */
+._1kestwg2 { padding-right: 56px; }
+@media screen and (min-width: 1280px) {
+    ._1kestwg2 { padding-right: 0; }
+}
+
+.ho2myi1 {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1;
+    align-items: center;
+    min-height: 100vh;
+    min-width: 0;
+}
+
+/* 본문 콘텐츠 영역 */
+.ho2myi2 {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    flex: 1 1;
+    isolation: isolate;
+}
+
+._2ozzgc8 {
+    height: 100%;
+}
+._2ozzgch {
+    min-height: calc(100vh - 52px - var(--_2ozzgcg) px) !important;
+}
+._2ozzgcf {
+    padding: 0 calc(clamp(16px, 6.25vw - 48px, 32px) + 8px);
+    min-height: calc(100vh - 52px);
+}
+._2ozzgca {
+    flex: 1 1;
+    min-width: 0;
+}
+._2x64iu3 {
+    isolation: isolate;
+}
+._2x64iu1 {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+}
+.ia3qp40 {
+    padding: 4px 0 8px;
+}
+._1pn0hfp0 {
+    display: flex;
+    justify-content: space-between;
+    width: calc(100% + 2 * calc(clamp(16px, 6.25vw - 48px, 32px) + 8px));
+    margin-left: calc(-1 * calc(clamp(16px, 6.25vw - 48px, 32px) + 8px));
+    padding-left: calc(clamp(16px, 6.25vw - 48px, 32px) + 8px);
+    padding-right: calc(clamp(16px, 6.25vw - 48px, 32px) + 8px);
+    padding-bottom: 10px;
+    background: var(--wts-body-background-color);
+}
+._2x64iu0 {
+    display: flex;
+    gap: 8px;
+    flex: 1 1;
+    margin-bottom: 24px;
+}
+.e9yr874 {
+    position: sticky;
+    left: 0;
+    bottom: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    width: var(--section-width);
+}
+/* 기타 유틸리티 */
+img {
+    overflow: clip;
+    overflow-clip-margin: content-box;
+}
+
+* { scrollbar-width: thin; }

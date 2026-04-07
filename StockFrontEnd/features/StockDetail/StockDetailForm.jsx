@@ -1,81 +1,104 @@
-// StockDetailForm.jsx
 'use client';
 
-import styles from '../../css/StockDetailForm.module.css';
 import HogaChart from './HogaChart';
 import TradeForm from '../Trade/TradeForm';
 import { StockDetail } from './StockDetail';
 import useWatch from '../watchList/useWatch';
 import ExecutionList from '../execution/ExecutionList';
 import CandleForm from '../candle/CandleForm';
+// CSS 파일을 import 합니다. (Next.js 기준)
+import '../../tossCss/toss-layout.css'
+import Header from '../UI/Header';
 
 export default function StockDetailForm({ stock, watched }) {
-  const { connected, stocks, selectedPrice, setSelectedPrice } = StockDetail(stock.stockCode, stock);
+  const { connected, stocks, selectedPrice, setSelectedPrice } =
+    StockDetail(stock.stockCode, stock);
+
   const currentStock = stocks[stock.stockCode] || stock;
-  const { isWatched, handleWatchToggle, watchLoading } = useWatch(stock.stockCode, watched);
+  const { isWatched, handleWatchToggle, watchLoading } =
+    useWatch(stock.stockCode, watched);
 
   const openPrice  = currentStock?.openPrice  || 0;
   const closePrice = currentStock?.closePrice || 0;
   const changeAmt  = closePrice - openPrice;
   const changeRate = openPrice ? (changeAmt / openPrice * 100) : 0;
-  const isUp = changeAmt >= 0;
+  const isUp       = changeAmt >= 0;
+  const fmt        = (n) => Number(n).toLocaleString('ko-KR');
 
-  return (
-    <div style={{ padding: "16px", maxWidth: 1400, margin: "0 auto", fontFamily: "sans-serif" }}>
-      {/* 상단: 종목명 + 현재가 + 연결상태 */}
-      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 12 }}>
-        <div>
-          <h2 style={{ margin: 0 }}>{currentStock?.stockName}</h2>
-          <span style={{ fontSize: 13, color: "#888" }}>{currentStock?.stockCode}</span>
-        </div>
-        <div style={{ marginLeft: "auto", textAlign: "right" }}>
-          <div style={{ fontSize: 24, fontWeight: 600, color: isUp ? "#ff3b30" : "#0056e0" }}>
-            {closePrice.toLocaleString()}원
+  const HEADER_H = 60;
+  const GAP      = 8;
+  const PAD      = 8;
+
+return (
+<div id="_next" className="tw3v-n7og3x0">
+  <div id="main-content">
+    <div className="ho2myi0 _1kestwgq _1kestwg2">
+      <div className="ho2myi1">
+        <Header />
+       <main className="ho2myi2">
+          <div className="_2ozzgc8">
+            <div 
+              className="_2ozzgcf _2ozzgca _2ozzget" 
+              style={{ '--_2ozzgcg': '42.046875'}}
+            >            
+              <div 
+                className="_2x64iu3 _2x64iu1" 
+                data-section-name="종목상세" 
+              >
+                <div></div>
+                <div></div>
+                {/* 1. 가격 정보 섹션: div class="ia3qp40" */}
+                <div 
+                  className="ia3qp40" 
+                  style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: '0px', 
+                    justifyContent: 'normal', 
+                    alignItems: 'normal' 
+                  }}
+                >
+                  {/* 여기에 종목명, 가격 정보 등이 들어갑니다. */}
+                </div>
+
+                {/* 2. 스티키 탭 영역: div class="_1pn0hfp0" */}
+                <div 
+                  className="_1pn0hfp0" 
+                  style={{ 
+                    position: 'sticky', 
+                    top: '81px', 
+                    zIndex: 10
+                  }}
+                >
+                  {/* 여기에 차트/호가/소식 탭 메뉴가 들어갑니다. */}
+                </div>
+
+                {/* 3. 메인 콘텐츠 루트: div class="_2x64iu0" id="stock-contents-root" */}
+                <div 
+                  className="_2x64iu0" 
+                  id="stock-contents-root" 
+                  data-nosnippet="true"
+                  
+                >
+                  {/* 실제 차트나 호가 내용이 렌더링되는 지점입니다. */}
+                </div>
+
+                {/* 4. 지수 롤링 바: div data-section-name="지수Rolling" */}
+                <div 
+                  className="e9yr874" 
+                  data-section-name="지수Rolling" 
+                  style={{ '--section-width': '1460px'}}
+                >
+                  {/* 하단에 흐르는 지수 정보 영역입니다. */}
+                </div>
+
+              </div>
+            </div>
           </div>
-          <div style={{ fontSize: 13, color: isUp ? "#ff3b30" : "#0056e0" }}>
-            {isUp ? "▲" : "▼"} {Math.abs(changeAmt).toLocaleString()}원 ({Math.abs(changeRate).toFixed(2)}%)
-          </div>
-        </div>
-        <button onClick={handleWatchToggle} disabled={watchLoading}
-          style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer" }}>
-          {isWatched ? "❤️" : "🤍"}
-        </button>
-        <div style={{
-          padding: "4px 10px", borderRadius: 4, fontSize: 12,
-          background: connected ? "#79b387" : "#f8d7da",
-          color: connected ? "#fff" : "#333"
-        }}>
-          {connected ? "✅ 연결됨" : "❌ 연결 안됨"}
-        </div>
-      </div>
-
-      {/* 메인 레이아웃: [차트+체결 | 호가 | 거래] */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 280px 280px", gap: 12, alignItems: "start" }}>
-        {/* 1번: 캔들 차트 + 체결내역 */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <CandleForm stockCode={stock.stockCode} />
-          <ExecutionList stockCode={stock.stockCode} />
-        </div>
-
-        {/* 2번: 호가 */}
-        <div>
-          <HogaChart
-            currentStock={currentStock}
-            selectedPrice={selectedPrice}
-            setSelectedPrice={setSelectedPrice}
-          />
-        </div>
-
-        {/* 3번: 거래 */}
-        <div>
-          <TradeForm
-            stockCode={stock.stockCode}
-            selectedPrice={selectedPrice}
-            setSelectedPrice={setSelectedPrice}
-          />
-        </div>
-
+        </main>
       </div>
     </div>
+  </div>
+</div>
   );
 }

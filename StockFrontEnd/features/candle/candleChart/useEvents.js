@@ -1,6 +1,6 @@
 // CandleChart/useEvents.js
 import { useEffect } from "react";
-import { INTERVAL_MS } from "./constants";
+import { INTERVAL_MS } from "./CandleConstants";
 
 export function useEvents({
   mainRef, crossRef, wrapRef,

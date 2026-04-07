@@ -1,6 +1,6 @@
 // CandleChart/useChartState.js
 import { useRef } from "react";
-import { INTERVAL_MS, DEFAULT_VIEW, RIGHT_PAD } from "./constants";
+import { INTERVAL_MS, DEFAULT_VIEW, RIGHT_PAD } from "./CandleConstants";
 
 export function useChartState() {
   const stateRef = useRef({
