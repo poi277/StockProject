@@ -1,0 +1,60 @@
+.ia3qp43, .ia3qp44 {
+    display: flex;
+    align-items: center;
+}
+.ia3qp43 {
+    gap: 6px;
+}
+._1sivumi7 {
+    display: flex;
+    width: 100%;
+    padding-bottom: 10px;
+    position: fixed;
+    top: 52px;
+    z-index: 10;
+    background: var(--wts-body-background-color);
+}
+._1sivumi2 {
+    visibility: visible;
+}
+._1sivumi0 {
+    flex: 1 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.ia3qp44 {
+    gap: 4px;
+}
+._196hb70 {
+    display: inline-flex;
+}
+.ia3qp46 {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+._3wzkxk0 {
+    display: inline-flex;
+    gap: 4px;
+}
+._3wzkxk2._3wzkxk2 {
+    background-color: var(--_3wzkxk1);
+    box-shadow: inset 0 0 0 .75px var(--wts-adaptive-greyOpacity200);
+}
+.tw3v-17xiat92 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+._3wzkxk4 {
+    --_3wzkxk1: #26262e !important;
+}
+._3wzkxk2 {
+    --_3wzkxk1: var(--wts-adaptive-greyOpacity200);
+    --wts-chip-hover-background-color: var(--wts-adaptive-greyOpacity100);
+    --wts-chip-active-icon-color: var(--wts-adaptive-greyOpacity100);
+    --wts-chip-box-shadow-color: var(--wts-adaptive-greyOpacity200);
+    cursor: pointer;
+    color: var(--wts-adaptive-grey700);
+}

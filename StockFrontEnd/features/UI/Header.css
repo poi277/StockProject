@@ -1,29 +1,6 @@
-/* GNB 최상위 컨테이너: 상단 고정 및 중앙 정렬 */
-._1bfoojl0 {
-    top: 0;
-    position: sticky;
-    width: 100%;
-    z-index: 10001;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-width: 704px; /* 레이아웃 붕괴 방지 최소폭 */
+._1leau172 {
+    padding: 0 clamp(16px, 6.25vw - 48px, 32px);
 }
-
-/* GNB 배경 레이어: 투명도 및 다크모드 배경색 */
-._1bfoojl1 {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: -1;
-    pointer-events: none; /* 배경이 클릭을 막지 않도록 설정 */
-    background-color: var(--wts-body-background-color, #101013);
-}
-
-/* 내부 콘텐츠 폭 제어 및 반응형 패딩 */
 ._1leau170 {
     width: 100%;
     box-sizing: border-box;
@@ -31,65 +8,110 @@
     flex-direction: column;
     align-items: center;
 }
-
-._1leau172 {
-    /* 화면 너비에 따라 16px ~ 32px 유동적 패딩 */
-    padding: 0 clamp(16px, 6.25vw - 48px, 32px);
-}
-
-/* 네비게이션 바 본체: 양끝 정렬 및 높이 설정 */
-._1bfoojl3 {
-    position: relative;
+._9x1lao0, ._9x1lao1 {
     display: flex;
+}
+._9x1lao0 {
+    position: relative;
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    height: 52px; /* 토스 표준 GNB 높이 */
-    isolation: isolate;
 }
 
-/* 로고 영역 */
-._1bfoojl4 {
+._9x1lao2 {
+    text-decoration: none;
+    list-style: none;
+    font-size: 15px;
+    line-height: 1.45;
+    font-weight: var(--tw-font-weight-medium);
+    color: var(--wts-adaptive-grey600);
+    white-space: nowrap;
+}
+._9x1lao5 {
+    padding: 6px 12px;
+}
+._9x1lao5:hover {
+    background-color: transparent !important; /* 배경 박스 제거 */
+    color: var(--wts-adaptive-grey900) !important; /* 밝은 흰색으로 변경 */
+}
+.u09klc0 {
+    background-color: var(--wts-adaptive-greyOpacity100);
+    border: 1px solid var(--wts-adaptive-greyOpacity100);
+    border-radius: 8px;
+    height: 32px;
+    width: 200px;
+    margin-left: auto;
+}
+._1pqi7zp5, .u09klc0 {
     display: flex;
     align-items: center;
 }
-
-._1k9p25g2 {
+.u09klc1 {
+    margin: 0 10px;
+}
+.u09klc2, .u09klc3 {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 40px;
-    padding: 0 8px;
-    cursor: pointer;
 }
-
-/* 메뉴 리스트 (ul) */
-._9x1lao1 {
+.u09klc3 {
+    background-color: var(--wts-adaptive-greyOpacity100);
+    border-radius: 5px;
+    width: 20px;
+    height: 20px;
+    margin-right: 4px;
+    color: var(--wts-adaptive-greyOpacity800);
+}
+._1bfoojl5 {
     display: flex;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    gap: 8px; /* 메뉴 항목 간 기본 간격 */
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 8px;
 }
-
-/* 메뉴 항목 (li) 및 링크 (a) 스타일 */
-._9x1lao2 {
-    display: block;
+._1gwjmki2 {
+    width: 32px;
+    height: 32px;
 }
-
-._9x1lao5 {
-    display: block;
-    padding: 6px 12px;
-    font-size: 15px;
-    line-height: 1.45;
-    font-weight: 500;
-    color: #adb5bd; /* 비활성 상태의 회색 */
-    text-decoration: none;
-    white-space: nowrap;
-    transition: color 0.2s;
+._1gwjmki0 {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    -webkit-user-select: none;
+    user-select: none;
 }
-
-/* 메뉴 호버 효과 */
-._9x1lao5:hover {
-    color: #ffffff;
+.css-ry5kze {
+    position: relative;
+    display: inline-flex;
+    -webkit-box-pack: center;
+    justify-content: center;
+    -webkit-box-align: center;
+    align-items: center;
+    vertical-align: top;
+}
+._1gwjmkib {
+    border-radius: 8px;
+}
+._1gwjmkia {
+    border: none;
+    box-shadow: inset 0 0 0 1px var(--wts-adaptive-greyOpacity100);
+}
+.css-1vqadhc {
+    position: relative;
+    display: inline-flex;
+    -webkit-box-pack: center;
+    justify-content: center;
+    -webkit-box-align: center;
+    align-items: center;
+    overflow: hidden;
+    vertical-align: top;
+}
+.css-zl34r3 {
+    width: 100%;
+    height: 100%;
+    transform: scale(var(--asset-scale));
+}
+.css-zl34r3, .css-zl34r3 img, .css-zl34r3 video {
+    object-fit: var(--asset-object-fit);
 }

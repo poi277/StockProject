@@ -9,7 +9,8 @@ import CandleForm from '../candle/CandleForm';
 // CSS 파일을 import 합니다. (Next.js 기준)
 import '../../tossCss/toss-layout.css'
 import Header from '../UI/Header';
-
+import StockPriceHeader from './StockHeader/StockPriceHeader';
+import './StockDetailForm.css'
 export default function StockDetailForm({ stock, watched }) {
   const { connected, stocks, selectedPrice, setSelectedPrice } =
     StockDetail(stock.stockCode, stock);
@@ -38,7 +39,7 @@ return (
        <main className="ho2myi2">
           <div className="_2ozzgc8">
             <div 
-              className="_2ozzgcf _2ozzgca _2ozzget" 
+              className="_2ozzgcf _2ozzgca _2ozzgch" 
               style={{ '--_2ozzgcg': '42.046875'}}
             >            
               <div 
@@ -59,6 +60,7 @@ return (
                   }}
                 >
                   {/* 여기에 종목명, 가격 정보 등이 들어갑니다. */}
+                  <StockPriceHeader/>
                 </div>
 
                 {/* 2. 스티키 탭 영역: div class="_1pn0hfp0" */}
