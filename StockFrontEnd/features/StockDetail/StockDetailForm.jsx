@@ -11,6 +11,8 @@ import '../../tossCss/toss-layout.css'
 import Header from '../UI/Header';
 import StockPriceHeader from './StockHeader/StockPriceHeader';
 import './StockDetailForm.css'
+import StockTabSelection from './StockHeader/StockTabSelection/StockTabSelection';
+import StockRollingBar from './StockRollingBar/StockRollingBar';
 export default function StockDetailForm({ stock, watched }) {
   const { connected, stocks, selectedPrice, setSelectedPrice } =
     StockDetail(stock.stockCode, stock);
@@ -62,18 +64,8 @@ return (
                   {/* 여기에 종목명, 가격 정보 등이 들어갑니다. */}
                   <StockPriceHeader/>
                 </div>
-
-                {/* 2. 스티키 탭 영역: div class="_1pn0hfp0" */}
-                <div 
-                  className="_1pn0hfp0" 
-                  style={{ 
-                    position: 'sticky', 
-                    top: '81px', 
-                    zIndex: 10
-                  }}
-                >
                   {/* 여기에 차트/호가/소식 탭 메뉴가 들어갑니다. */}
-                </div>
+                  <StockTabSelection/>
 
                 {/* 3. 메인 콘텐츠 루트: div class="_2x64iu0" id="stock-contents-root" */}
                 <div 
@@ -86,13 +78,10 @@ return (
                 </div>
 
                 {/* 4. 지수 롤링 바: div data-section-name="지수Rolling" */}
-                <div 
-                  className="e9yr874" 
-                  data-section-name="지수Rolling" 
-                  style={{ '--section-width': '1460px'}}
-                >
+              
+                  <StockRollingBar/>
                   {/* 하단에 흐르는 지수 정보 영역입니다. */}
-                </div>
+               
 
               </div>
             </div>

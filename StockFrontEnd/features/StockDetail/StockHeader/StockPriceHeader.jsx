@@ -11,7 +11,7 @@ export default function StockPriceHeader() {
       className="ia3qp41" style={{ display: 'flex', flexDirection: 'row', gap: '0px', justifyContent: 'normal', alignItems: 'center' }}
     >
       {/* 1. 종목명/아이콘 영역: div class="ia3qp42" */}
-      <div className="ia3qp42" style={{ display: 'flex' }}>
+      <div className="ia3qp42">
         {/* 1. 종목 아이콘/로고 영역: div class="ia3qp43" */}
           <StockHeaderName/>
         {/* 2. 숨겨진 구분선 혹은 스페이서: div class="_1sivumi7" */}
@@ -21,7 +21,7 @@ export default function StockPriceHeader() {
       </div>
 
       {/* 2. 가격/등락 정보 영역: div class="_8u2t3p0" */}
-      <div className="_8u2t3p0" style={{ display: 'flex' }}>
+      <div className="_8u2t3p0">
           <StockHeaderTabs/>
       </div>
 
@@ -99,7 +99,7 @@ export default function StockPriceHeader() {
                 aria-checked="false" 
                 data-state="unchecked" 
                 value="left" 
-                className="tw3v-1cq3ggq0 tw3v-1cq3ggq2" 
+                className="tw3v-1cq3gqg0 tw3v-1cq3gqg2" 
                 data-seg-state="unchecked" 
                 data-tossinvest-log="SegmentedControl.Item" 
                 data-contents-value="달러" 
@@ -127,7 +127,7 @@ export default function StockPriceHeader() {
                 aria-checked="true" 
                 data-state="checked" 
                 value="right" 
-                className="tw3v-1cq3ggq0 tw3v-1cq3ggq2" 
+                className="tw3v-1cq3gqg0 tw3v-1cq3gqg2" 
                 data-seg-state="checked" 
                 data-tossinvest-log="SegmentedControl.Item" 
                 data-contents-value="원" 
@@ -136,8 +136,8 @@ export default function StockPriceHeader() {
                 tabIndex="0" 
                 data-radix-collection-item=""
               >
-                <div className="tw3v-1cq3ggq3 tw3v-1cq3gqg5" style={{ display: 'flex' }}>
-                  <span className="tw3v-17xiat90 tw3v-17xiat91 tw3v-1cq3ggqe" aria-hidden="false" role="presentation" style={{ height: '14px', width: '14px', minWidth: '14px', color: 'var(--wts-adaptive-greyOpacity800)' }}>
+                <div className="tw3v-1cq3gqg3 tw3v-1cq3gqg5">
+                  <span className="tw3v-17xiat90 tw3v-17xiat91 tw3v-1cq3gqge" aria-hidden="false" role="presentation" style={{ height: '14px', width: '14px', minWidth: '14px', color: 'var(--wts-adaptive-greyOpacity800)' }}>
                     <svg enableBackground="new 0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <g fill="#b0b8c1">
                         <path d="m 7.363 9.498 c 0.671 0.253 1.438 0.38 2.299 0.38 s 1.621 -0.127 2.28 -0.38 s 1.172 -0.614 1.539 -1.083 c 0.38 -0.481 0.57 -1.032 0.57 -1.653 c 0 -0.633 -0.19 -1.184 -0.57 -1.653 c -0.367 -0.469 -0.88 -0.836 -1.539 -1.102 s -1.419 -0.399 -2.28 -0.399 s -1.628 0.133 -2.299 0.399 c -0.659 0.266 -1.172 0.633 -1.539 1.102 s -0.551 1.02 -0.551 1.653 c 0 0.621 0.184 1.172 0.551 1.653 c 0.367 0.469 0.88 0.83 1.539 1.083 Z m 0.855 -3.724 c 0.38 -0.215 0.861 -0.323 1.444 -0.323 c 0.405 0 0.754 0.051 1.045 0.152 s 0.519 0.247 0.684 0.437 s 0.247 0.431 0.247 0.722 c 0 0.418 -0.184 0.741 -0.551 0.969 c -0.355 0.215 -0.83 0.323 -1.425 0.323 c -0.583 0 -1.064 -0.108 -1.444 -0.323 c -0.367 -0.228 -0.551 -0.551 -0.551 -0.969 c 0 -0.443 0.184 -0.773 0.551 -0.988 Z" />

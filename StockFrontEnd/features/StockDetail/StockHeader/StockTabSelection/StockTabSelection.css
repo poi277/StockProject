@@ -1,0 +1,20 @@
+._1pn0hfp0 {
+    display: flex;
+    justify-content: space-between;
+    width: calc(100% + 2 * calc(clamp(16px, 6.25vw - 48px, 32px) + 8px));
+    margin-left: calc(-1 * calc(clamp(16px, 6.25vw - 48px, 32px) + 8px));
+    padding-left: calc(clamp(16px, 6.25vw - 48px, 32px) + 8px);
+    padding-right: calc(clamp(16px, 6.25vw - 48px, 32px) + 8px);
+    margin-bottom: 10px;
+    background: var(--wts-body-background-color);
+}
+._1pn0hfp1 {
+    white-space: nowrap;
+}
+._1f14oz20 {
+    display: flex;
+    gap: 8px;
+}
+._1pd1ca40 {
+    padding: 8px 10px;
+}

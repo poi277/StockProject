@@ -97,3 +97,11 @@
 .w65da {
     color: var(--wts-adaptive-blue500);
 }
+.w65d5 {
+    width: 4px;
+    height: 4px;
+    border-radius: 99px;
+    background-color: var(--wts-adaptive-green600);
+    box-shadow: inset 0 0 0 .75px var(--wts-adaptive-green800);
+    flex-shrink: 0;
+}

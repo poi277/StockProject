@@ -1,0 +1,91 @@
+.e9yr877 {
+    margin-left: 12px;
+    background: linear-gradient(transparent, var(--wts-adaptive-grey400), transparent);
+    height: 20px;
+    width: 1px;
+}
+.e9yr876 {
+    --container-width: 0px;
+    --animation-duration: 0s;
+    --section-width: 0px;
+    flex: 1 1;
+    min-width: 0;
+    position: relative;
+    overflow: clip;
+    contain: content;
+}
+.e9yr875 {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}
+.e9yr871 {
+    display: flex;
+    justify-content: space-around;
+    padding: 6px 0;
+    animation-play-state: running !important;
+    will-change: transform;
+    animation-name: e9yr870;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    width: var(--container-width);
+    animation-duration: var(--animation-duration);
+}
+.e9yr872 {
+    padding: 4px 10px;
+    border-radius: 8px;
+}
+.e9yr873 {
+    white-space: nowrap;
+}
+.e9yr878 {
+    margin-left: 8px;
+}
+.e9yr879 {
+    margin-left: 4px;
+}
+.e9yr878, .e9yr879 {
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+}
+.e9yr874 {
+    position: sticky;
+    left: 0;
+    bottom: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    width: var(--section-width);
+}
+
+@keyframes e9yr870 {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    /* 왼쪽으로 컨테이너의 절반만큼 이동 */
+    transform: translateX(-50%);
+  }
+}
+
+
+.e9yr876:hover .e9yr871 {
+    animation-play-state: paused !important;
+}
+
+
+.e9yr872:hover {
+    /* 토스 다크모드 기준 hover 배경색 (살짝 밝아짐) */
+    background-color: var(--wts-adaptive-grey100, #2c2c35); 
+}
+
+/* 3. 링크 텍스트가 밑줄 생기지 않게 방지 (이미지 구조 유지) */
+.e9yr873 {
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+}
