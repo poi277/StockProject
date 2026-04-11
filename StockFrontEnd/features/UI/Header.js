@@ -1,5 +1,5 @@
 import './Header.css';
-import '@/tossCss/toss-layout.css'
+import '../../tossCss/toss-layout.css'
 export default function Header() {
     return(
          <div className="_1bfoojl0" data-nosnippet="true" id="tossinvest_global_navigation_bar">

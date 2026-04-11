@@ -38,4 +38,5 @@
     gap: 8px;
     flex: 1 1;
     margin-bottom: 24px;
+    min-height: 0; /* ← 이것만 추가 */
 }

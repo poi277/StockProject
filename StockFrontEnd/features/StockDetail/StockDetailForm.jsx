@@ -7,12 +7,14 @@ import useWatch from '../watchList/useWatch';
 import ExecutionList from '../execution/ExecutionList';
 import CandleForm from '../candle/CandleForm';
 // CSS 파일을 import 합니다. (Next.js 기준)
-import '../../tossCss/toss-layout.css'
 import Header from '../UI/Header';
 import StockPriceHeader from './StockHeader/StockPriceHeader';
 import './StockDetailForm.css'
 import StockTabSelection from './StockHeader/StockTabSelection/StockTabSelection';
 import StockRollingBar from './StockRollingBar/StockRollingBar';
+import MainContent from './MainContent/MainContent';
+import '../../tossCss/toss-layout.css'
+
 export default function StockDetailForm({ stock, watched }) {
   const { connected, stocks, selectedPrice, setSelectedPrice } =
     StockDetail(stock.stockCode, stock);
@@ -33,7 +35,8 @@ export default function StockDetailForm({ stock, watched }) {
   const PAD      = 8;
 
 return (
-<div id="_next" className="tw3v-n7og3x0">
+<div id="_next">
+    <div data-nosnippet="true" id="unsupported-device-section" className="f2xx2r0"></div>
   <div id="main-content">
     <div className="ho2myi0 _1kestwgq _1kestwg2">
       <div className="ho2myi1">
@@ -75,6 +78,7 @@ return (
                   
                 >
                   {/* 실제 차트나 호가 내용이 렌더링되는 지점입니다. */}
+                  <MainContent/>
                 </div>
 
                 {/* 4. 지수 롤링 바: div data-section-name="지수Rolling" */}

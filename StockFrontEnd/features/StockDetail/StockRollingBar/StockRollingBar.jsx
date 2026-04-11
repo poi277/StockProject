@@ -1,5 +1,5 @@
 import './StockRollingBar.css'
-
+import '@/tossCss/toss-layout.css'
 export default function StockRollingBar() {
   return (
   <div  className="e9yr874"  data-section-name="지수Rolling" style={{ '--section-width': '1460px'}}>
