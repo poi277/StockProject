@@ -66,6 +66,297 @@
     font-feature-settings: "tnum";
     font-variant: tabular-nums;
 }
+._1oug70o1 {
+    position: relative;
+    flex: 1 1;
+}
+._1oug70o3 {
+    grid-template-columns: minmax(104px, 1fr) minmax(86px, 1fr) minmax(104px, 1fr);
+}
+._1oug70o2 {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-rows: repeat(2, 1fr);
+    z-index: 0;
+    pointer-events: none;
+}
+._1oug70ow {
+    grid-column: 1 / 2;
+    grid-row: 1 / 2;
+}
+._1oug70or {
+    grid-column: 2 / 3;
+    grid-row: 1 / 3;
+}
+._1oug70oz {
+    grid-column: 3 / 4;
+    grid-row: 2 / 3;
+}
+._1oug70oy {
+    opacity: .3;
+    background: linear-gradient(to bottom, transparent 0, var(--wts-adaptive-red50) 100%);
+}
+._1oug70oq {
+    pointer-events: none;
+}
+._1oug70ou {
+    box-shadow: 8px 0 8px -8px rgba(0, 0, 0, .15), -8px 0 8px -8px rgba(0, 0, 0, .15);
+}
+._1oug70ov {
+    opacity: .3;
+    background: linear-gradient(to bottom, var(--wts-adaptive-blue50) 0, transparent 100%);
+}
+._1oug70o5 {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) 1px minmax(0, 1fr);
+    z-index: 2;
+    pointer-events: none;
+}
+._1oug70o8 {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) 1px minmax(0, 1fr);
+    position: relative;
+    z-index: 1;
+    padding: 32px 0;
+    flex: 1 1;
+}
+._1oug70o6 {
+    grid-template-columns: minmax(104px, 1fr) minmax(86px, 1fr) minmax(104px, 1fr);
+}
+._1oug70oh {
+    padding: 8px 0;
+    display: grid;
+    grid-template-columns: minmax(4px, 12px) minmax(72px, 1fr) minmax(4px, 12px);
+}
+._1oug70o9 {
+    pointer-events: none;
+    justify-self: stretch;
+    align-self: end;
+    grid-row: 1 / 2;
+}
+._1oug70oa {
+    grid-column: 3 / 4;
+}
+._1oug70od {
+    grid-column: 1 / 2;
+}
+._1oug70oj {
+    row-gap: 6px;
+    justify-content: flex-start;
+    width: 100%;
+    max-width: 135px;
+    font-feature-settings: "tnum";
+    font-variant: tabular-nums;
+}
+
+._1oug70oh:after, ._1oug70oh:before {
+    content: "";
+    max-width: 12px;
+    display: block;
+}
+
+._1oug70oc {
+    pointer-events: none;
+    justify-self: stretch;
+    align-self: start;
+    padding-bottom: 32px;
+    grid-row: 3 / 4;
+    justify-items: end;
+}
+._1oug70of {
+    justify-content: end;
+}
+._1oug70o11 {
+    flex: 0 0 1px;
+    height: 1px;
+    margin: 1px 0;
+    background: linear-gradient(90deg, transparent 0, var(--wts-adaptive-grey200) 35%, var(--wts-adaptive-grey200) 65%, transparent 100%);
+}
+._1oug70og {
+    justify-content: start;
+}
+._1oug70ok {
+    margin: 1px 0;
+}
+._1oug70ol {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 8px;
+    justify-content: space-between;
+}
+._14zza89 {
+    left: 6px;
+}
+._1oug70on {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 8px;
+    justify-content: space-between;
+}
+._14zza85 {
+    background: linear-gradient(270deg, transparent 0, var(--wts-adaptive-grey200) 100%);
+    background-size: 100% 1px;
+    background-repeat: no-repeat;
+    background-position: bottom;
+}
+
+.hmbv031 {
+    grid-template-columns: minmax(104px, 1fr) minmax(86px, 1fr) minmax(104px, 1fr);
+}
+.hmbv030 {
+    display: grid;
+    min-height: 40px;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+}
+._14zza80 {
+    display: flex;
+    align-items: center;
+    justify-content: right;
+}
+.dj9of22 {
+    display: flex;
+    position: relative;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 1px;
+}
+.dj9of23 {
+    position: relative;
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr minmax(44px, auto);
+    align-items: center;
+    padding: 1px 0;
+    row-gap: 0;
+    column-gap: 10px;
+    font-feature-settings: "tnum";
+    font-variant: tabular-nums;
+}
+
+.dj9of25 {
+    padding: 0;
+    align-items: center;
+}
+.dj9of2e.dj9of2e {
+    margin-top: -2px;
+}
+.dj9of2e {
+    text-align: center;
+}
+.dj9of2c {
+    position: relative;
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+}
+._1oug70og {
+    justify-content: start;
+}
+._1kcm3421 {
+    grid-template-columns: minmax(104px, 1fr) minmax(86px, 1fr) minmax(104px, 1fr);
+}
+._14zza87 {
+    border-radius: 6px;
+    background-color: var(--wts-adaptive-red50);
+    margin-right: auto;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+._1kcm3420 {
+    display: grid;
+    min-height: 40px;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+._1oug70of, ._1oug70og {
+    width: 100%;
+    flex: 1 1;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    min-height: 450px;
+}
+.dj9of25, .dj9of26 {
+    position: relative;
+    display: flex;
+    margin: 0;
+    justify-content: center;
+    flex-direction: column;
+}
+.hmbv030>#quote-row-quantity {
+    position: relative;
+}
+._1kcm3420>#quote-row-price {
+    transition: background-color .2s cubic-bezier(.16, 1, .3, 1);
+    container-type: inline-size;
+    container-name: price-column;
+}
+
+.hmbv030>#quote-row-quantity>div {
+    transition: background-color .2s cubic-bezier(.16, 1, .3, 1);
+}
+
+._14zza8a {
+    background-color: var(--wts-adaptive-blue100);
+}
+._14zza86 {
+    border-radius: 6px;
+    background-color: var(--wts-adaptive-blue50);
+    margin-left: auto;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+._14zza88 {
+    right: 6px;
+}
+._14zza88, ._14zza89 {
+    position: absolute;
+    top: 3px;
+}
+._14zza86, ._14zza87 {
+    height: 24px;
+    position: relative;
+    transition: background-color .2s ease-in-out;
+}
+
+.hmbv030>#quote-row-price {
+    transition: background-color .2s cubic-bezier(.16, 1, .3, 1);
+    container-type: inline-size;
+    container-name: price-column;
+}
+.hmbv030>#quote-row-quantity:before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, transparent 0, var(--wts-adaptive-blue50) 50%);
+    opacity: 0;
+    transition: opacity .2s cubic-bezier(.16, 1, .3, 1);
+}
+._1oug70of, ._1oug70og {
+    width: 100%;
+    flex: 1 1;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    min-height: 450px;
+}
+
+._1oug70oi, ._1oug70oj {
+    display: flex;
+    flex-direction: column;
+}
 
 ._1hpof5w8, ._1hpof5w9 {
     flex: 1 1;

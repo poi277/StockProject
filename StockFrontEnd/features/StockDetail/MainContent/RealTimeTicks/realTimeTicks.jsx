@@ -32,7 +32,6 @@ export default function RealTimeTicks()
                     <div data-viewport-type="element" style={{ width: "100%", height: "100%", position: "absolute", top: "0px" }}>
                     <table className="tw3v-kvawo28 tw3v-kvawo2a tw3v-kvawo2e" style={{ borderSpacing: "0px", overflowAnchor: "none" }}>
                         <thead className="tw3v-4pu5o90" data-tabster='{"mover":{"cyclic":false,"direction":2,"memorizeCurrent":true}}' style={{ zIndex: "auto", position: "sticky", top: "0px" }}>
-                            <i tabIndex={0} role="none" data-tabster-dummy aria-hidden="true" style={{ position: "fixed", height: "1px", width: "1px", opacity: 0.001, zIndex: -1, contentVisibility: "hidden", top: "0px", left: "0px" }}></i>
 
                             <tr className="auto-zebra-pattern">
                                 <th className="tw3v-1apn5az0">
@@ -62,7 +61,6 @@ export default function RealTimeTicks()
                                 </th>
                             </tr>
 
-                            <i tabIndex={0} role="none" data-tabster-dummy aria-hidden="true" style={{ position: "fixed", height: "1px", width: "1px", opacity: 0.001, zIndex: -1, contentVisibility: "hidden", top: "0px", left: "0px" }}></i>
                         </thead>
                        <tbody data-tabster='{"mover":{"cyclic":false,"direction":3,"memorizeCurrent":true}}' data-testid="virtuoso-item-list">
 

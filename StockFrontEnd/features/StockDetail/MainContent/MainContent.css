@@ -84,7 +84,15 @@
     user-select: none;
 }
 
-
+._1upatvo0 {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 16px;
+    box-sizing: border-box;
+    border: 1px solid transparent;
+    transition: border .15s ease, box-shadow .15s ease;
+}
 
 ._1gr0g6c1, ._1gr0g6c2 {
     background-color: initial;

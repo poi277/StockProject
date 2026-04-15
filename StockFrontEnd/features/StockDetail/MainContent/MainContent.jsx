@@ -5,6 +5,7 @@ import './MainContent.css';
 import '@/tossCss/toss-layout.css';
 import RealTimeTicks from './RealTimeTicks/realTimeTicks';
 import HogaChart from './HogaChart/HogaChart';
+import OrderForm from './Order/OrderForm';
 
 // 초기 레이아웃 상수
 const INIT = {
@@ -115,8 +116,10 @@ export default function StockContent() {
                   width: `${w1}px`, height: `${splitH_left}px`
                 }}>
                   <input type="hidden" value='{"typeId":"chart","title":"차트","hide":"false"}' />
+                <div className="_1upatvo0">
                   <div className="tw3v-1ftc7zl0">
                      <MainContentForm/>
+                    </div>
                   </div>
                 </div>
 
@@ -126,9 +129,11 @@ export default function StockContent() {
                   width: `${w2}px`, height: `${splitH_mid}px`
                 }}>
                   <input type="hidden" value='{"typeId":"quote","title":"호가","minWidth":325,"minHeight":300,"hide":"false"}' />
+                  <div className="_1upatvo0">
                   <div className="tw3v-1ftc7zl0">
                      <MainContentForm/>
                       <HogaChart/>
+                     </div>
                   </div>
                 </div>
 
@@ -138,8 +143,11 @@ export default function StockContent() {
                   width: `${w3}px`, height: `${splitH_right}px`
                 }}>
                   <input type="hidden" value='{"typeId":"orderForm","title":"일반주문","minWidth":300,"minHeight":300,"hide":"false"}' />
+                   <div className="_1upatvo0">
                   <div className="tw3v-1ftc7zl0">
-                    <MainContentForm/>                 
+                    <MainContentForm/>
+                    <OrderForm/>            
+                  </div>
                   </div>
                 </div>
 

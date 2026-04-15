@@ -9,35 +9,166 @@ export default function HogaChart()
                     <div id="종목상세__호가" className="_1niv0g0" data-section-name="종목상세__호가" data-ignore-auto-section-prefix="true">
                         <div className="_1niv0g1">
                             <div style={{ position: "absolute", top: "calc(32px)", left: "50%" }}></div>
-                            <div className="_1ofr7z31">  </div>
-                            <div className="_1oug70o0">  </div>
-                            <div>
-                               <div className="_1hpof5wa">
-                                <div className="_1hpof5w1"> 
-                                    <span className="_1hpof5w3" style={{ "--_1hpof5w2": "133314" }}></span>
-                                    <span className="_1hpof5w5" style={{ "--_1hpof5w4": "46445" }}></span>
-                                </div>
-                                <div className="_1hpof5w6">
-                                    <div className="_1hpof5w8">
-                                        <span className="tw3v-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>판매대기</span>
-                                        <span className="tw3v-1r5dc8g0 _1p5yqoh0 gvo66u0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-blue600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>133,314</span>
+                            <div className="_1ofr7z31"></div>
+                            <div className="_1oug70o0">
+                                <div className="_1oug70o1">
+                                    <div className="_1oug70o3 _1oug70o2">
+                                        <div className="_1oug70ow _1oug70ov"></div>
+                                        <div className="_1oug70oq _1oug70or _1oug70ou"></div>
+                                        <div className="_1oug70oz _1oug70oy"></div>
                                     </div>
-                                    <div className="_1hpof5w7">
-                                        <div className="_1oug70op" style={{ display: "flex", flexDirection: "row", gap: "0px", justifyContent: "center", alignItems: "center" }}>
-                                            <span className="tw3v-1r5dc8g0 gvo66u1" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey700)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>애프터마켓</span>
+                                    <div className="_1oug70o6 _1oug70o5">
+                                        <div className="_1oug70oa _1oug70o9 _1oug70oh">                                      
+                                                <QuotesInfoKr/>
+                                        </div>
+                                        <div className="_1oug70od _1oug70oc _1oug70oh">
+                                                <TradingStrengthKr/>
                                         </div>
                                     </div>
-                                    <div className="_1hpof5w9">
-                                        <span className="tw3v-1r5dc8g0 _1p5yqoh0 gvo66u0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-red600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>46,445</span>
-                                        <span className="tw3v-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>구매대기</span>
+                                    <div className="_1oug70o8">                    
+                                        <SellOrderBook/>
+                                    <div className="_1oug70o11"></div>
+                                        <BuyOrderBook/>
                                     </div>
                                 </div>
                             </div>
-                            </div>
+                            <HogaUnderBar/>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    )
+}
+
+function HogaUnderBar() {
+	return (
+		<div>
+			<div className="_1hpof5wa">
+				<div className="_1hpof5w1">
+					<span className="_1hpof5w3" style={{ "--_1hpof5w2": "133314" }}></span>
+					<span className="_1hpof5w5" style={{ "--_1hpof5w4": "46445" }}></span>
+				</div>
+				<div className="_1hpof5w6">
+					<div className="_1hpof5w8">
+						<span className="tw3v-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>판매대기</span>
+						<span className="tw3v-1r5dc8g0 _1p5yqoh0 gvo66u0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-blue600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>133,314</span>
+					</div>
+					<div className="_1hpof5w7">
+						<div className="_1oug70op" style={{ display: "flex", flexDirection: "row", gap: "0px", justifyContent: "center", alignItems: "center" }}>
+							<span className="tw3v-1r5dc8g0 gvo66u1" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey700)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>애프터마켓</span>
+						</div>
+					</div>
+					<div className="_1hpof5w9">
+						<span className="tw3v-1r5dc8g0 _1p5yqoh0 gvo66u0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-red600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>46,445</span>
+						<span className="tw3v-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>구매대기</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+function QuotesInfoKr()
+{
+    return(
+        <ul data-list-name="QuotesInfoKr" className="_1oug70oj">
+            <li className="_1oug70ol">
+                <span className="tw3v-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>52주 최고</span>
+                <span className="tw3v-1r5dc8g0 gvo66u0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>1,117,000</span>
+            </li>
+            <hr className="tw3v-5u17g30 _1oug70ok"></hr>
+            <li className="_1oug70ol">
+                <span className="tw3v-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>최고</span>
+                <span className="tw3v-1r5dc8g0 gvo66u0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-red600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>1,043,000</span>
+            </li>
+            <li className="_1oug70ol">
+                <span className="tw3v-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>최고</span>
+                <span className="tw3v-1r5dc8g0 gvo66u0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-blue600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>1,043,000</span>
+            </li>
+         </ul>
+    )
+}
+
+function TradingStrengthKr()
+{
+    return(
+         <ul data-list-name="TradingStrengthKr" className="_1oug70om">
+            <li className="_1oug70on">
+                <span className="tw3v-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>체결강도</span>
+                <span className="tw3v-1r5dc8g0 gvo66u0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-red600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>122%</span>
+            </li>
+            <li className="_1oug70on">
+                <span className="tw3v-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey700)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>1,032,000</span>
+                <span className="tw3v-1r5dc8g0 gvo66u0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-blue600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>21</span>
+            </li>
+            <li className="_1oug70on">
+                <span className="tw3v-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey700)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>1,032,000</span>
+                <span className="tw3v-1r5dc8g0 gvo66u0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-red600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>21</span>
+            </li>
+         </ul>
+    )
+}
+
+function SellOrderBook()
+{
+    return(
+         <ul data-list-name="SellOrderBookKrComp" className="_1oug70of">
+            <li data-tossinvest-log="li" data-parent-name="SellOrderBookKrComp" className="hmbv031 hmbv030" role="button" tabIndex="0">
+                <div id="quote-row-quantity" className="_14zza80 _14zza84">
+                    <div className="_14zza86 _14zza8a" style={{ width: "calc(58.1794% - 8px)" }}>
+                        <span className="tw3v-1r5dc8g0 _1p5yqoh0 _14zza88" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-regular)", "--tds-wts-foreground-color": "var(--wts-adaptive-blue600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>296,120</span>
+                    </div>
+                </div>
+                <button data-tossinvest-log="button" data-contents-value="상한가261000+29.85%" data-content-tag="contentsLabel" data-parent-name="RegularKrButton" id="quote-row-price" className="dj9of22" aria-haspopup="dialog" aria-expanded="false" aria-controls="radix-_r_463_" data-state="closed" data-contents-label="[object Object]" data-contents-label-code="child" data-tossinvest-priority-log="Popover.Trigger">
+                    <div></div>
+                    <div className="dj9of25 dj9of23">
+                        <span className="tw3v-1r5dc8g0 gvo66u1" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-red500)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>261,000</span>
+                        <span className="tw3v-1r5dc8g0 dj9of2e dj9of2c" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-red500)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>+29.85%</span>
+                    </div>
+                    <div></div>
+                </button>
+                <div></div>
+            </li>
+                        <li data-tossinvest-log="li" data-parent-name="SellOrderBookKrComp" className="hmbv031 hmbv030" role="button" tabIndex="0">
+                <div id="quote-row-quantity" className="_14zza80 _14zza84">
+                    <div className="_14zza86 _14zza8a" style={{ width: "calc(58.1794% - 8px)" }}>
+                        <span className="tw3v-1r5dc8g0 _1p5yqoh0 _14zza88" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-regular)", "--tds-wts-foreground-color": "var(--wts-adaptive-blue600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>296,120</span>
+                    </div>
+                </div>
+                <button data-tossinvest-log="button" data-contents-value="상한가261000+29.85%" data-content-tag="contentsLabel" data-parent-name="RegularKrButton" id="quote-row-price" className="dj9of22" aria-haspopup="dialog" aria-expanded="false" aria-controls="radix-_r_463_" data-state="closed" data-contents-label="[object Object]" data-contents-label-code="child" data-tossinvest-priority-log="Popover.Trigger">
+                    <div></div>
+                    <div className="dj9of25 dj9of23">
+                        <span className="tw3v-1r5dc8g0 gvo66u1" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-red500)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>261,000</span>
+                        <span className="tw3v-1r5dc8g0 dj9of2e dj9of2c" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-red500)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>+29.85%</span>
+                    </div>
+                    <div></div>
+                </button>
+                <div></div>
+            </li>
+        </ul>
+    )
+}
+function BuyOrderBook()
+{
+    return(
+         <ul data-list-name="BuyOrderBookKrComp" className="_1oug70og">
+            <li data-tossinvest-log="li" data-parent-name="BuyOrderBookKrComp" className="_1kcm3421 _1kcm3420" role="button" tabIndex="0">
+                <div></div>
+                <button data-tossinvest-log="button" data-contents-value="207000+2.98%" data-content-tag="contentsLabel" data-parent-name="RegularKrButton" id="quote-row-price" className="dj9of22" aria-haspopup="dialog" aria-expanded="false" aria-controls="radix-_r_7kf_" data-state="closed" data-contents-label="[object Object]" data-contents-label-code="child" data-tossinvest-priority-log="Popover.Trigger">
+                    <div></div>
+                    <div className="dj9of25 dj9of23">
+                        <span className="tw3v-1r5dc8g0 gvo66u1" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-red500)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>207,000</span>
+                        <span className="tw3v-1r5dc8g0 dj9of2e dj9of2c" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-red500)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>+2.98%</span>
+                    </div>
+                    <div></div>
+                </button>
+                <div id="quote-row-quantity" className="_14zza80 _14zza85">
+                    <div className="_14zza87 _14zza8b" style={{ width: "calc(30.5308% - 8px)" }}>
+                        <span className="tw3v-1r5dc8g0 _1p5yqoh0 _14zza89" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-regular)", "--tds-wts-foreground-color": "var(--wts-adaptive-red600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>232,232</span>
+                    </div>
+                </div>
+            </li>
+        </ul>
     )
 }
