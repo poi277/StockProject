@@ -6,6 +6,7 @@ import '@/tossCss/toss-layout.css';
 import RealTimeTicks from './RealTimeTicks/realTimeTicks';
 import HogaChart from './HogaChart/HogaChart';
 import OrderForm from './Order/OrderForm';
+import ChartForm from '../Chart/ChartForm';
 
 // 초기 레이아웃 상수
 const INIT = {
@@ -119,6 +120,7 @@ export default function StockContent() {
                 <div className="_1upatvo0">
                   <div className="tw3v-1ftc7zl0">
                      <MainContentForm/>
+                     <ChartForm/>
                     </div>
                   </div>
                 </div>

@@ -239,3 +239,27 @@
 ._13izhfo4>:last-child {
     margin: 0;
 }
+
+/* 판매/대기 선택 시 파란색 배경 */
+.xl0v5qg-sell {
+    --xl0v5qd: linear-gradient(90deg, var(--wts-adaptive-blueOpacity50) 0%, var(--wts-adaptive-greyOpacity100) 70%);
+    --xl0v5qe: var(--wts-adaptive-blueOpacity50);
+}
+.xl0v5qg-pending {
+    --xl0v5qd: linear-gradient(90deg, var(--wts-adaptive-greyOpacity50) 0%, var(--wts-adaptive-greyOpacity100) 70%);
+    --xl0v5qe: var(--wts-adaptive-greyOpacity50);
+}
+/* 판매/대기 선택된 버튼 파란색 */
+.xl0v5qp {
+    --xl0v5qm: var(--wts-adaptive-blue600);
+}
+/* 배경 슬라이더 애니메이션 추가 */
+.tw3v-1sni4y97 {
+    transition: transform 0.2s ease-in-out, width 0.2s ease-in-out;
+}
+
+/* 라디오 그룹 내부 버튼들이 가로로 균등하게 배치되도록 설정 */
+.tw3v-1sni4y90 {
+    display: flex;
+    position: relative;
+}

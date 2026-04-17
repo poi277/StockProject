@@ -1,16 +1,19 @@
+import { useState } from 'react'
 import './OrderForm.css'
 
 export default function OrderForm()
 {
+    const [tradeType, setTradeType] = useState('buy')
+
     return(
         <div className="sa1m6r0">
             <div className="sa1m6r1">
                 <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "auto" }}>
                     <div style={{ flex: "1 1 0", minHeight: "0px" }}>
                         <div id="trade-order-section" data-section-name="종목상세__주문하기" data-ignore-auto-section-prefix="true">
-                           <OrderType/>
-                           <OrderStatus/>
-                           <OrderQuantityForm/>
+                           <OrderType tradeType={tradeType} setTradeType={setTradeType}/>
+                           <OrderStatus tradeType={tradeType} />
+                           <OrderQuantityForm tradeType={tradeType} />
                         </div>
                     </div>
                 </div>
@@ -19,49 +22,116 @@ export default function OrderForm()
     )
 }
 
-function OrderType()
-{
-    return(
+function OrderType({ tradeType, setTradeType }) {
+  const isBuy = tradeType === 'buy';
+  const isSell = tradeType === 'sell';
+  const isPending = tradeType === 'pending-orders';
+
+  // 구매: red, 판매: blue, 대기: grey (상태에 따른 부모 컨테이너 색상 클래스)
+  const colorClass = isBuy ? 'xl0v5qg' : isSell ? 'xl0v5qg-sell' : 'xl0v5qg-pending';
+
+  /**
+   * 이동 로직 설명:
+   * 1. width: "33.333%" -> 전체의 1/3 너비
+   * 2. transform:
+   * - 구매(buy): translateX(0%) -> 가장 왼쪽
+   * - 판매(sell): translateX(100%) -> 중앙 (자기 너비만큼 1번 이동)
+   * - 대기(pending-orders): translateX(200%) -> 오른쪽 (자기 너비만큼 2번 이동)
+   */
+  const getTranslateValue = () => {
+    if (isBuy) return 'translateX(0%)';
+    if (isSell) return 'translateX(100%)';
+    if (isPending) return 'translateX(200%)';
+    return 'none';
+  };
+
+  return (
     <div className="xl0v5qc">
-    <div role="radiogroup" aria-required="false" dir="ltr" className="tw3v-1sni4y90 tw3v-1sni4y92 tw3v-1sni4y95 xl0v5qf xl0v5qg xl0v5qk xl0v5ql" tabIndex="0" style={{ outline: "none" }} data-scrollable="false">
-        <div className="tw3v-1sni4y97 tw3v-1sni4y99" style={{ boxShadow: "rgba(0, 0, 0, 0.15) 0px 1px 3px 1px 0px", width: "129px", transform: "none" }}></div>
-            <button type="button" role="radio" aria-checked="true" data-state="checked" value="buy" className="tw3v-1cq3qqg0 tw3v-1cq3qqg2 xl0v5qn xl0v5qo" data-seg-state="checked" aria-controls="trade-order-section" aria-selected="true" data-tossinvest-log="SegmentedControl.Item" data-contents-value="구매" data-content-tag="tab_label" data-parent-name="TradeTypes" tabIndex="-1" data-radix-collection-item>
-                <div className="tw3v-1cq3gqg3 tw3v-1cq3gqg5">
-                    <div className="tw3v-1cq3gqg8">
-                        <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" aria-hidden="true" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>구매</span>
-                        <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>구매</span>
-                    </div>
-                </div>
-            </button>
-            <button type="button" role="radio" aria-checked="false" data-state="unchecked" value="sell" className="tw3v-1cq3qqg0 tw3v-1cq3qqg2 xl0v5qn xl0v5qr" data-seg-state="unchecked" aria-controls="trade-order-section" aria-selected="false" data-tossinvest-log="SegmentedControl.Item" data-contents-value="판매" data-content-tag="tab_label" data-parent-name="TradeTypes" tabIndex="-1" data-radix-collection-item>
-                <div className="tw3v-1cq3gqg3 tw3v-1cq3gqg5">
-                    <div className="tw3v-1cq3gqg8">
-                        <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" aria-hidden="true" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>판매</span>
-                        <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>판매</span>
-                    </div>
-                </div>
-            </button>
-            <button type="button" role="radio" aria-checked="false" data-state="unchecked" value="pending-orders" className="tw3v-1cq3qqg0 tw3v-1cq3qqg2 xl0v5qn xl0v5qr" data-seg-state="unchecked" aria-controls="trade-pending-orders-section" aria-selected="false" data-tossinvest-log="SegmentedControl.Item" data-contents-value="대기" data-content-tag="tab_label" data-parent-name="TradeTypes" tabIndex="-1" data-radix-collection-item>
-               <div className="tw3v-1cq3gqg3 tw3v-1cq3gqg5">
-                    <div className="tw3v-1cq3gqg8">
-                        <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" aria-hidden="true" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>대기</span>
-                        <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>대기</span>
-                    </div>
-               </div>
-            </button>
+      <div
+        role="radiogroup"
+        aria-required="false"
+        dir="ltr"
+        className={`tw3v-1sni4y90 tw3v-1sni4y92 tw3v-1sni4y95 xl0v5qf xl0v5qk xl0v5ql ${colorClass}`}
+        tabIndex="0"
+        style={{ outline: "none", position: "relative" }} // 부모에 relative 추가
+        data-scrollable="false"
+      >
+        {/* 배경 슬라이더 (움직이는 하얀색 바) */}
+        <div
+          className="tw3v-1sni4y97 tw3v-1sni4y99"
+          style={{
+            boxShadow: "rgba(0, 0, 0, 0.15) 0px 1px 3px 0px",
+            width: "33.333%", // 1/3 너비
+            transform: getTranslateValue(), // 위치 이동
+            position: "absolute",
+            top: "2px", // 상하 여백 조정 (필요시)
+            left: "0px",
+            height: "calc(100% - 4px)", // 높이 조정 (필요시)
+            transition: "transform 0.2s ease-in-out", // 부드러운 이동 효과
+            zIndex: 0
+          }}
+        ></div>
+
+        {/* 구매 버튼 */}
+        <button
+          type="button"
+          role="radio"
+          aria-checked={isBuy}
+          className={`tw3v-1cq3gqg0 tw3v-1cq3gqg2 xl0v5qn ${isBuy ? 'xl0v5qo' : 'xl0v5qr'}`}
+          style={{ flex: 1, zIndex: 1, position: "relative", background: "transparent" }}
+          onClick={() => setTradeType('buy')}
+        >
+          <div className="tw3v-1cq3gqg3 tw3v-1cq3gqg5">
+            <div className="tw3v-1cq3gqg8">
+              <span className="tw3v-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-greyOpacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>구매</span>
+            </div>
+          </div>
+        </button>
+
+        {/* 판매 버튼 */}
+        <button
+          type="button"
+          role="radio"
+          aria-checked={isSell}
+          className={`tw3v-1cq3gqg0 tw3v-1cq3gqg2 xl0v5qn ${isSell ? 'xl0v5qp' : 'xl0v5qr'}`}
+          style={{ flex: 1, zIndex: 1, position: "relative", background: "transparent" }}
+          onClick={() => setTradeType('sell')}
+        >
+          <div className="tw3v-1cq3gqg3 tw3v-1cq3gqg5">
+            <div className="tw3v-1cq3gqg8">
+              <span className="tw3v-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-greyOpacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>판매</span>
+            </div>
+          </div>
+        </button>
+
+        {/* 대기 버튼 */}
+        <button
+          type="button"
+          role="radio"
+          aria-checked={isPending}
+          className={`tw3v-1cq3gqg0 tw3v-1cq3gqg2 xl0v5qn ${isPending ? 'xl0v5qp' : 'xl0v5qr'}`}
+          style={{ flex: 1, zIndex: 1, position: "relative", background: "transparent" }}
+          onClick={() => setTradeType('pending-orders')}
+        >
+          <div className="tw3v-1cq3gqg3 tw3v-1cq3gqg5">
+            <div className="tw3v-1cq3gqg8">
+              <span className="tw3v-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-greyOpacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>대기</span>
+            </div>
+          </div>
+        </button>
+      </div>
     </div>
-    </div>
-    )
+  );
 }
 
-function OrderStatus()
+function OrderStatus({ tradeType })
 {
     return(
         <div className="fjdgoj0">
             <label className="tw3v-1r5dc8g0 fjdgoj1" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>주문 유형</label>
             <div className="fjdgoj2 css-1qo9j44" style={{ "--wts-form-field-template-columns": "auto", "--wts-form-field-addon-columns-start": "1", "--wts-field-box-container-display": "grid" }}>
                 <div type="button" id="radix-_r_kul_" aria-haspopup="menu" aria-expanded="false" data-state="closed" data-tossinvest-log="DropdownMenu.Trigger" data-parent-name="OrderMethodSelect" tabIndex="0" data-tossinvest-priority-log="Dropdown.Trigger" data-contents-value="주문 유형 선택" data-content-tag="주문_유형_선택" className="css-ghyw0v">
-                    <div data-tds-wts-field-box-content-variant="default" className="_13izhfo4 css-c8ze6m" style={{ "--wts-field-box-background-color": "var(--wts-adaptive-background)", "--wts-field-box-disabled-background-color": "var(--wts-adaptive-grey100)", "--wts-field-box-border-color": "var(--wts-adaptive-grey200)", "--wts-field-box-disabled-border-color": "var(--wts-adaptive-grey0pacity50)", "--wts-field-box-h-padding": "6px", "--wts-field-box-height": "32px", "--wts-field-box-font-size": "14px", "--wts-field-box-separator-height": "20px", "--wts-field-box-border-radius": "8px", "--wts-field-box-separator-margin": "0 4px", "--wts-field-box-box-shadow-color": "var(--wts-field-box-border-color)", "--wts-field-box-box-shadow-width": "1px", "--wts-field-box-hover-box-shadow-color": "var(--wts-adaptive-blue200)", "--wts-field-box-focus-box-shadow-color": "var(--wts-adaptive-blue500)", "--wts-field-box-content-left-padding": "var(--wts-field-box-h-padding)", "--wts-field-box-content-right-padding": "0px", "--wts-field-box-content-hover-offset": "5px", "--wts-field-box-content-left": "0px", "--wts-field-box-clear-content-margin-bottom": "var(--wts-field-box-content-margin-bottom, 0px)" }}>
+                    <div data-tds-wts-field-box-content-variant="default" className="_13izhfo4 css-c8ze6m" style={{ "--wts-field-box-background-color": "var(--wts-adaptive-background)", "--wts-field-box-disabled-background-color": "var(--wts-adaptive-grey100)", "--wts-field-box-border-color": "var(--wts-adaptive-grey200)", "--wts-field-box-disabled-border-color": "var(--wts-adaptive-greyOpacity50)", "--wts-field-box-h-padding": "6px", "--wts-field-box-height": "32px", "--wts-field-box-font-size": "14px", "--wts-field-box-separator-height": "20px", "--wts-field-box-border-radius": "8px", "--wts-field-box-separator-margin": "0 4px", "--wts-field-box-box-shadow-color": "var(--wts-field-box-border-color)", "--wts-field-box-box-shadow-width": "1px", "--wts-field-box-hover-box-shadow-color": "var(--wts-adaptive-blue200)", "--wts-field-box-focus-box-shadow-color": "var(--wts-adaptive-blue500)", "--wts-field-box-content-left-padding": "var(--wts-field-box-h-padding)", "--wts-field-box-content-right-padding": "0px", "--wts-field-box-content-hover-offset": "5px", "--wts-field-box-content-left": "0px", "--wts-field-box-clear-content-margin-bottom": "var(--wts-field-box-content-margin-bottom, 0px)" }}>
                         <span className="tw3v-1r5dc8g0 _13izhfo5 _7wshe50" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>일반 주문</span>
                         <span className="css-109kmiu" style={{ "--wts-field-box-addon-padding": "4px" }}>
                             <span className="tw3v-17xiat90 tw3v-17xiat91" aria-hidden="false" role="presentation" style={{ height: "16px", width: "16px", minWidth: "16px", color: "var(--wts-adaptive-grey400)" }}>
@@ -77,8 +147,17 @@ function OrderStatus()
     )
 }
 
-function OrderQuantityForm()
+function OrderQuantityForm({tradeType})
 {
+    const [priceType, setPriceType] = useState('limit') // 'limit' = 지정가, 'market' = 시장가
+    const isLimit = priceType === 'limit'
+    const isSell = tradeType === 'sell'
+    const priceLabel = isSell ? '판매' : '구매'
+    const buttonLabel = isSell ? '판매하기' : '구매하기'
+    const buttonClass = isSell
+        ? "tw3v-1wkoka52h tw3v-1wkoka54 tw3v-1wkoka541 tw3v-1wkoka5f tw3v-1wkoka519 tw3v-1wkoka5z tw3v-1wkoka5s tw3v-1wkoka5n tw3v-1wkoka52b"
+        : "tw3v-1wkoka52h tw3v-1wkoka54 tw3v-1wkoka541 tw3v-1wkoka5f tw3v-1wkoka519 tw3v-1wkoka5z tw3v-1wkoka5s tw3v-1wkoka5n tw3v-1wkoka52a"
+
     return(
         <form id="new-order-form" action="/api/v2/wts/trading/order/create/direct" className="xl0v5q1" method="post" data-gtm-form-interact-id="3">
             <input type="hidden" value="A005930" name="stockCode" />
@@ -89,6 +168,7 @@ function OrderQuantityForm()
             <input type="hidden" value="false" name="marginTrading" />
             <input type="hidden" value="false" name="noAutoExchange" />
             <input type="hidden" value="false" name="buyMaxQuantity" />
+            <input type="hidden" value={isLimit ? "00" : "03"} name="orderPriceType" />
             <div className="xl0v5q2" id="trade-order-section">
                 <div>
                     <input type="hidden" value="268000" name="UpperLimit" />
@@ -97,31 +177,32 @@ function OrderQuantityForm()
                         <input type="hidden" value="00" name="orderPriceType" />
                         <div className="_13izhfo1">
                             <span className="tw3v-1r5dc8g0" aria-hidden="true" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey700)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
-                                구매
+                                {priceLabel}
                                 가격
                             </span>
                             <fieldset className="xl0v5q5">
                                 <legend className="_9vo4o90">매매 가격</legend>
                                 <div role="radiogroup" aria-required="true" dir="ltr" className="tw3v-1sni4y90 tw3v-1sni4y92 tw3v-1sni4y95" data-skip="true" tabIndex="0" style={{ outline: "none" }} data-scrollable="false">
-                                    <div className="tw3v-1sni4y97 tw3v-1sni4y99" style={{ boxShadow: "rgba(0, 0, 0, 0.15) 0px 1px 3px 0px", width: "123px", transform: "none" }}></div>
-                                    <button type="button" role="radio" aria-checked="true" data-state="checked" value="00" className="tw3v-1cq3gqg0 tw3v-1cq3gqg2" data-seg-state="checked" data-tossinvest-log="SegmentedControl.Item" data-contents-label="지정가" data-contents-label-code="orderPriceTypeName" data-contents-value="지정가" data-content-tag="orderPriceTypeName" tabIndex="-1" data-radix-collection-item>
+                                    <div className="tw3v-1sni4y97 tw3v-1sni4y99" style={{ boxShadow: "rgba(0, 0, 0, 0.15) 0px 1px 3px 0px", width: "50%",transform: isLimit ? "translateX(0%)" : "translateX(100%)", position: "absolute", top: "2px", left: "0px", height: "calc(100% - 4px)", transition: "transform 0.2s ease-in-out", zIndex: 0}}></div>
+                                    <button onClick={() => setPriceType('limit')} style={{ flex: 1, zIndex: 1, position: "relative", background: "transparent" }} type="button" role="radio" aria-checked="true" data-state="checked" value="00" className="tw3v-1cq3gqg0 tw3v-1cq3gqg2" data-seg-state="checked" data-tossinvest-log="SegmentedControl.Item" data-contents-label="지정가" data-contents-label-code="orderPriceTypeName" data-contents-value="지정가" data-content-tag="orderPriceTypeName" tabIndex="-1" data-radix-collection-item>
                                         <div className="tw3v-1cq3gqg3 tw3v-1cq3gqg5">
                                             <div className="tw3v-1cq3gqg8">
-                                                <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" aria-hidden="true" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>지정가</span>
-                                                <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>지정가</span>
+                                                 {/* greyOpacity800->600으로 */}
+                                                <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" aria-hidden="true" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": priceType === 'limit' ? "var(--wts-adaptive-greyOpacity800)" : "var(--wts-adaptive-greyOpacity600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>지정가</span>
+                                                <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color":priceType === 'limit' ? "var(--wts-adaptive-greyOpacity800)" : "var(--wts-adaptive-greyOpacity600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>지정가</span>
                                             </div>
                                         </div>
                                     </button>
-                                    <input aria-hidden="true" tabIndex="-1" type="radio" value="00" checked name="orderPriceType" style={{ transform: "translateX(-100%)", position: "absolute", pointerEvents: "none", opacity: "0", margin: "0px", width: "123px", height: "28px" }} />
-                                    <button type="button" role="radio" aria-checked="false" data-state="unchecked" value="03" className="tw3v-1cq3gqg0 tw3v-1cq3gqg2" data-seg-state="unchecked" data-tossinvest-log="SegmentedControl.Item" data-contents-label="시장가" data-contents-label-code="orderPriceTypeName" data-contents-value="시장가" data-content-tag="orderPriceTypeName" tabIndex="-1" data-radix-collection-item>
+                                    <input aria-hidden="true" tabIndex="-1" type="radio" value="00" checked name="orderPriceType" onChange={() => {}} style={{ transform: "translateX(-100%)", position: "absolute", pointerEvents: "none", opacity: "0", margin: "0px", width: "123px", height: "28px" }} />
+                                    <button onClick={() => setPriceType('market')} style={{ flex: 1, zIndex: 1, position: "relative", background: "transparent" }}  type="button" role="radio" aria-checked="false" data-state="unchecked" value="03" className="tw3v-1cq3gqg0 tw3v-1cq3gqg2" data-seg-state="unchecked" data-tossinvest-log="SegmentedControl.Item" data-contents-label="시장가" data-contents-label-code="orderPriceTypeName" data-contents-value="시장가" data-content-tag="orderPriceTypeName" tabIndex="-1" data-radix-collection-item>
                                         <div className="tw3v-1cq3gqg3 tw3v-1cq3gqg5">
                                             <div className="tw3v-1cq3gqg8">
-                                                <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" aria-hidden="true" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>시장가</span>
-                                                <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>시장가</span>
+                                                <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" aria-hidden="true" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": priceType === 'market' ? "var(--wts-adaptive-greyOpacity800)" : "var(--wts-adaptive-greyOpacity600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>시장가</span>
+                                                <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color":priceType === 'market' ? "var(--wts-adaptive-greyOpacity800)" : "var(--wts-adaptive-greyOpacity600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>시장가</span>
                                             </div>
                                         </div>
                                     </button>
-                                    <input aria-hidden="true" tabIndex="-1" type="radio" value="03" name="orderPriceType" style={{ transform: "translateX(-100%)", position: "absolute", pointerEvents: "none", opacity: "0", margin: "0px", width: "123px", height: "28px" }} />
+                                    <input aria-hidden="true" tabIndex="-1" type="radio" value="03" name="orderPriceType" onChange={() => {}} style={{ transform: "translateX(-100%)", position: "absolute", pointerEvents: "none", opacity: "0", margin: "0px", width: "123px", height: "28px" }} />
                                 </div>
                             </fieldset>
                         </div>
@@ -132,8 +213,8 @@ function OrderQuantityForm()
                             <div className="_13izhfo2">
                                 <div className="_13izhfo3 css-1qo9j44" style={{ "--wts-form-field-template-columns": "auto", "--wts-form-field-addon-columns-start": "1", "--wts-field-box-container-display": "grid" }}>
                                     <div className="css-ghyw0v">
-                                        <div data-tds-wts-field-box-content-variant="default" className="css-c8ze6m" style={{ "--wts-field-box-background-color": "var(--wts-adaptive-background)", "--wts-field-box-disabled-background-color": "var(--wts-adaptive-grey100)", "--wts-field-box-border-color": "var(--wts-adaptive-grey200)", "--wts-field-box-disabled-border-color": "var(--wts-adaptive-grey0pacity50)", "--wts-field-box-h-padding": "6px", "--wts-field-box-height": "32px", "--wts-field-box-font-size": "14px", "--wts-field-box-separator-height": "20px", "--wts-field-box-border-radius": "8px", "--wts-field-box-separator-margin": "0 4px", "--wts-field-box-box-shadow-color": "var(--wts-field-box-border-color)", "--wts-field-box-box-shadow-width": "1px", "--wts-field-box-hover-box-shadow-color": "var(--wts-adaptive-blue200)", "--wts-field-box-focus-box-shadow-color": "var(--wts-adaptive-blue500)", "--wts-field-box-content-left-padding": "var(--wts-field-box-h-padding)", "--wts-field-box-content-right-padding": "var(--wts-field-box-h-padding)", "--wts-field-box-content-hover-offset": "0px", "--wts-field-box-clear-content-margin-bottom": "var(--wts-field-box-content-margin-bottom, 0px)" }}>
-                                            <label className="tw3v-1r5dc8g0 _13izhfo5 _7wshe50" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "15px" }}>
+                                        <div data-tds-wts-field-box-content-variant="default" className="css-c8ze6m" style={{ "--wts-field-box-background-color": "var(--wts-adaptive-background)", "--wts-field-box-disabled-background-color": "var(--wts-adaptive-grey100)", "--wts-field-box-border-color": "var(--wts-adaptive-grey200)", "--wts-field-box-disabled-border-color": "var(--wts-adaptive-greyOpacity50)", "--wts-field-box-h-padding": "6px", "--wts-field-box-height": "32px", "--wts-field-box-font-size": "14px", "--wts-field-box-separator-height": "20px", "--wts-field-box-border-radius": "8px", "--wts-field-box-separator-margin": "0 4px", "--wts-field-box-box-shadow-color": "var(--wts-field-box-border-color)", "--wts-field-box-box-shadow-width": "1px", "--wts-field-box-hover-box-shadow-color": "var(--wts-adaptive-blue200)", "--wts-field-box-focus-box-shadow-color": "var(--wts-adaptive-blue500)", "--wts-field-box-content-left-padding": "var(--wts-field-box-h-padding)", "--wts-field-box-content-right-padding": "var(--wts-field-box-h-padding)", "--wts-field-box-content-hover-offset": "0px", "--wts-field-box-clear-content-margin-bottom": "var(--wts-field-box-content-margin-bottom, 0px)" }}>
+                                            <label className="tw3v-1r5dc8g0 _13izhfo5 _7wshe50" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-greyOpacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "15px" }}>
                                                 <input data-tossinvest-log="InputWithSubText" data-contents-value="가격" data-content-tag="가격" data-parent-name="PriceFieldsSet" aria-required="true" id="trading-form-price" inputMode="numeric" maxLength="11" pattern="[0-9,|.]+" type="text" defaultValue="214,500" name="price" style={{ width: "58px" }} />
                                                 <span aria-hidden="true" className="_7wshe51" style={{ marginLeft: "auto", marginRight: "6px" }}>원</span>
                                             </label>
@@ -144,7 +225,7 @@ function OrderQuantityForm()
                                     <button type="button" tabIndex="-1" aria-disabled="false" className="tw3v-1wkoka52h tw3v-1wkoka5a tw3v-1wkoka5d tw3v-1wkoka515 tw3v-1wkoka5v tw3v-1wkoka5r tw3v-1wkoka5j tw3v-1wkoka526 _1cx72gj0" data-tds-wts-button data-tossinvest-log="Button" data-contents-value="마이너스 버튼" data-content-tag="마이너스_버튼" data-parent-name="PlusMinusButtons">
                                         <span className="tw3v-1wkoka52g">
                                             <span className="tw3v-17xiat90 tw3v-17xiat91" aria-hidden="true" role="presentation" style={{ height: "16px", width: "16px", minWidth: "16px", color: "var(--wts-adaptive-grey500)" }}>
-                                                <svg enable-background="new 0 0 16 16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                                                <svg enableBackground="new 0 0 16 16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                                                   <path d="m 12.292 8.875 h -8.585 c -0.483 0 -0.875 -0.392 -0.875 -0.875 s 0.391 -0.875 0.875 -0.875 h 8.585 c 0.483 0 0.875 0.391 0.875 0.875 s -0.392 0.875 -0.875 0.875 Z" fill="#b0b8c1"></path>
                                                 </svg>
                                             </span>
@@ -177,8 +258,8 @@ function OrderQuantityForm()
                                 <div className="_13izhfo2">
                                 <div className="_13izhfo3 css-1qo9j44" style={{ "--wts-form-field-template-columns": "auto", "--wts-form-field-addon-columns-start": "1", "--wts-field-box-container-display": "grid" }}>
                                     <div className="css-ghyw0v">
-                                        <div data-tds-wts-field-box-content-variant="default" className="css-c8ze6m" style={{ "--wts-field-box-background-color": "var(--wts-adaptive-background)", "--wts-field-box-disabled-background-color": "var(--wts-adaptive-grey100)", "--wts-field-box-border-color": "var(--wts-adaptive-grey200)", "--wts-field-box-disabled-border-color": "var(--wts-adaptive-grey0pacity50)", "--wts-field-box-h-padding": "6px", "--wts-field-box-height": "32px", "--wts-field-box-font-size": "14px", "--wts-field-box-separator-height": "20px", "--wts-field-box-border-radius": "8px", "--wts-field-box-separator-margin": "0 4px", "--wts-field-box-box-shadow-color": "var(--wts-field-box-border-color)", "--wts-field-box-box-shadow-width": "1px", "--wts-field-box-hover-box-shadow-color": "var(--wts-adaptive-blue200)", "--wts-field-box-focus-box-shadow-color": "var(--wts-adaptive-blue500)", "--wts-field-box-content-left-padding": "var(--wts-field-box-h-padding)", "--wts-field-box-content-right-padding": "var(--wts-field-box-h-padding)", "--wts-field-box-content-hover-offset": "0px", "--wts-field-box-clear-content-margin-bottom": "var(--wts-field-box-content-margin-bottom, 0px)" }}>
-                                            <label className="tw3v-1r5dc8g0 _13izhfo5 _7wshe50" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "15px" }}>
+                                        <div data-tds-wts-field-box-content-variant="default" className="css-c8ze6m" style={{ "--wts-field-box-background-color": "var(--wts-adaptive-background)", "--wts-field-box-disabled-background-color": "var(--wts-adaptive-grey100)", "--wts-field-box-border-color": "var(--wts-adaptive-grey200)", "--wts-field-box-disabled-border-color": "var(--wts-adaptive-greyOpacity50)", "--wts-field-box-h-padding": "6px", "--wts-field-box-height": "32px", "--wts-field-box-font-size": "14px", "--wts-field-box-separator-height": "20px", "--wts-field-box-border-radius": "8px", "--wts-field-box-separator-margin": "0 4px", "--wts-field-box-box-shadow-color": "var(--wts-field-box-border-color)", "--wts-field-box-box-shadow-width": "1px", "--wts-field-box-hover-box-shadow-color": "var(--wts-adaptive-blue200)", "--wts-field-box-focus-box-shadow-color": "var(--wts-adaptive-blue500)", "--wts-field-box-content-left-padding": "var(--wts-field-box-h-padding)", "--wts-field-box-content-right-padding": "var(--wts-field-box-h-padding)", "--wts-field-box-content-hover-offset": "0px", "--wts-field-box-clear-content-margin-bottom": "var(--wts-field-box-content-margin-bottom, 0px)" }}>
+                                            <label className="tw3v-1r5dc8g0 _13izhfo5 _7wshe50" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-greyOpacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "15px" }}>
                                                 <input data-tossinvest-log="InputWithSubText" data-contents-value="수량" data-content-tag="수량" data-parent-name="QuantityFieldsSet" aria-required="true" className="" id="trading-form-quantity" inputMode="numeric" maxLength="11" pattern="[0-9,|.]+" type="text" defaultValue="" name="quantity" style={{ width: "80px" }} placeholder="최대 5주 가능" />
                                                 <span aria-hidden="true" className="_7wshe51" style={{ marginLeft: "auto", marginRight: "6px" }}></span>
                                             </label>
@@ -189,7 +270,7 @@ function OrderQuantityForm()
                                     <button type="button" tabIndex="-1" aria-disabled="false" className="tw3v-1wkoka52h tw3v-1wkoka5a tw3v-1wkoka5d tw3v-1wkoka515 tw3v-1wkoka5v tw3v-1wkoka5r tw3v-1wkoka5j tw3v-1wkoka526 _1cx72gj0" data-tds-wts-button data-tossinvest-log="Button" data-contents-value="마이너스 버튼" data-content-tag="마이너스_버튼" data-parent-name="PlusMinusButtons">
                                         <span className="tw3v-1wkoka52g">
                                             <span className="tw3v-17xiat90 tw3v-17xiat91" aria-hidden="true" role="presentation" style={{ height: "16px", width: "16px", minWidth: "16px", color: "var(--wts-adaptive-grey500)" }}>
-                                                <svg enable-background="new 0 0 16 16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                                                <svg enableBackground="new 0 0 16 16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                                                   <path d="m 12.292 8.875 h -8.585 c -0.483 0 -0.875 -0.392 -0.875 -0.875 s 0.391 -0.875 0.875 -0.875 h 8.585 c 0.483 0 0.875 0.391 0.875 0.875 s -0.392 0.875 -0.875 0.875 Z" fill="#b0b8c1"></path>
                                                 </svg>
                                             </span>
@@ -305,11 +386,23 @@ function OrderQuantityForm()
                         </div>
                     </div>
                 </div>
-                <div className="xl0v5qb xl0v5q9">
-                    <button type="submit" aria-disabled="false" className="tw3v-1wkoka52h tw3v-1wkoka54 tw3v-1wkoka541 tw3v-1wkoka5f tw3v-1wkoka519 tw3v-1wkoka5z tw3v-1wkoka5s tw3v-1wkoka5n tw3v-1wkoka52a" data-tds-wts-button data-tossinvest-log="Button" data-contents-label="구매하기" data-contents-label-code="buttonText" data-contents-value="구매하기" data-content-tag="buttonText" data-parent-name="SubmitComp">
-                     <span className="tw3v-1wkoka52g">구매하기</span>
-                    </button>
-                </div>
+                    <div className="xl0v5qb xl0v5q9">
+                        <button
+                            type="submit"
+                            aria-disabled="false"
+                            className={isSell ? "tw3v-1wkoka52h tw3v-1wkoka50 tw3v-1wkoka541 tw3v-1wkoka5f tw3v-1wkoka519 tw3v-1wkoka5z tw3v-1wkoka5s tw3v-1wkoka5n tw3v-1wkoka52a" : "tw3v-1wkoka52h tw3v-1wkoka54 tw3v-1wkoka541 tw3v-1wkoka5f tw3v-1wkoka519 tw3v-1wkoka5z tw3v-1wkoka5s tw3v-1wkoka5n tw3v-1wkoka52a"}
+                            data-tds-wts-button
+                            data-tossinvest-log="Button"
+                            data-contents-label={isSell ? "판매하기" : "구매하기"}
+                            data-contents-label-code="buttonText"
+                            data-contents-value={isSell ? "판매하기" : "구매하기"}
+                            data-content-tag="buttonText"
+                            data-parent-name="SubmitComp"
+                            style={{ backgroundColor: "var(--wts-button-background-color)" }}
+                        >
+                            <span className="tw3v-1wkoka52g">{isSell ? "판매하기" : "구매하기"}</span>
+                        </button>
+                    </div>
             </div>
         </form>
     )

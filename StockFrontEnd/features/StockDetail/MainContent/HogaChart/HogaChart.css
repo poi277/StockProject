@@ -219,6 +219,12 @@
     align-items: center;
     justify-content: right;
 }
+._14zza84 {
+    background: linear-gradient(90deg, transparent 0, var(--wts-adaptive-grey200) 100%);
+    background-size: 100% 1px;
+    background-repeat: no-repeat;
+    background-position: top;
+}
 .dj9of22 {
     display: flex;
     position: relative;
@@ -306,7 +312,16 @@
 .hmbv030>#quote-row-quantity>div {
     transition: background-color .2s cubic-bezier(.16, 1, .3, 1);
 }
-
+._1oug70om {
+    display: grid;
+    row-gap: 6px;
+    width: 100%;
+    max-width: 135px;
+}
+._1oug70om, ._1oug70on {
+    font-feature-settings: "tnum";
+    font-variant: tabular-nums;
+}
 ._14zza8a {
     background-color: var(--wts-adaptive-blue100);
 }
