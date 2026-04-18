@@ -2,11 +2,10 @@
 
 import HogaChart from './HogaChart';
 import TradeForm from '../Trade/TradeForm';
-import { StockDetail } from './StockDetail';
+import { useStockDetail } from './useStockDetail';
 import useWatch from '../watchList/useWatch';
 import ExecutionList from '../execution/ExecutionList';
 import CandleForm from '../candle/CandleForm';
-// CSS 파일을 import 합니다. (Next.js 기준)
 import Header from '../UI/Header';
 import StockPriceHeader from './StockHeader/StockPriceHeader';
 import './StockDetailForm.css'
@@ -17,7 +16,7 @@ import '../../tossCss/toss-layout.css'
 
 export default function StockDetailForm({ stock, watched }) {
   const { connected, stocks, selectedPrice, setSelectedPrice } =
-    StockDetail(stock.stockCode, stock);
+    useStockDetail(stock.stockCode, stock);
 
   const currentStock = stocks[stock.stockCode] || stock;
   const { isWatched, handleWatchToggle, watchLoading } =
@@ -78,7 +77,7 @@ return (
                   
                 >
                   {/* 실제 차트나 호가 내용이 렌더링되는 지점입니다. */}
-                  <MainContent/>
+                  <MainContent stock = {stock}/>
                 </div>
 
                 {/* 4. 지수 롤링 바: div data-section-name="지수Rolling" */}

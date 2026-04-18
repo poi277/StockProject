@@ -1,30 +1,58 @@
+import { useState } from 'react'
 import './realTimeTicks.css'
 
 export default function RealTimeTicks()
 {
-    return(
-        <div className="sa1m6rO">
-            <div className="sa1m6r1">
-            <div className="ro36d1" data-section-name="종목상세__일별실시간시세" data-ignore-auto-section-prefix="true">
-                <div role="radiogroup" aria-required="false" dir="ltr" className="tw3v-1sni4y90 tw3v-1sni4y92 tw3v-1sni4y95 ro36d0" tabIndex={0} style={{ outline: "none" }} data-scrollable="false">
-                    <div className="tw3v-1sni4y97 tw3v-1sni4y99" style={{ boxShadow: "rgba(0, 0, 0, 0.15) 0px 1px 3px 0px", width: "166px", transform: "none" }}></div>
+    const [tickType, setTickType] = useState('realtime') // 'realtime' = 실시간, 'daily' = 일별
+    const isRealtime = tickType === 'realtime'
 
-                    <button type="button" role="radio" aria-checked="true" data-state="checked" value="실시간" className="tw3v-1cq3gqg0 tw3v-1cq3gqg2" data-seg-state="checked" data-tossinvest-log="SegmentedControl.Item" data-contents-label="실시간" data-contents-label-code="실시간" data-contents-value="실시간" data-content-tag="실시간" tabIndex={-1} data-radix-collection-item>
-                        <div className="tw3v-1cq3gqg3 tw3v-1cq3gqg5">
+        return (
+            <div className="sa1m6rO">
+            <div className="sa1m6r1">
+                <div className="ro36d1" data-section-name="종목상세__일별실시간시세" data-ignore-auto-section-prefix="true">
+                <div role="radiogroup" aria-required="false" dir="ltr"
+                    className="tw3v-1sni4y90 tw3v-1sni4y92 tw3v-1sni4y95 ro36d0"
+                    tabIndex={0} style={{ outline: "none", position: "relative" }} data-scrollable="false">
+                    <div className="tw3v-1sni4y97 tw3v-1sni4y99" style={{
+                    boxShadow: "rgba(0, 0, 0, 0.15) 0px 1px 3px 0px",
+                    width: "50%",
+                    transform: isRealtime ? "translateX(0%)" : "translateX(100%)",
+                    position: "absolute",
+                    top: "2px",
+                    left: "0px",
+                    height: "calc(100% - 4px)",
+                    transition: "transform 0.2s ease-in-out",
+                    zIndex: 0
+                    }}></div>
+
+                    {/* 실시간 버튼 */}
+                    <button type="button" role="radio" aria-checked={isRealtime}
+                    onClick={() => setTickType('realtime')}
+                    style={{ flex: 1, zIndex: 1, position: "relative", background: "transparent" }}
+                    className="tw3v-1cq3gqg0 tw3v-1cq3gqg2" tabIndex={-1}>
+                    <div className="tw3v-1cq3gqg3 tw3v-1cq3gqg5">
                         <div className="tw3v-1cq3gqg8">
-                            <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" aria-hidden="true" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>실시간</span>
-                            <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>실시간</span>
+                        <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" aria-hidden="true"
+                            style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": isRealtime ? "var(--wts-adaptive-greyOpacity800)" : "var(--wts-adaptive-greyOpacity600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>실시간</span>
+                        <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb"
+                            style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": isRealtime ? "var(--wts-adaptive-greyOpacity800)" : "var(--wts-adaptive-greyOpacity600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>실시간</span>
                         </div>
-                        </div>
+                    </div>
                     </button>
 
-                    <button type="button" role="radio" aria-checked="false" data-state="unchecked" value="일별" className="tw3v-1cq3gqg0 tw3v-1cq3gqg2" data-seg-state="unchecked" data-tossinvest-log="SegmentedControl.Item" data-contents-label="일별" data-contents-label-code="일별" data-contents-value="일별" data-content-tag="일별" tabIndex={-1} data-radix-collection-item>
-                        <div className="tw3v-1cq3gqg3 tw3v-1cq3gqg5">
+                    {/* 일별 버튼 */}
+                    <button type="button" role="radio" aria-checked={!isRealtime}
+                    onClick={() => setTickType('daily')}
+                    style={{ flex: 1, zIndex: 1, position: "relative", background: "transparent" }}
+                    className="tw3v-1cq3gqg0 tw3v-1cq3gqg2" tabIndex={-1}>
+                    <div className="tw3v-1cq3gqg3 tw3v-1cq3gqg5">
                         <div className="tw3v-1cq3gqg8">
-                            <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" aria-hidden="true" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>일별</span>
-                            <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>일별</span>
+                        <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" aria-hidden="true"
+                            style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": !isRealtime ? "var(--wts-adaptive-greyOpacity800)" : "var(--wts-adaptive-greyOpacity600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>일별</span>
+                        <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb"
+                            style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": !isRealtime ? "var(--wts-adaptive-greyOpacity800)" : "var(--wts-adaptive-greyOpacity600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>일별</span>
                         </div>
-                        </div>
+                    </div>
                     </button>
                 </div>
                 {/* ( height: "100%" 를 "500px"로 수정 ) */}

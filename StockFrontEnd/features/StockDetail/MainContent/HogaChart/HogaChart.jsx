@@ -1,28 +1,9 @@
 import './HogaChart.css'
+import useHoga from './useHoga';
 
-// 매도 데이터
-const sellOrders = [
-  { price: 261000, change: '+29.85%', quantity: 296120, priceColor: 'var(--wts-adaptive-red500)' },
-  { price: 255000, change: '+26.86%', quantity: 180000, priceColor: 'var(--wts-adaptive-red500)' },
-];
-
-// 매수 데이터
-const buyOrders = [
-  { price: 207000, change: '+2.98%',  quantity: 232232, priceColor: 'var(--wts-adaptive-red500)' },
-  { price: 200000, change: '-0.50%',  quantity: 150000, priceColor: 'var(--wts-adaptive-blue500)' },
-];
-
-// 매도/매수 전체 최대값 기준으로 비율 계산
-const maxQuantity = Math.max(
-  ...sellOrders.map(o => o.quantity),
-  ...buyOrders.map(o => o.quantity)
-);
-
-function getBarWidth(quantity) {
-  return `calc(${(quantity / maxQuantity) * 100}% - 8px)`;
-}
-
-export default function HogaChart() {
+export default function HogaChart({stock}) {
+  const { sellOrders, buyOrders, maxQuantity, getBarWidth, totalSellQuantity, totalBuyQuantity } = useHoga(stock.stockCode)
+  console.log(stock)
   return (
     <div className="sa1m6r0" style={{ paddingLeft: "0px", paddingRight: "0px" }}>
       <div className="sa1m6r1">
@@ -40,20 +21,20 @@ export default function HogaChart() {
                   </div>
                   <div className="_1oug70o6 _1oug70o5">
                     <div className="_1oug70oa _1oug70o9 _1oug70oh">
-                      <QuotesInfoKr />
+                      <QuotesInfoKr stock={stock} />
                     </div>
                     <div className="_1oug70od _1oug70oc _1oug70oh">
-                      <TradingStrengthKr />
+                      <TradingStrengthKr stock={stock} />
                     </div>
                   </div>
                   <div className="_1oug70o8">
-                    <SellOrderBook orders={sellOrders} maxQuantity={maxQuantity} />
+                    <SellOrderBook orders={sellOrders} maxQuantity={maxQuantity} getBarWidth={getBarWidth} />
                     <div className="_1oug70o11"></div>
-                    <BuyOrderBook orders={buyOrders} maxQuantity={maxQuantity} />
+                    <BuyOrderBook orders={buyOrders} maxQuantity={maxQuantity} getBarWidth={getBarWidth} />
                   </div>
                 </div>
               </div>
-              <HogaUnderBar />
+              <HogaUnderBar totalSellQuantity={totalSellQuantity} totalBuyQuantity={totalBuyQuantity} />
             </div>
           </div>
         </div>
@@ -62,7 +43,7 @@ export default function HogaChart() {
   );
 }
 
-function SellOrderBook({ orders, maxQuantity }) {
+function SellOrderBook({ orders, maxQuantity,getBarWidth }) {
   return (
     <ul data-list-name="SellOrderBookKrComp" className="_1oug70of">
       {orders.map((order, i) => (
@@ -79,12 +60,12 @@ function SellOrderBook({ orders, maxQuantity }) {
           <button id="quote-row-price" className="dj9of22">
             <div></div>
             <div className="dj9of25 dj9of23">
-              <span className="tw3v-1r5dc8g0 gvo66u1"
-                style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": order.priceColor, "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
+              <span className="tw3v-1r5dc8g0 gvo66u1" 
+                style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-red500)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
                 {order.price.toLocaleString('ko-KR')}
               </span>
               <span className="tw3v-1r5dc8g0 dj9of2e dj9of2c"
-                style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": order.priceColor, "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>
+                style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color":  "var(--wts-adaptive-red500)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>
                 {order.change}
               </span>
             </div>
@@ -97,7 +78,7 @@ function SellOrderBook({ orders, maxQuantity }) {
   );
 }
 
-function BuyOrderBook({ orders, maxQuantity }) {
+function BuyOrderBook({ orders, maxQuantity,getBarWidth }) {
   return (
     <ul data-list-name="BuyOrderBookKrComp" className="_1oug70og">
       {orders.map((order, i) => (
@@ -108,12 +89,12 @@ function BuyOrderBook({ orders, maxQuantity }) {
             <div></div>
             <div className="dj9of25 dj9of23">
               <span className="tw3v-1r5dc8g0 gvo66u1"
-                style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": order.priceColor, "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
+                style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color":"var(--wts-adaptive-red500)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
                 {order.price.toLocaleString('ko-KR')}
               </span>
               <span className="tw3v-1r5dc8g0 dj9of2e dj9of2c"
-                style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": order.priceColor, "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>
-                {order.change}
+                style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-red500)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>
+                29.88%
               </span>
             </div>
             <div></div>
@@ -132,20 +113,27 @@ function BuyOrderBook({ orders, maxQuantity }) {
   );
 }
 
-function HogaUnderBar() {
+function HogaUnderBar({ totalSellQuantity = 0, totalBuyQuantity = 0 }) {
+  const total = totalSellQuantity + totalBuyQuantity || 1
+  const sellRatio = totalSellQuantity / total  // CSS flex 값으로 사용
+  const buyRatio  = totalBuyQuantity  / total
+
   return (
     <div>
       <div className="_1hpof5wa">
         <div className="_1hpof5w1">
-          <span className="_1hpof5w3" style={{ "--_1hpof5w2": "133314" }}></span>
-          <span className="_1hpof5w5" style={{ "--_1hpof5w4": "46445" }}></span>
+          {/* ✅ 퍼센트 비율로 게이지바 */}
+          <span className="_1hpof5w3" style={{ "--_1hpof5w2": sellRatio * 100 }}></span>
+          <span className="_1hpof5w5" style={{ "--_1hpof5w4": buyRatio  * 100 }}></span>
         </div>
         <div className="_1hpof5w6">
           <div className="_1hpof5w8">
             <span className="tw3v-1r5dc8g0"
               style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>판매대기</span>
             <span className="tw3v-1r5dc8g0 _1p5yqoh0 gvo66u0"
-              style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-blue600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>133,314</span>
+              style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-blue600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>
+              {totalSellQuantity.toLocaleString('ko-KR')}
+            </span>
           </div>
           <div className="_1hpof5w7">
             <div className="_1oug70op" style={{ display: "flex", flexDirection: "row", gap: "0px", justifyContent: "center", alignItems: "center" }}>
@@ -155,7 +143,9 @@ function HogaUnderBar() {
           </div>
           <div className="_1hpof5w9">
             <span className="tw3v-1r5dc8g0 _1p5yqoh0 gvo66u0"
-              style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-red600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>46,445</span>
+              style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-red600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>
+              {totalBuyQuantity.toLocaleString('ko-KR')}
+            </span>
             <span className="tw3v-1r5dc8g0"
               style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>구매대기</span>
           </div>
@@ -165,21 +155,27 @@ function HogaUnderBar() {
   );
 }
 
-function QuotesInfoKr() {
+function QuotesInfoKr({ stock }) {
   return (
     <ul data-list-name="QuotesInfoKr" className="_1oug70oj">
       <li className="_1oug70ol">
         <span className="tw3v-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>52주 최고</span>
-        <span className="tw3v-1r5dc8g0 gvo66u0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>1,117,000</span>
+        <span className="tw3v-1r5dc8g0 gvo66u0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>
+          {stock.highPrice?.toLocaleString('ko-KR')}
+        </span>
       </li>
       <hr className="tw3v-5u17g30 _1oug70ok" />
       <li className="_1oug70ol">
         <span className="tw3v-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>최고</span>
-        <span className="tw3v-1r5dc8g0 gvo66u0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-red600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>1,043,000</span>
+        <span className="tw3v-1r5dc8g0 gvo66u0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-red600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>
+          {stock.highPrice?.toLocaleString('ko-KR')}
+        </span>
       </li>
       <li className="_1oug70ol">
-        <span className="tw3v-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>최고</span>
-        <span className="tw3v-1r5dc8g0 gvo66u0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-blue600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>1,043,000</span>
+        <span className="tw3v-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>최저</span>
+        <span className="tw3v-1r5dc8g0 gvo66u0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-blue600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>
+          {stock.lowPrice?.toLocaleString('ko-KR')}
+        </span>
       </li>
     </ul>
   );

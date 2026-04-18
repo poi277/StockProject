@@ -2,7 +2,7 @@
 
 import HogaChart from './HogaChart';
 import TradeForm from '../Trade/TradeForm';
-import { StockDetail } from './StockDetail';
+import { StockDetail } from './useStockDetail';
 import useWatch from '../watchList/useWatch';
 import ExecutionList from '../execution/ExecutionList';
 import CandleForm from '../candle/CandleForm';

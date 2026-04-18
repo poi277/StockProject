@@ -8,7 +8,6 @@ export default async function StockDetail({ params }) {
         StockDetailApi(stockCode),
         isWatchedApi(stockCode),
     ]);
-
     return (
         <div>
             <StockDetailForm stock={res.data} watched={watchRes.data ?? false} />

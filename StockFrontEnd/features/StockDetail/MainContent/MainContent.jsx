@@ -23,7 +23,7 @@ const INIT = {
   GAP: 10,
 };
 
-export default function StockContent() {
+export default function StockContent({stock}) {
   const containerRef = useRef(null);
 
   const [layout, setLayout] = useState({
@@ -134,7 +134,7 @@ export default function StockContent() {
                   <div className="_1upatvo0">
                   <div className="tw3v-1ftc7zl0">
                      <MainContentForm/>
-                      <HogaChart/>
+                      <HogaChart  stock = {stock}/>
                      </div>
                   </div>
                 </div>
