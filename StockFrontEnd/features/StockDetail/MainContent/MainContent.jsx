@@ -178,7 +178,7 @@ export default function StockContent({stock}) {
                   <input type="hidden" value='{"typeId":"realtimeTicks","title":시세","hide":"false"}' />
                     <div className="tw3v-1ftc7zl0">
                         <MainContentForm/>
-                        <RealTimeTicks/>
+                        <RealTimeTicks  stockCode = {stock.stockCode}/>
                     </div>
                 </div>
 

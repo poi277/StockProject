@@ -10,7 +10,6 @@ export function useExecutionSocket(client, connected, stockCode) {
 
     const subscription = client.subscribe(`/topic/execution/${stockCode}`, message => {
       const data = JSON.parse(message.body);
-
       const execution = {
         tradeType: data.tradeType,
         price: data.price,

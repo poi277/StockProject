@@ -6,11 +6,10 @@ export default async function StockDetail({ params }) {
     const { stockCode } = await params;
     const [res, watchRes] = await Promise.all([
         StockDetailApi(stockCode),
-        isWatchedApi(stockCode),
     ]);
     return (
         <div>
-            <StockDetailForm stock={res.data} watched={watchRes.data ?? false} />
+            <StockDetailForm stock={res.data} />
         </div>
     );
 }

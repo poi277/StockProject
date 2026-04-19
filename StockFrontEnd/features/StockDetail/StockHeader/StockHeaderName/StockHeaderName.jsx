@@ -1,6 +1,7 @@
 import './StockHeaderName.css'
 
-export default function StockHeaderName() {
+export default function StockHeaderName({stock}) {
+  console.log(stock)
   return (
       <div className="ia3qp43">
       {/* 1. 로고 이미지 영역 */}
@@ -25,11 +26,11 @@ export default function StockHeaderName() {
       <div className="ia3qp44">
         <span className="tw3v-1r5dc8g0" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-bold)', 
             '--tds-wts-foreground-color': 'var(--wts-adaptive-greyOpacity800)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '14px' }}>
-          허준찬홀딩스
+          {stock.stockName}
         </span>
         <span className="tw3v-1r5dc8g0" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-semibold)',
              '--tds-wts-foreground-color': 'var(--wts-adaptive-greyOpacity600)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '14px' }}>
-          6974
+          {stock.stockCode}
         </span>
       </div>
 
