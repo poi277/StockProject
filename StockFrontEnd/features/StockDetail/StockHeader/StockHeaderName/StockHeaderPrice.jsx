@@ -4,7 +4,7 @@ import React from 'react';
  * 이미지 [image_7b3c43.png]와 [image_8.png]의 대조 결과를 바탕으로
  * 누락된 '_1sivumi5' 계층을 정확한 위치에 포함하여 완벽하게 재현한 컴포넌트
  */
-export default function StockHeaderPrice() {
+export default function StockHeaderPrice({stock}) {
   return (
     <div className="_1sivumi0 _1sivumi2">
       <div style={{ display: 'flex', flexDirection: 'row', gap: '0px', alignItems: 'center' }}>
@@ -19,7 +19,7 @@ export default function StockHeaderPrice() {
             '--tds-wts-font-size': '20px' 
           }}
         >
-          <span className="_1p5yqoh0">1원</span>
+          <span className="_1p5yqoh0">{stock.closePrice.toLocaleString()}원</span>
         </span>
 
         {/* 2. 달러 환산가 */}
@@ -60,19 +60,15 @@ export default function StockHeaderPrice() {
               '--tds-wts-font-size': '14px' 
             }}
           >
-            정규장 1000원으로 마감
+            어제보다
           </span>
-          
-          <span 
-            className="tw3v-1r5dc8g0" 
-            style={{ 
-              '--tds-wts-font-weight': 'var(--tw-font-weight-semibold)', 
-              '--tds-wts-foreground-color': 'var(--wts-adaptive-red500)', 
-              '--tds-wts-line-height': '1.45', 
-              '--tds-wts-font-size': '14px' 
+          <span className="tw3v-1r5dc8g0" style={{
+              '--tds-wts-font-weight': 'var(--tw-font-weight-semibold)',
+              '--tds-wts-foreground-color': stock.changeAmount < 0  ? 'var(--wts-adaptive-blue500)' : 'var(--wts-adaptive-red500)', '--tds-wts-line-height': '1.45',
+              '--tds-wts-font-size': '14px'
             }}
           >
-            +1원 (1%)
+            {stock.changeAmount.toLocaleString()}원({stock.changeRate}%)
           </span>
         </div>
 

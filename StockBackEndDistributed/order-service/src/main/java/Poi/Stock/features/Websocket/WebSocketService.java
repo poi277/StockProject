@@ -8,6 +8,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import Poi.Stock.features.Order.OrderBookCache;
+import Poi.Stock.features.Stock.Stock;
 import Poi.Stock.features.Stock.StockCache;
 import Poi.Stock.object.TradeExecution;
 import Poi.Stock.repository.OrderRepository;
@@ -30,15 +31,18 @@ public class WebSocketService {
 
 //	-------------------------------
 	// 가격 업데이트 및 WebSocket 전송
-	public void SendCurrentPrice(String stockCode, Integer currentPrice, LocalDateTime tradeTime) {
+	public void SendCurrentPrice(Stock stock, LocalDateTime tradeTime) {
+		Integer currentPrice = stock.getClosePrice();
 		if (currentPrice == null || currentPrice <= 0)
 			return;
 		Map<String, Object> payload = new HashMap<>();
-		payload.put("stockCode", stockCode);
-		payload.put("currentPrice", currentPrice);
+		payload.put("stockCode", stock.getStockCode());
+		payload.put("currentPrice", stock.getClosePrice());
 		payload.put("tradeTime", tradeTime);
+		payload.put("changeRate", stock.getChangeRate());
+		payload.put("changeAmount", stock.getChangeAmount());
 		System.out.println(payload);
-		messagingTemplate.convertAndSend("/topic/stock/" + stockCode, payload);
+		messagingTemplate.convertAndSend("/topic/stock/" + stock.getStockCode(), payload);
 	}
 
 	public void sendHoga(String stockCode, tradeType side, int price, int qty) {

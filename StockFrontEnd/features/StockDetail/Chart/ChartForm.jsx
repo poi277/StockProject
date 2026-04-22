@@ -2,7 +2,7 @@ import React from 'react';
 import './ChartForm.css';
 import ChartComponent from './ChartComponent';
 
-export default function ChartForm() {
+export default function ChartForm({stockCode}) {
     return (
         <div className="sa1m6r0">
             <div className="sa1m6r1">
@@ -11,7 +11,7 @@ export default function ChartForm() {
                     <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingTop: "8px" }}></div>
                     <div style={{ flex: "0 0 auto", height: "16px", backgroundColor: "var(--wts-adaptive-background)" }}></div>
                    <div className="mnc8st3"  data-section-name="종목상세__차트" data-ignore-auto-section-prefix="true" >
-                        <ChartComponent /> 
+                        <ChartComponent stockCode={stockCode}/> 
                     </div>
                 </div>
             </div>

@@ -56,7 +56,8 @@ public class Stock {
 	public double calcChangeRate(int price) {
 		if (openPrice == null || openPrice == 0)
 			return 0.0;
-		return (double) (price - openPrice) / openPrice * 100;
+		double rate = (double) (price - openPrice) / openPrice * 100;
+		return Math.round(rate * 100.0) / 100.0;
 	}
 
 	public long fillTotalvolume(int fillVolume) {

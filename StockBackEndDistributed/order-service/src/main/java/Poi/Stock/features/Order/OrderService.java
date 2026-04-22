@@ -18,6 +18,8 @@ import Poi.Stock.DTO.user.HogaDTO;
 import Poi.Stock.DTO.user.TradeDTO;
 import Poi.Stock.DTO.user.myOrderDTO;
 import Poi.Stock.features.Candle.CandleService;
+import Poi.Stock.features.Stock.Stock;
+import Poi.Stock.features.Stock.StockCache;
 import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.features.kafka.KafkaProducer;
 import Poi.Stock.object.MatchingResult;
@@ -39,6 +41,7 @@ public class OrderService {
     private final OrderTradeService orderTradeService;
     private final RestTemplate restTemplate;
 	private final CandleService candleService;
+	private final StockCache stockCache;
 
     @Value("${user.service.url}")
     private String userServiceUrl;
@@ -71,13 +74,14 @@ public class OrderService {
     public void processOrder(TradeDTO tradeDTO) {
         Order order = orderTradeService.setOrder(tradeDTO);
         OrderBook book = orderBookCache.get(order.getStockCode());
-        MatchingResult result = orderTradeService.matchLoop(order, book);
+		Stock stock = stockCache.get(order.getStockCode());
+		MatchingResult result = orderTradeService.matchLoop(order, book, stock);
         orderTradeService.saveTradeHistories(result.getExecutions());
         orderTradeService.saveOrders(result, order);
 		orderTradeService.settlement(result);
 		orderTradeService.updateStockCache(order.getStockCode(), result);
 		orderTradeService.updateCurrentCandle(order.getStockCode(), result);
-        orderTradeService.sendWebSocket(order.getStockCode(), result, book);
+		orderTradeService.sendWebSocket(result, book, stock);
     }
 
     public void placeOrder(String userId, TradeDTO tradeDTO) {

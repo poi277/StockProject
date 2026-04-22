@@ -92,9 +92,8 @@ public class OrderTradeService {
 		return new SettlementEvent(stockCode, assetChanges, stockChanges);
 	}
 
-	public MatchingResult matchLoop(Order order, OrderBook book) {
+	public MatchingResult matchLoop(Order order, OrderBook book, Stock stock) {
 		MatchingResult result = new MatchingResult();
-		Stock stock = stockCache.get(order.getStockCode());
 		// 거래량은 아직 정산이 안되기 떄문에 여기서 임의로 증가시켜줘야함
 		Long fillTotalvolume = stock.getTotalvolume();
 		TreeMap<Integer, PriceLevel> oppositeBook = order.getTradeType() == tradeType.BUY ? book.getSellBook()
@@ -179,22 +178,20 @@ public class OrderTradeService {
 		return book.getSellBook().isEmpty() ? 0 : book.getSellBook().firstKey();
 	}
 
-	public void sendWebSocket(String stockCode, MatchingResult matchingResult, OrderBook book) {
+	public void sendWebSocket(MatchingResult matchingResult, OrderBook book, Stock stock) {
 		for (int price : matchingResult.getMatchedPrices()) {
 			PriceLevel sellLevel = book.getSellBook().get(price);
 			PriceLevel buyLevel = book.getBuyBook().get(price);
 			int sellQty = sellLevel == null ? 0 : sellLevel.getTotalQuantity();
 			int buyQty = buyLevel == null ? 0 : buyLevel.getTotalQuantity();
-			webSocketService.sendHoga(stockCode, tradeType.SELL, price, sellQty);
-			webSocketService.sendHoga(stockCode, tradeType.BUY, price, buyQty);
+			webSocketService.sendHoga(stock.getStockCode(), tradeType.SELL, price, sellQty);
+			webSocketService.sendHoga(stock.getStockCode(), tradeType.BUY, price, buyQty);
 		}
 		for (TradeExecution execution : matchingResult.getExecutions()) {
-			webSocketService.sendExecution(stockCode, execution);
+			webSocketService.sendExecution(stock.getStockCode(), execution);
 		}
-		// 현재가 전송 추가
-		Integer currentPrice = matchingResult.getLastExecutionPrice();
-		LocalDateTime TradeTime = matchingResult.getLastExecutionTime();
-		webSocketService.SendCurrentPrice(stockCode, currentPrice, TradeTime);
+		LocalDateTime tradeTime = matchingResult.getLastExecutionTime();
+		webSocketService.SendCurrentPrice(stock, tradeTime);
 	}
 
 	public void updateStockCache(String stockCode, MatchingResult result) {

@@ -6,9 +6,10 @@ import './StockPriceHeader.css'
 import { useStockHeader } from "./useStockHeader";
 import useWatch from "../../watchList/useWatch";
 //css완료중
-export default function StockPriceHeader({stock}) {
-  const {connected, stocks, selectedPrice, setSelectedPrice} = useStockHeader(stock.stockCode, stock);
-  const { isWatched, handleWatchToggle, watchLoading } =useWatch(stock.stockCode);
+export default function StockPriceHeader({initStock}) {
+  console.log(initStock)
+  const {connected, stock, selectedPrice, setSelectedPrice} = useStockHeader(initStock);
+  const { isWatched, handleWatchToggle, watchLoading } =useWatch(initStock.stockCode);
 
   return (
     /* 이미지 최상단: div class="ia3qp41" */
@@ -18,16 +19,16 @@ export default function StockPriceHeader({stock}) {
       {/* 1. 종목명/아이콘 영역: div class="ia3qp42" */}
       <div className="ia3qp42">
         {/* 1. 종목 아이콘/로고 영역: div class="ia3qp43" */}
-          <StockHeaderName stock={stocks}/>
+          <StockHeaderName stock={stock}/>
         {/* 2. 숨겨진 구분선 혹은 스페이서: div class="_1sivumi7" */}
         <div className="_1sivumi7" style={{ visibility: 'hidden'}}></div>
         {/* 3. 종목가격: div class="_1sivumi0 _1sivumi2" */}
-          <StockHeaderPrice stock={stocks}/>
+          <StockHeaderPrice stock={stock}/>
       </div>
 
       {/* 2. 가격/등락 정보 영역: div class="_8u2t3p0" */}
       <div className="_8u2t3p0">
-          <StockHeaderTabs stock={stocks}/>
+          <StockHeaderTabs stock={stock}/>
       </div>
 
       <div className="njzdl36" >

@@ -120,7 +120,7 @@ export default function StockContent({stock}) {
                 <div className="_1upatvo0">
                   <div className="tw3v-1ftc7zl0">
                      <MainContentForm/>
-                     <ChartForm/>
+                     <ChartForm  stockCode = {stock.stockCode}/>
                     </div>
                   </div>
                 </div>

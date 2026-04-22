@@ -43,4 +43,10 @@ public class MatchingResult {
 			return null;
 		return executions.get(executions.size() - 1).getTime();
 	}
+
+	public Double getLastChangeRate() {
+		if (executions.isEmpty())
+			return null;
+		return executions.get(executions.size() - 1).getChangeRate();
+	}
 }

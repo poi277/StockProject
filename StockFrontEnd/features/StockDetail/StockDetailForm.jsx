@@ -41,7 +41,7 @@ export default function StockDetailForm({ stock }) {
                     }}
                   >
                     {/* 여기에 종목명, 가격 정보 등이 들어갑니다. */}
-                    <StockPriceHeader stock = {stock}/>
+                    <StockPriceHeader initStock = {stock}/>
                   </div>
                     {/* 여기에 차트/호가/종목정보/뉴스 탭 메뉴가 들어갑니다. */}
                     <StockTabSelection/>
