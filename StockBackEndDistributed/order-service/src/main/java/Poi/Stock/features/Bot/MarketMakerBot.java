@@ -2,6 +2,7 @@ package Poi.Stock.features.Bot;
 
 import java.util.Random;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import Poi.Stock.features.Order.OrderCancelService;
@@ -32,7 +33,7 @@ public class MarketMakerBot {
 
 	private final Random random = new Random();
 
-	// @Scheduled(fixedDelay = 3000)
+	@Scheduled(fixedDelay = 3000)
 	public void placeOrders() {
 
 		Bot bot = botCache.get(BOT_ID);

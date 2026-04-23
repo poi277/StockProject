@@ -57,7 +57,13 @@ export default function ChartComponent({ stockCode, type = 'ONE_MINUTE' }) {
   const candleSeriesRef = useRef(null);
   const [ohlc, setOhlc] = useState(null);
   const isLoadingMore = useRef(false);
+  const isInitialized = useRef(false);
   const { candles, loadMoreCandles } = useCandle(stockCode, type);
+  const loadMoreCandlesRef = useRef(loadMoreCandles);
+
+  useEffect(() => {
+    loadMoreCandlesRef.current = loadMoreCandles;
+  }, [loadMoreCandles]);
 
   // 차트 초기화 (한 번만)
   useEffect(() => {
@@ -71,7 +77,7 @@ export default function ChartComponent({ stockCode, type = 'ONE_MINUTE' }) {
       if (!range) return;
       if (range.from < 5 && !isLoadingMore.current) {
         isLoadingMore.current = true;
-        loadMoreCandles().finally(() => {
+        loadMoreCandlesRef.current().finally(() => {
           isLoadingMore.current = false;
         });
       }
@@ -92,26 +98,37 @@ export default function ChartComponent({ stockCode, type = 'ONE_MINUTE' }) {
     return () => {
       resizeObserver.disconnect();
       chart.remove();
+      isInitialized.current = false;
     };
   }, []);
 
-  // ChartComponent.jsx - 데이터 업데이트 useEffect
+  // 초기 로드 - setData + fitContent 1회만
   useEffect(() => {
     if (!candleSeriesRef.current || !candles || candles.length === 0) return;
+    if (isInitialized.current) return;
 
-    const chartData = candles.map(c => ({
-      time: toUnixTime(c.time),
-      open: c.open,
-      high: c.high,
-      low: c.low,
-      close: c.close,
-    }));
+    const chartData = candles
+      .map(c => ({ time: toUnixTime(c.time), open: c.open, high: c.high, low: c.low, close: c.close }))
+      .sort((a, b) => a.time - b.time)
+      .filter((c, i, arr) => i === 0 || c.time !== arr[i - 1].time);
 
     candleSeriesRef.current.setData(chartData);
-    // fitContent는 초기 로드 시에만
-    if (!isLoadingMore.current) {
-      chartRef.current.timeScale().fitContent();
-    }
+    chartRef.current.timeScale().fitContent();
+    isInitialized.current = true;
+  }, [candles]);
+
+  // 실시간 업데이트 - 마지막 봉만 update()
+  useEffect(() => {
+    if (!candleSeriesRef.current || !candles || candles.length === 0 || !isInitialized.current) return;
+
+    const last = candles[candles.length - 1];
+    candleSeriesRef.current.update({
+      time: toUnixTime(last.time),
+      open: last.open,
+      high: last.high,
+      low: last.low,
+      close: last.close,
+    });
   }, [candles]);
 
   return (

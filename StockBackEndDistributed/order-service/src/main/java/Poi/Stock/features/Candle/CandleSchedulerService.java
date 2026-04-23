@@ -12,6 +12,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
+import Poi.Stock.DTO.user.CandleDTO;
 import Poi.Stock.features.Stock.Stock;
 import Poi.Stock.repository.CandleMinuteRepository;
 import Poi.Stock.repository.StockRepository;
@@ -22,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class CandleSchedulerService {
+
 	private final RedisTemplate<String, String> redisTemplate;
 	private final CandleMinuteRepository candleMinuteRepository;
 	private final StockRepository stockRepository;
@@ -44,16 +46,27 @@ public class CandleSchedulerService {
 			  redis.call('HSET', key, 'close', price)
 			  redis.call('HSET', key, 'volume', volume + qty)
 			end
-			return 1
+			return {
+			  redis.call('HGET', key, 'open'),
+			  redis.call('HGET', key, 'high'),
+			  redis.call('HGET', key, 'low'),
+			  redis.call('HGET', key, 'close'),
+			  redis.call('HGET', key, 'volume')
+			}
 			""";
 
 	// 체결 시 호출
 	// 분리시 카프카로 호출
-	public void saveCurrentCandle(String stockCode, int price, int quantity, LocalDateTime executionTime) {
+	public CandleDTO saveCurrentCandle(String stockCode, int price, int quantity, LocalDateTime executionTime) {
 		LocalDateTime minuteTime = executionTime.withSecond(0).withNano(0);
 		String key = "candle:1m:" + stockCode + ":" + minuteTime.format(FMT);
-		redisTemplate.execute(new DefaultRedisScript<>(UPDATE_CANDLE_SCRIPT, Long.class), List.of(key),
-				String.valueOf(price), String.valueOf(quantity));
+		List<String> result = redisTemplate.execute(new DefaultRedisScript<>(UPDATE_CANDLE_SCRIPT, List.class),
+				List.of(key), String.valueOf(price), String.valueOf(quantity));
+		if (result == null || result.size() < 5)
+			return null;
+		return new CandleDTO(minuteTime.toString(), Integer.parseInt(result.get(0)),
+				Integer.parseInt(result.get(1)),
+				Integer.parseInt(result.get(2)), Integer.parseInt(result.get(3)), Long.parseLong(result.get(4)));
 	}
 
 	public void save1MinCandle() {

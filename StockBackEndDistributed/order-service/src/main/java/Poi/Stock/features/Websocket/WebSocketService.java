@@ -7,6 +7,7 @@ import java.util.Map;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import Poi.Stock.DTO.user.CandleDTO;
 import Poi.Stock.features.Order.OrderBookCache;
 import Poi.Stock.features.Stock.Stock;
 import Poi.Stock.features.Stock.StockCache;
@@ -74,6 +75,18 @@ public class WebSocketService {
 	public void sendError(String userId, String message) {
 		System.out.println(message);
 		messagingTemplate.convertAndSend("/topic/error/" + userId, message);
+	}
+
+	public void sendCurrentCandle(CandleDTO candleDTO, String stockCode) {
+		Map<String, Object> payload = new HashMap<>();
+		payload.put("open", candleDTO.getOpen());
+		payload.put("low", candleDTO.getLow());
+		payload.put("high", candleDTO.getHigh());
+		payload.put("close", candleDTO.getClose());
+		payload.put("volume", candleDTO.getVolume());
+		payload.put("time", candleDTO.getTime());
+		System.out.println(payload);
+		messagingTemplate.convertAndSend("/topic/candle/" + stockCode, payload);
 	}
 
 }

@@ -13,7 +13,7 @@ import Poi.Stock.DTO.user.TradeDTO;
 import Poi.Stock.TreadeHistory.TradeHistory;
 import Poi.Stock.features.Bot.Bot;
 import Poi.Stock.features.Bot.BotCache;
-import Poi.Stock.features.Candle.CandleSchedulerService;
+import Poi.Stock.features.Candle.CandleService;
 import Poi.Stock.features.CompletedOrder.CompletedOrder;
 import Poi.Stock.features.Stock.Stock;
 import Poi.Stock.features.Stock.StockCache;
@@ -45,7 +45,7 @@ public class OrderTradeService {
 	private final TradeHistoryRepository tradeHistoryRepository;
 	private final BotCache botCache;
 	private final SettlementProducer settlementProducer;
-	private final CandleSchedulerService candleSchedulerService;
+	private final CandleService candleService;
 
 	// StockUserRepository, HaveStockRepository 제거
 
@@ -219,7 +219,7 @@ public class OrderTradeService {
 		int filledQty = result.getTotalFilledQty();
 		LocalDateTime lastExecutiontime = result.getLastExecutionTime();
 		if (currentPrice != null && currentPrice > 0 && lastExecutiontime != null) {
-			candleSchedulerService.saveCurrentCandle(stockCode, currentPrice, filledQty, lastExecutiontime);
+			candleService.updateCandle(stockCode, currentPrice, filledQty, lastExecutiontime);
 		}
 	}
 }

@@ -13,12 +13,12 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import Poi.Stock.DTO.user.CandleDTO;
+import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.repository.CandleMinuteRepository;
 import Poi.Stock.repository.StockRepository;
 import Poi.Stock.util.EnumUtil.CandleType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -27,6 +27,8 @@ public class CandleService {
 	private final CandleMinuteRepository candleMinuteRepository;
 	private final StockRepository stockRepository;
 	private final RedisTemplate<String, String> redisTemplate;
+	private final CandleSchedulerService candleSchedulerService;
+	private final WebSocketService webSocketService;
 
 	private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
 
@@ -140,4 +142,11 @@ public class CandleService {
 			return null;
 		}
 	}
+
+	public void updateCandle(String stockCode, Integer currentPrice, int filledQty, LocalDateTime lastExecutiontime) {
+		CandleDTO candleDTO = candleSchedulerService.saveCurrentCandle(stockCode, currentPrice, filledQty,
+				lastExecutiontime);
+		webSocketService.sendCurrentCandle(candleDTO, stockCode);
+	}
+
 }
