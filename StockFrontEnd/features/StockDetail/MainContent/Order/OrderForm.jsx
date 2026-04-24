@@ -1,25 +1,36 @@
 import { useState } from 'react'
 import './OrderForm.css'
+import useOrder from './useOrder';
 
-export default function OrderForm()
-{
-    const [tradeType, setTradeType] = useState('buy')
 
-    return(
-        <div className="sa1m6r0">
-            <div className="sa1m6r1">
-                <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "auto" }}>
-                    <div style={{ flex: "1 1 0", minHeight: "0px" }}>
-                        <div id="trade-order-section" data-section-name="종목상세__주문하기" data-ignore-auto-section-prefix="true">
-                           <OrderType tradeType={tradeType} setTradeType={setTradeType}/>
-                           <OrderStatus tradeType={tradeType} />
-                           <OrderQuantityForm tradeType={tradeType} />
-                        </div>
-                    </div>
-                </div>
+
+export default function OrderForm({ selectedPrice, setSelectedPrice, stockCode }) {
+  const [tradeType, setTradeType] = useState("buy");
+
+  const { executeOrder, loading, error, priceType, setPriceType, price, setPrice, quantity, setQuantity } = useOrder(selectedPrice, stockCode);
+
+  return (
+    <div className="sa1m6r0">
+      <div className="sa1m6r1">
+        <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "auto" }}>
+          <div style={{ flex: "1 1 0", minHeight: "0px" }}>
+            <div id="trade-order-section">
+              
+              <OrderType tradeType={tradeType} setTradeType={setTradeType} />
+              <OrderStatus tradeType={tradeType} />
+              <OrderQuantityForm
+                tradeType={tradeType}
+                priceType={priceType} setPriceType={setPriceType}
+                price={price} setPrice={setPrice}
+                quantity={quantity} setQuantity={setQuantity}
+                onSubmit={executeOrder}
+              />
             </div>
+          </div>
         </div>
-    )
+      </div>
+    </div>
+  );
 }
 
 function OrderType({ tradeType, setTradeType }) {
@@ -147,9 +158,8 @@ function OrderStatus({ tradeType })
     )
 }
 
-function OrderQuantityForm({tradeType})
+function OrderQuantityForm({tradeType, priceType, setPriceType, price, setPrice, quantity, setQuantity, onSubmit })
 {
-    const [priceType, setPriceType] = useState('limit') // 'limit' = 지정가, 'market' = 시장가
     const isLimit = priceType === 'limit'
     const isSell = tradeType === 'sell'
     const priceLabel = isSell ? '판매' : '구매'
@@ -159,7 +169,8 @@ function OrderQuantityForm({tradeType})
         : "tw3v-1wkoka52h tw3v-1wkoka54 tw3v-1wkoka541 tw3v-1wkoka5f tw3v-1wkoka519 tw3v-1wkoka5z tw3v-1wkoka5s tw3v-1wkoka5n tw3v-1wkoka52a"
 
     return(
-        <form id="new-order-form" action="/api/v2/wts/trading/order/create/direct" className="xl0v5q1" method="post" data-gtm-form-interact-id="3">
+        // action="/api/v2/wts/trading/order/create/direct"
+        <form id="new-order-form" onSubmit={(e) => { e.preventDefault(); onSubmit({ tradeType }); }} className="xl0v5q1" method="post" data-gtm-form-interact-id="3">
             <input type="hidden" value="A005930" name="stockCode" />
             <input type="hidden" value="buy" name="tradeType" />
             <input type="hidden" value="KSP" name="market" />
@@ -215,7 +226,7 @@ function OrderQuantityForm({tradeType})
                                     <div className="css-ghyw0v">
                                         <div data-tds-wts-field-box-content-variant="default" className="css-c8ze6m" style={{ "--wts-field-box-background-color": "var(--wts-adaptive-background)", "--wts-field-box-disabled-background-color": "var(--wts-adaptive-grey100)", "--wts-field-box-border-color": "var(--wts-adaptive-grey200)", "--wts-field-box-disabled-border-color": "var(--wts-adaptive-greyOpacity50)", "--wts-field-box-h-padding": "6px", "--wts-field-box-height": "32px", "--wts-field-box-font-size": "14px", "--wts-field-box-separator-height": "20px", "--wts-field-box-border-radius": "8px", "--wts-field-box-separator-margin": "0 4px", "--wts-field-box-box-shadow-color": "var(--wts-field-box-border-color)", "--wts-field-box-box-shadow-width": "1px", "--wts-field-box-hover-box-shadow-color": "var(--wts-adaptive-blue200)", "--wts-field-box-focus-box-shadow-color": "var(--wts-adaptive-blue500)", "--wts-field-box-content-left-padding": "var(--wts-field-box-h-padding)", "--wts-field-box-content-right-padding": "var(--wts-field-box-h-padding)", "--wts-field-box-content-hover-offset": "0px", "--wts-field-box-clear-content-margin-bottom": "var(--wts-field-box-content-margin-bottom, 0px)" }}>
                                             <label className="tw3v-1r5dc8g0 _13izhfo5 _7wshe50" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-greyOpacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "15px" }}>
-                                                <input data-tossinvest-log="InputWithSubText" data-contents-value="가격" data-content-tag="가격" data-parent-name="PriceFieldsSet" aria-required="true" id="trading-form-price" inputMode="numeric" maxLength="11" pattern="[0-9,|.]+" type="text" defaultValue="214,500" name="price" style={{ width: "58px" }} />
+                                                <input data-tossinvest-log="InputWithSubText" data-contents-value="가격" data-content-tag="가격" data-parent-name="PriceFieldsSet" aria-required="true" id="trading-form-price" inputMode="numeric" maxLength="11" pattern="[0-9,|.]+" type="text" value={price} onChange={(e) => setPrice(e.target.value)} name="price" style={{ width: "58px" }} />
                                                 <span aria-hidden="true" className="_7wshe51" style={{ marginLeft: "auto", marginRight: "6px" }}>원</span>
                                             </label>
                                         </div>
@@ -260,7 +271,7 @@ function OrderQuantityForm({tradeType})
                                     <div className="css-ghyw0v">
                                         <div data-tds-wts-field-box-content-variant="default" className="css-c8ze6m" style={{ "--wts-field-box-background-color": "var(--wts-adaptive-background)", "--wts-field-box-disabled-background-color": "var(--wts-adaptive-grey100)", "--wts-field-box-border-color": "var(--wts-adaptive-grey200)", "--wts-field-box-disabled-border-color": "var(--wts-adaptive-greyOpacity50)", "--wts-field-box-h-padding": "6px", "--wts-field-box-height": "32px", "--wts-field-box-font-size": "14px", "--wts-field-box-separator-height": "20px", "--wts-field-box-border-radius": "8px", "--wts-field-box-separator-margin": "0 4px", "--wts-field-box-box-shadow-color": "var(--wts-field-box-border-color)", "--wts-field-box-box-shadow-width": "1px", "--wts-field-box-hover-box-shadow-color": "var(--wts-adaptive-blue200)", "--wts-field-box-focus-box-shadow-color": "var(--wts-adaptive-blue500)", "--wts-field-box-content-left-padding": "var(--wts-field-box-h-padding)", "--wts-field-box-content-right-padding": "var(--wts-field-box-h-padding)", "--wts-field-box-content-hover-offset": "0px", "--wts-field-box-clear-content-margin-bottom": "var(--wts-field-box-content-margin-bottom, 0px)" }}>
                                             <label className="tw3v-1r5dc8g0 _13izhfo5 _7wshe50" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-greyOpacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "15px" }}>
-                                                <input data-tossinvest-log="InputWithSubText" data-contents-value="수량" data-content-tag="수량" data-parent-name="QuantityFieldsSet" aria-required="true" className="" id="trading-form-quantity" inputMode="numeric" maxLength="11" pattern="[0-9,|.]+" type="text" defaultValue="" name="quantity" style={{ width: "80px" }} placeholder="최대 5주 가능" />
+                                                <input data-tossinvest-log="InputWithSubText" data-contents-value="수량" data-content-tag="수량" data-parent-name="QuantityFieldsSet" aria-required="true" className="" id="trading-form-quantity" inputMode="numeric" maxLength="11" pattern="[0-9,|.]+" type="text" value={quantity} onChange={(e) => setQuantity(e.target.value)}  name="quantity" style={{ width: "80px" }} placeholder="최대 5주 가능" />
                                                 <span aria-hidden="true" className="_7wshe51" style={{ marginLeft: "auto", marginRight: "6px" }}></span>
                                             </label>
                                         </div>

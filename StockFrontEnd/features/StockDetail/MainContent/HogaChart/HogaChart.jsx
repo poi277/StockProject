@@ -1,8 +1,10 @@
 import './HogaChart.css'
+import { useState, useEffect } from 'react';
 import useHoga from './useHoga';
 
-export default function HogaChart({stock}) {
+export default function HogaChart({stock, onPriceSelect}) {
   const { sellOrders, buyOrders, maxQuantity, getBarWidth, totalSellQuantity, totalBuyQuantity,executions,closePrice,lastExecutionPrice } = useHoga(stock.stockCode)
+  
   return (
     <div className="sa1m6r0" style={{ paddingLeft: "0px", paddingRight: "0px" }}>
       <div className="sa1m6r1">
@@ -27,9 +29,9 @@ export default function HogaChart({stock}) {
                     </div>
                   </div>
                   <div className="_1oug70o8">
-                    <SellOrderBook orders={sellOrders} maxQuantity={maxQuantity} getBarWidth={getBarWidth} openPrice={stock.openPrice} lastExecutionPrice={lastExecutionPrice} />
+                    <SellOrderBook orders={sellOrders} maxQuantity={maxQuantity} getBarWidth={getBarWidth} openPrice={stock.openPrice} lastExecutionPrice={lastExecutionPrice} onPriceSelect={onPriceSelect} />
                     <div className="_1oug70o11"></div>
-                    <BuyOrderBook orders={buyOrders} maxQuantity={maxQuantity} getBarWidth={getBarWidth} openPrice={stock.openPrice} lastExecutionPrice={lastExecutionPrice}/>
+                    <BuyOrderBook orders={buyOrders} maxQuantity={maxQuantity} getBarWidth={getBarWidth} openPrice={stock.openPrice} lastExecutionPrice={lastExecutionPrice} onPriceSelect={onPriceSelect} />
                   </div>
                 </div>
               </div>
@@ -42,7 +44,15 @@ export default function HogaChart({stock}) {
   );
 }
 
-function SellOrderBook({ orders, maxQuantity, getBarWidth, openPrice,lastExecutionPrice }) {
+function SellOrderBook({ orders, maxQuantity, getBarWidth, openPrice, lastExecutionPrice, onPriceSelect }) {
+  const [keyDownPrice, setKeyDownPrice] = useState(null);
+
+  useEffect(() => {
+    const handleMouseUp = () => setKeyDownPrice(null);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => window.removeEventListener('mouseup', handleMouseUp);
+  }, []);
+
   return (
     <ul data-list-name="SellOrderBookKrComp" className="_1oug70of">
       {orders.map((order, i) => {
@@ -57,8 +67,13 @@ function SellOrderBook({ orders, maxQuantity, getBarWidth, openPrice,lastExecuti
             : "var(--wts-adaptive-blue500)"
         const changeRateStr = `${isUp ? '+' : ''}${changeRate.toFixed(2)}%`
 
+        const isActive = order.price === keyDownPrice;
+
         return (
-          <li key={i} className="hmbv031 hmbv030" role="button" tabIndex="0">
+          <li key={i} className="hmbv031 hmbv030" role="button" tabIndex="0"
+            onMouseDown={() => setKeyDownPrice(order.price)}
+            onMouseUp={() => { setKeyDownPrice(null); onPriceSelect?.(order.price); }}
+          >
             <div id="quote-row-quantity" className="_14zza80 _14zza84">
               <div className="_14zza86 _14zza8a" style={{ width: getBarWidth(order.quantity) }}>
                 <span className="tw3v-1r5dc8g0 _1p5yqoh0 _14zza88"
@@ -67,7 +82,7 @@ function SellOrderBook({ orders, maxQuantity, getBarWidth, openPrice,lastExecuti
                 </span>
               </div>
             </div>
-            <button id="quote-row-price" className={`dj9of22 ${order.price === lastExecutionPrice ? 'dj9of20' : ''}`}>
+            <button id="quote-row-price" className={`dj9of22 ${order.price === lastExecutionPrice || isActive ? 'dj9of20' : ''}`}>
               <div></div>
               <div className="dj9of25 dj9of23">
                 <span className="tw3v-1r5dc8g0 gvo66u1"
@@ -89,7 +104,15 @@ function SellOrderBook({ orders, maxQuantity, getBarWidth, openPrice,lastExecuti
   );
 }
 
-function BuyOrderBook({ orders, maxQuantity, getBarWidth, openPrice,lastExecutionPrice }) {
+function BuyOrderBook({ orders, maxQuantity, getBarWidth, openPrice, lastExecutionPrice, onPriceSelect }) {
+  const [keyDownPrice, setKeyDownPrice] = useState(null);
+
+  useEffect(() => {
+    const handleMouseUp = () => setKeyDownPrice(null);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => window.removeEventListener('mouseup', handleMouseUp);
+  }, []);
+
   return (
     <ul data-list-name="BuyOrderBookKrComp" className="_1oug70og">
       {orders.map((order, i) => {
@@ -103,10 +126,15 @@ function BuyOrderBook({ orders, maxQuantity, getBarWidth, openPrice,lastExecutio
               : "var(--wts-adaptive-blue500)"
           const changeRateStr = `${isUp ? '+' : ''}${changeRate.toFixed(2)}%`
 
+          const isActive = order.price === keyDownPrice;
+
         return (
-          <li key={i} className="_1kcm3421 _1kcm3420" role="button" tabIndex="0">
+          <li key={i} className="_1kcm3421 _1kcm3420" role="button" tabIndex="0"
+            onMouseDown={() => setKeyDownPrice(order.price)}
+            onMouseUp={() => { setKeyDownPrice(null); onPriceSelect?.(order.price); }}
+          >
             <div></div>
-            <button id="quote-row-price" className={`dj9of22 ${order.price === lastExecutionPrice ? 'dj9of20' : ''}`}>
+            <button id="quote-row-price" className={`dj9of22 ${order.price === lastExecutionPrice || isActive ? 'dj9of20' : ''}`}>
               <div></div>
               <div className="dj9of25 dj9of23">
                 <span className="tw3v-1r5dc8g0 gvo66u1"

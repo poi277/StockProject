@@ -1,100 +1,21 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
 import './MainContent.css';
 import '@/tossCss/toss-layout.css';
 import RealTimeTicks from './RealTimeTicks/realTimeTicks';
 import HogaChart from './HogaChart/HogaChart';
 import OrderForm from './Order/OrderForm';
 import ChartForm from '../Chart/ChartForm';
-
-// 초기 레이아웃 상수
-const INIT = {
-  // 세로 구분선 X 위치
-  splitV1: 759,   // 왼쪽 | 중앙
-  splitV2: 1089,  // 중앙 | 오른쪽
-
-  // 가로 구분선 Y 위치
-  splitH_left: 395,   // 차트 | 커뮤니티
-  splitH_mid: 562,    // 호가 | 개인외국인기관
-  splitH_right: 340,  // 일반주문 | 보유주식
-
-  totalH: 727,
-  GAP: 10,
-};
+import useMainContent from './useMainContent';
 
 export default function StockContent({stock}) {
-  const containerRef = useRef(null);
-
-  const [layout, setLayout] = useState({
-    splitV1: INIT.splitV1,
-    splitV2: INIT.splitV2,
-    splitH_left: INIT.splitH_left,
-    splitH_mid: INIT.splitH_mid,
-    splitH_right: INIT.splitH_right,
-    totalH: INIT.totalH,
-  });
-
-  const dragging = useRef(null); // { type, startX, startY, startLayout }
-
-  const onMouseDown = useCallback((e, type) => {
-    e.preventDefault();
-    dragging.current = {
-      type,
-      startX: e.clientX,
-      startY: e.clientY,
-      startLayout: { ...layout },
-    };
-  }, [layout]);
-
-  useEffect(() => {
-    const onMouseMove = (e) => {
-      if (!dragging.current) return;
-      const { type, startX, startY, startLayout } = dragging.current;
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      const G = INIT.GAP;
-
-      setLayout(prev => {
-        const next = { ...prev };
-
-        if (type === 'v1') {
-          // 왼쪽 | 중앙 구분선
-          next.splitV1 = Math.max(200, Math.min(startLayout.splitV1 + dx, startLayout.splitV2 - 200));
-        } else if (type === 'v2') {
-          // 중앙 | 오른쪽 구분선
-          next.splitV2 = Math.max(startLayout.splitV1 + 200, Math.min(startLayout.splitV2 + dx, 1600));
-        } else if (type === 'h_left') {
-          next.splitH_left = Math.max(100, Math.min(startLayout.splitH_left + dy, startLayout.totalH - 100));
-        } else if (type === 'h_mid') {
-          next.splitH_mid = Math.max(100, Math.min(startLayout.splitH_mid + dy, startLayout.totalH - 100));
-        } else if (type === 'h_right') {
-          next.splitH_right = Math.max(100, Math.min(startLayout.splitH_right + dy, startLayout.totalH - 100));
-        }
-
-        return next;
-      });
-    };
-
-    const onMouseUp = () => {
-      dragging.current = null;
-    };
-
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
-    return () => {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
-    };
-  }, []);
-
-  const { splitV1, splitV2, splitH_left, splitH_mid, splitH_right, totalH } = layout;
-  const G = INIT.GAP;
-
-  // 각 컬럼 너비
-  const w1 = splitV1;
-  const w2 = splitV2 - splitV1 - G;
-  const w3 = 1460 - splitV2 - G; // 전체 너비 가정 1460
+  const {
+    containerRef,
+    selectedPrice, setSelectedPrice,
+    onMouseDown,
+    splitV1, splitV2, splitH_left, splitH_mid, splitH_right, totalH,
+    G, w1, w2, w3,
+  } = useMainContent();
 
   return (
     <div className="_1gr0g6c7">
@@ -134,7 +55,7 @@ export default function StockContent({stock}) {
                   <div className="_1upatvo0">
                   <div className="tw3v-1ftc7zl0">
                      <MainContentForm/>
-                      <HogaChart  stock = {stock}/>
+                      <HogaChart stock={stock} onPriceSelect={setSelectedPrice} />
                      </div>
                   </div>
                 </div>
@@ -148,7 +69,7 @@ export default function StockContent({stock}) {
                    <div className="_1upatvo0">
                   <div className="tw3v-1ftc7zl0">
                     <MainContentForm/>
-                    <OrderForm/>            
+                    <OrderForm selectedPrice={selectedPrice} setSelectedPrice={setSelectedPrice} stockCode={stock.stockCode} />
                   </div>
                   </div>
                 </div>
@@ -164,18 +85,9 @@ export default function StockContent({stock}) {
                   </div>
                 </div>
 
-                {/* 5. 개인·외국인·기관
-                <div className="_14b51l92" style={{
-                  position: 'absolute', top: `${splitH_mid + G}px`, left: `${splitV1 + G}px`,
-                  width: `${w2}px`, height: `${totalH - splitH_mid - G}px`
-                }}>
-                  <input type="hidden" value='{"typeId":"investorTrend","title":"개인 · 외국인 · 기관","hide":"false"}' />
-                  <div className="tw3v-1ftc7zl0"></div>
-                </div> */}
-
                 {/* 5-1. 시세 */}
                 <div className="_14b51l92" style={{ position: 'absolute', top: `${splitH_mid + G}px`, left: `${splitV1 + G}px`,  width: `${w2}px`, height: `${totalH - splitH_mid - G}px` }}>
-                  <input type="hidden" value='{"typeId":"realtimeTicks","title":시세","hide":"false"}' />
+                  <input type="hidden" value='{"typeId":"realtimeTicks","title":"시세","hide":"false"}' />
                     <div className="tw3v-1ftc7zl0">
                         <MainContentForm/>
                         <RealTimeTicks  stockCode = {stock.stockCode}/>
@@ -192,8 +104,6 @@ export default function StockContent({stock}) {
                     <MainContentForm/>
                   </div>
                 </div>
-
-                {/* ── 구분선들 ── */}
 
                 {/* 세로 구분선 V1 (왼쪽) */}
                 <div
@@ -305,7 +215,7 @@ function MainContentForm() {
             </div>
           </div>
           <div id="DndDescribedBy-68" style={{ display: "none" }}> </div>
-          <div id="DndLiveRegion-68" role="status" aria-live="assertive" aria-atomic="true" style={{ position: "fixed", top: 0, left: 0, width: "1px", height: "1px", margin: "-1px", border: 0, padding: "0px", overflow: "hidden", clip: "rect(0px, 0px, 0px, 0px)", clipPath: "inset(100%)", whiteSpace: "nowrap", }}>
+          <div id="DndLiveRegion-68" role="status" aria-live="assertive" aria-atomic="true" style={{ position: "fixed", top: 0, left: 0, width: "1px", height: "1px", margin: "-1px", border: 0, padding: "0px", overflow: "hidden", clip: "rect(0px, 0px, 0px, 0px)", clipPath: "inset(100%)", whiteSpace: "nowrap" }}>
           </div>
           <button className="tw3v-emtxt715 tw3v-emtxt7p tw3v-emtxt7t tw3v-emtxt710 tw3v-ta8c3h1" aria-disabled="false" aria-label="탭 추가" data-theme="grey" data-variant="clear" data-mode="dark" aria-haspopup="menu" aria-expanded="false" data-state="closed" data-tossinvest-log="DropdownMenu.Trigger" data-parent-name="TabbedPanelHeader" data-tossinvest-priority-log="Dropdown.Trigger" data-contents-value="탭 추가" data-content-tag="탭_추가">
             <span className="tw3v-17xiat90 tw3v-17xiat91" aria-hidden="false" role="presentation" style={{ height: "14px", width: "14px", minWidth: "14px" }}>
