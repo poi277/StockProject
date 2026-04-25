@@ -80,6 +80,7 @@
     flex-direction: column;
     -webkit-user-select: none;
     user-select: none;
+    cursor: pointer;
 }
 .css-ry5kze {
     position: relative;

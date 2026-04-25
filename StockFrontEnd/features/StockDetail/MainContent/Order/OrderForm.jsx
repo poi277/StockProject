@@ -5,7 +5,7 @@ import useOrder from './useOrder';
 
 
 export default function OrderForm({ selectedPrice, setSelectedPrice, stockCode }) {
-  const [tradeType, setTradeType] = useState("buy");
+  const [tradeType, setTradeType] = useState("BUY");
 
   const { executeOrder, loading, error, priceType, setPriceType, price, setPrice, quantity, setQuantity } = useOrder(selectedPrice, stockCode);
 
@@ -34,8 +34,8 @@ export default function OrderForm({ selectedPrice, setSelectedPrice, stockCode }
 }
 
 function OrderType({ tradeType, setTradeType }) {
-  const isBuy = tradeType === 'buy';
-  const isSell = tradeType === 'sell';
+  const isBuy = tradeType === 'BUY';
+  const isSell = tradeType === 'SELL';
   const isPending = tradeType === 'pending-orders';
 
   // 구매: red, 판매: blue, 대기: grey (상태에 따른 부모 컨테이너 색상 클래스)
@@ -90,7 +90,7 @@ function OrderType({ tradeType, setTradeType }) {
           aria-checked={isBuy}
           className={`tw3v-1cq3gqg0 tw3v-1cq3gqg2 xl0v5qn ${isBuy ? 'xl0v5qo' : 'xl0v5qr'}`}
           style={{ flex: 1, zIndex: 1, position: "relative", background: "transparent" }}
-          onClick={() => setTradeType('buy')}
+          onClick={() => setTradeType('BUY')}
         >
           <div className="tw3v-1cq3gqg3 tw3v-1cq3gqg5">
             <div className="tw3v-1cq3gqg8">
@@ -106,7 +106,7 @@ function OrderType({ tradeType, setTradeType }) {
           aria-checked={isSell}
           className={`tw3v-1cq3gqg0 tw3v-1cq3gqg2 xl0v5qn ${isSell ? 'xl0v5qp' : 'xl0v5qr'}`}
           style={{ flex: 1, zIndex: 1, position: "relative", background: "transparent" }}
-          onClick={() => setTradeType('sell')}
+          onClick={() => setTradeType('SELL')}
         >
           <div className="tw3v-1cq3gqg3 tw3v-1cq3gqg5">
             <div className="tw3v-1cq3gqg8">
@@ -161,7 +161,7 @@ function OrderStatus({ tradeType })
 function OrderQuantityForm({tradeType, priceType, setPriceType, price, setPrice, quantity, setQuantity, onSubmit })
 {
     const isLimit = priceType === 'limit'
-    const isSell = tradeType === 'sell'
+    const isSell = tradeType === 'SELL'
     const priceLabel = isSell ? '판매' : '구매'
     const buttonLabel = isSell ? '판매하기' : '구매하기'
     const buttonClass = isSell
@@ -172,7 +172,7 @@ function OrderQuantityForm({tradeType, priceType, setPriceType, price, setPrice,
         // action="/api/v2/wts/trading/order/create/direct"
         <form id="new-order-form" onSubmit={(e) => { e.preventDefault(); onSubmit({ tradeType }); }} className="xl0v5q1" method="post" data-gtm-form-interact-id="3">
             <input type="hidden" value="A005930" name="stockCode" />
-            <input type="hidden" value="buy" name="tradeType" />
+            <input type="hidden" value="BUY" name="tradeType" />
             <input type="hidden" value="KSP" name="market" />
             <input type="hidden" value="KRW" name="currencyMode" />
             <input type="hidden" value="1481.4" name="exchangeRate" />

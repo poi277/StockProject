@@ -3,7 +3,6 @@ export default function NormalLayout({ children }) {
   return (
     <>
       {children}
-      <UnderBarForm/>
     </>
   );
 }

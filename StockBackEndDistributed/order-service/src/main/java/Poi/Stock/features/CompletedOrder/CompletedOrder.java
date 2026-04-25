@@ -29,7 +29,7 @@ public class CompletedOrder {
 	private String userId;
 	private int tradePrice;
 	private int filledQuantity; // 체결된 수량
-
+	private int quantity;
 	@Enumerated(EnumType.STRING)
 	private tradeType tradeType; // BUY or SELL
 	@Enumerated(EnumType.STRING)
@@ -46,6 +46,7 @@ public class CompletedOrder {
 		co.filledQuantity = order.getQuantity();
 		co.tradeType = order.getTradeType();
 		co.status = OrderStatus.COMPLETED; // 추가
+		co.quantity = order.getQuantity();
 		co.completedAt = LocalDateTime.now();
 		return co;
 	}
@@ -58,6 +59,7 @@ public class CompletedOrder {
 		co.userId = order.getUserId();
 		co.tradePrice = order.getTradePrice();
 		co.filledQuantity = order.getQuantity() - order.getRemainingQuantity();
+		co.quantity = order.getQuantity();
 		co.tradeType = order.getTradeType();
 		co.status = OrderStatus.CANCELLED;
 		co.completedAt = LocalDateTime.now();
