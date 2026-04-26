@@ -8,6 +8,7 @@ export default function useOrder(selectedPrice, stockCode) {
     const [priceType, setPriceType] = useState('limit'); // 'limit' | 'market'
     const [price, setPrice] = useState('');
     const [quantity, setQuantity] = useState('');
+    const [edit,setEdit] = useState(false);
 
     // 호가창에서 price 선택 시 input에 반영
     useEffect(() => {
@@ -41,5 +42,6 @@ export default function useOrder(selectedPrice, stockCode) {
         priceType, setPriceType,
         price, setPrice,
         quantity, setQuantity,
+        edit,setEdit
     };
 }

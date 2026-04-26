@@ -45,18 +45,30 @@
 .xl0v5ql>div {
     background-color: var(--xl0v5qe);
 }
-.xl0v5qo {
-    --xl0v5qm: var(--wts-adaptive-red600);
-}
 .xl0v5qn {
     transition: color .2s ease;
+}
+.xl0v5qo {
+    --xl0v5qm: var(--wts-adaptive-red600);
 }
 .xl0v5qr {
     --xl0v5qm: var(--wts-adaptive-greyOpacity600);
 }
-.xl0v5qg {
-    --xl0v5qd: linear-gradient(90deg, var(--wts-adaptive-redOpacity50) 0%, var(--wts-adaptive-greyOpacity100) 70%);
-    --xl0v5qe: var(--wts-adaptive-redOpacity50);
+.xl0v5qq {
+    --xl0v5qm: var(--wts-adaptive-green500);
+}
+.xl0v5qp {
+    --xl0v5qm: var(--wts-adaptive-blue600);
+}
+.xl0v5qv {
+    height: 500px;
+    padding: 0 8px;
+}
+.xl0v5qw {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 48px;
 }
 
 .fjdgoj1 {
@@ -214,6 +226,16 @@
     padding-right: 8px;
     border-radius: 8px;
 }
+.xl0v5qw .order-summary {
+    flex: 1 1;
+    display: flex;
+    flex-direction: column;
+}
+.xl0v5qw .order-edit-buttons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
 .css-c8ze6m {
     appearance: none;
     display: flex;
@@ -239,20 +261,21 @@
 ._13izhfo4>:last-child {
     margin: 0;
 }
-
-/* 판매/대기 선택 시 파란색 배경 */
-.xl0v5qg-sell {
-    --xl0v5qd: linear-gradient(90deg, var(--wts-adaptive-blueOpacity50) 0%, var(--wts-adaptive-greyOpacity100) 70%);
+.xl0v5qg {
+    --xl0v5qd: linear-gradient(90deg, var(--wts-adaptive-redOpacity50) 0%, var(--wts-adaptive-greyOpacity100) 70%);
+    --xl0v5qe: var(--wts-adaptive-redOpacity50);
+}
+.xl0v5qh {
+    --xl0v5qd: linear-gradient(90deg, var(--wts-adaptive-greyOpacity100) 10%, var(--wts-adaptive-blueOpacity50) 50%, var(--wts-adaptive-greyOpacity100) 90%);
     --xl0v5qe: var(--wts-adaptive-blueOpacity50);
 }
-.xl0v5qg-pending {
-    --xl0v5qd: linear-gradient(90deg, var(--wts-adaptive-greyOpacity50) 0%, var(--wts-adaptive-greyOpacity100) 70%);
-    --xl0v5qe: var(--wts-adaptive-greyOpacity50);
+
+.xl0v5qi {
+    --xl0v5qd: linear-gradient(90deg, var(--wts-adaptive-greyOpacity100) 30%, var(--wts-adaptive-greenOpacity50) 100%);
+    --xl0v5qe: var(--wts-adaptive-greenOpacity50);
 }
-/* 판매/대기 선택된 버튼 파란색 */
-.xl0v5qp {
-    --xl0v5qm: var(--wts-adaptive-blue600);
-}
+
+
 /* 배경 슬라이더 애니메이션 추가 */
 .tw3v-1sni4y97 {
     transition: transform 0.2s ease-in-out, width 0.2s ease-in-out;
