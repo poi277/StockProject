@@ -1,0 +1,34 @@
+import { useState, useEffect } from "react";
+import { orderApi } from "../../../../../lib/order";
+ 
+export default function useOrderBuy(selectedPrice, stockCode,tradeTypeTab,priceType) {
+
+    const [buyQuantity,setBuyQuantity] = useState("")
+    const [buyPrice,setBuyPrice] = useState("")
+    // 호가창 price 선택 시 현재 tradeType의 price에 반영 (BUY/SELL만)
+    useEffect(() => {
+        if (selectedPrice != null && tradeTypeTab=='BUY') {
+            setBuyPrice(selectedPrice.toLocaleString('ko-KR'));
+        }
+    }, [selectedPrice]);
+
+    async function buyExecuteOrder({ tradeTypeTab }) {
+            try {
+                const numericPrice = priceType === 'market' ? null : Number(buyPrice.replace(/,/g, ''));
+                const res = await orderApi(tradeTypeTab, stockCode, buyQuantity, numericPrice);
+                if (!res.success) {
+                    throw new Error(res.message || "주문 실패");
+                }
+                return res.data;
+            } catch (err) {
+                console.log(err.message);
+                return null;
+            } 
+        }
+ 
+    return {
+        buyExecuteOrder,
+        buyPrice, setBuyPrice,
+        buyQuantity, setBuyQuantity,
+    };
+}

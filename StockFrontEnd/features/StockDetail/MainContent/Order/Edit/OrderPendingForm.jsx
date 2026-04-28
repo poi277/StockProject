@@ -1,7 +1,24 @@
-export default function OrderPendingForm() {
+import { PriceForm, QuantityForm, SubmitButton } from "../Commonutil/OrderCommon";
+import useOrderEdit from "./useOrderEdit";
+
+export const DUMMY_PENDING_ORDERS = [
+    { id: 1, tradeType: 'BUY', price: 15000, quantity: 2, OrderStatus: 'PENDING' },
+    { id: 2, tradeType: 'SELL', price: 17000, quantity: 2, OrderStatus: 'PENDING' },
+];
+
+export default function OrderPendingForm({tradeTypeTab,stockCode,selectedPrice}) {
+    const { executeOrder,
+        edit,setEdit,
+        editTarget,setEditTarget,
+        editPrice, setEditPrice,
+        editQuantity, setEditQuantity,
+        editPriceType, setEditPriceType,
+        handleEditOpen,
+        handleEditClose} = useOrderEdit(selectedPrice, stockCode,tradeTypeTab);
+
     return (
         <div id="trade-pending-orders-section">
-            <form id="new-order-form" onSubmit={(e) => { e.preventDefault(); executeOrder({ tradeType: tradeTypeTab }); }} className="xl0v5q1" method="post" data-gtm-form-interact-id="3">
+            <form id="new-order-form" onSubmit={(e) => { e.preventDefault(); executeOrder({}); }} className="xl0v5q1" method="post" data-gtm-form-interact-id="3">
                 <input type="hidden" value="A005930" name="stockCode" />
                 <input type="hidden" value="BUY" name="tradeType" />
                 <input type="hidden" value="KSP" name="market" />
@@ -10,10 +27,20 @@ export default function OrderPendingForm() {
                 <input type="hidden" value="false" name="marginTrading" />
                 <input type="hidden" value="false" name="noAutoExchange" />
                 <input type="hidden" value="false" name="buyMaxQuantity" />
-                <input type="hidden" value={priceType ? "00" : "03"} name="orderPriceType" />
+                <input type="hidden" value={editPriceType ? "00" : "03"} name="orderPriceType" />
                 <div className="xl0v5q2" id="trade-order-section">
-                   <OrderEditForm/>
-                   <OrderPendingListForm/>
+                 {edit ? 
+                 <OrderEditForm tradeTypeTab={tradeTypeTab} 
+                 editPriceType={editPriceType} 
+                 setEditPriceType={setEditPriceType} 
+                 editPrice={editPrice}
+                 setEditPrice={setEditPrice}
+                 editQuantity={editQuantity}
+                 setQuantity={setEditQuantity}
+                 handleEditClose={handleEditClose}
+                 editTarget={editTarget}
+                    /> : 
+                 <OrderPendingListForm orders={DUMMY_PENDING_ORDERS} handleEditOpen={handleEditOpen} />}
                 </div>
             </form>
         </div>
@@ -21,7 +48,7 @@ export default function OrderPendingForm() {
 }
 
 
-function OrderPendingListForm({ orders, onEdit }) {
+function OrderPendingListForm({ orders, handleEditOpen }) {
     const TRADE_LABEL = { BUY: '구매', SELL: '판매' };
     const TRADE_COLOR = { BUY: 'var(--wts-adaptive-red500)', SELL: 'var(--wts-adaptive-blue500)' };
 
@@ -41,7 +68,7 @@ function OrderPendingListForm({ orders, onEdit }) {
                                         <span className="tw3s-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-regular)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>주당 {order.price.toLocaleString('ko-KR')}원</span>
                                     </div>
                                     <div className="order-edit-buttons">
-                                        <button onClick={() => onEdit(order)} type="button" aria-disabled="false" className="tw3s-1wkoka52h tw3s-1wkoka59 tw3s-1wkoka5c tw3s-1wkoka513 tw3s-1wkoka5t tw3s-1wkoka5r tw3s-1wkoka5h tw3s-1wkoka524" data-tds-wts-button data-tossinvest-log="Button" data-contents-label="수정" data-contents-label-code="수정" data-contents-value="수정" data-content-tag="pendingOrder_correctionInProgress_진행중__수정" data-parent-name="PendingOrder">
+                                        <button onClick={() => handleEditOpen(order)} type="button" aria-disabled="false" className="tw3s-1wkoka52h tw3s-1wkoka59 tw3s-1wkoka5c tw3s-1wkoka513 tw3s-1wkoka5t tw3s-1wkoka5r tw3s-1wkoka5h tw3s-1wkoka524" data-tds-wts-button data-tossinvest-log="Button" data-contents-label="수정" data-contents-label-code="수정" data-contents-value="수정" data-content-tag="pendingOrder_correctionInProgress_진행중__수정" data-parent-name="PendingOrder">
                                             <span className="tw3s-1wkoka52g">수정</span>
                                         </button>
                                         <button type="button" aria-disabled="false" className="tw3s-1wkoka52h tw3s-1wkoka51 tw3s-1wkoka5c tw3s-1wkoka513 tw3s-1wkoka5t tw3s-1wkoka5r tw3s-1wkoka5h tw3s-1wkoka524" data-tds-wts-button data-tossinvest-log="Button" data-contents-label="취소" data-contents-label-code="취소" data-contents-value="취소" data-content-tag="pendingOrder_cancellInProgress_진행중_취소" data-parent-name="PendingOrder">
@@ -58,11 +85,9 @@ function OrderPendingListForm({ orders, onEdit }) {
     )
 }
 
-function OrderEditForm({ priceType,tradeTypeTab,setPriceType, setEdit, tradeType, initialPrice, initialQuantity, OrderStatus }) {
-    const [price, setPrice] = useState(initialPrice.toLocaleString('ko-KR'));
-    const [quantity, setQuantity] = useState(String(initialQuantity));
-    const priceLabel = tradeType === 'BUY' ? '구매' : '판매';
-    const tradeColor = tradeType === 'BUY' ? 'var(--wts-adaptive-red500)' : 'var(--wts-adaptive-blue500)';
+function OrderEditForm({tradeTypeTab, editPriceType, setEditPriceType,editPrice,setEditPrice,editQuantity,setEditQuantity,handleEditClose,editTarget}) {
+    const priceLabel = editTarget.tradeType === 'BUY' ? '구매' : '판매';
+    const tradeColor = editTarget.tradeType === 'BUY' ? 'var(--wts-adaptive-red500)' : 'var(--wts-adaptive-blue500)';
     return (
         <>
             <input type="hidden" value="2026-04-26" name="orderDate" />
@@ -76,17 +101,17 @@ function OrderEditForm({ priceType,tradeTypeTab,setPriceType, setEdit, tradeType
                             <div className="tw3s-1ia8ofc0 tw3s-1ia8ofc1">
                                 <span className="tw3s-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-bold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey700)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
                                     <span style={{ color: tradeColor }}>{priceLabel}</span>
-                                    {` ${quantity}주`}
+                                    {` ${editQuantity}주`}
                                 </span>
                                 <span className="tw3s-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-regular)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey700)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
                                     {"주당 "}
-                                    {`${Number(price.replace(/,/g, '').toLocaleString('ko-KR'))}원`}
+                                    {`${Number(editPrice.replace(/,/g, '').toLocaleString('ko-KR'))}원`}
                                 </span>
                             </div>
                         </span>
                     </div>
                     <div className="tw3s-1e8fj1ap">
-                        <button type="button" className="tw3s-emtxt715 tw3s-emtxt7n tw3s-emtxt7r tw3s-emtxt7z" aria-disabled="false" aria-label="주문 수정 닫기" data-theme="grey" data-variant="fill" data-mode="dark" data-tossinvest-log="IconButton" data-contents-value="주문 수정 닫기" data-content-tag="주문_수정_닫기" onClick={setEdit} data-parent-name="OrderInfo">
+                        <button type="button" className="tw3s-emtxt715 tw3s-emtxt7n tw3s-emtxt7r tw3s-emtxt7z" aria-disabled="false" aria-label="주문 수정 닫기" data-theme="grey" data-variant="fill" data-mode="dark" data-tossinvest-log="IconButton" data-contents-value="주문 수정 닫기" data-content-tag="주문_수정_닫기" onClick={handleEditClose} data-parent-name="OrderInfo">
                             <span className="tw3s-17xiat90 tw3s-17xiat91" aria-hidden="false" role="presentation" style={{ height: "12px", width: "12px", minWidth: "12px" }}>
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="line-icon">
                                     <path fill="#BOB8C1" fillRule="evenodd" d="M 13.815 12 l 5.651 -5.651 a 1.2 1.2 0 0 0 -1.697 -1.698 l -5.651 5.652 l -5.652 -5.652 a 1.201 1.201 0 0 0 -1.697 1.698 L 10.421 12 l -5.652 5.651 a 1.202 1.202 0 0 0 0.849 2.049 c 0.307 0 0.614 -0.117 0.848 -0.351 l 5.652 -5.652 l 5.651 5.652 a 1.198 1.198 0 0 0 1.697 0 a 1.2 1.2 0 0 0 0 -1.698 L 13.815 12 Z" />
@@ -96,8 +121,8 @@ function OrderEditForm({ priceType,tradeTypeTab,setPriceType, setEdit, tradeType
                     </div>
                 </div>
             </div>
-            <PriceForm priceLabel={priceLabel} priceType={priceType} price={price} setPrice={setPrice} setPriceType={setPriceType} />
-            <QuantityForm isPending={true} quantity={quantity} setQuantity={setQuantity} />
+            <PriceForm priceLabel={priceLabel} priceType={editPriceType} price={editPrice} setPrice={setEditPrice} setPriceType={setEditPriceType} />
+            <QuantityForm isPending={true} quantity={editQuantity} setQuantity={setEditQuantity} />
             <div style={{ display: "flex", flexDirection: "row", gap: "0px", justifyContent: "flex-end", alignItems: "normal", paddingRight: "8px" }}>
                 <div className="tw3s-93nb7ym tw3s-93nb7yh tw3s-93nb7ye tw3s-93nb7yl _1ov4tnc1" data-tds-wts-checkbox>
                     <div className="tw3s-93nb7yo">
@@ -118,13 +143,13 @@ function OrderEditForm({ priceType,tradeTypeTab,setPriceType, setEdit, tradeType
                         </span>
                         <span className="tw3s-1e8fj1am tw3s-1e8fj1ao">
                             <div className="tw3s-1ia8ofc0 tw3s-1ia8ofc1">
-                                <span className="tw3s-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>{(Number(price.replace(/,/g, '')) * Number(quantity)).toLocaleString('ko-KR')}원</span>
+                                <span className="tw3s-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey0pacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>{(Number(editPrice.replace(/,/g, '')) * Number(editQuantity)).toLocaleString('ko-KR')}원</span>
                             </div>
                         </span>
                     </div>
                 </div>
             </div>
-            <SubmitButton tradeTypeTab={tradeTypeTab} tradeType={tradeType} />
+            <SubmitButton tradeTypeTab={tradeTypeTab} tradeType={editTarget.tradeType} />
         </>
     )
 }
