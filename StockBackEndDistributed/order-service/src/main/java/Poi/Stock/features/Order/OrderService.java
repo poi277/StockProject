@@ -16,7 +16,8 @@ import org.springframework.web.client.RestTemplate;
 
 import Poi.Stock.DTO.user.HogaDTO;
 import Poi.Stock.DTO.user.TradeDTO;
-import Poi.Stock.DTO.user.myOrderDTO;
+import Poi.Stock.DTO.user.myAllOrderDTO;
+import Poi.Stock.DTO.user.myStockOrderDTO;
 import Poi.Stock.features.Candle.CandleService;
 import Poi.Stock.features.Stock.Stock;
 import Poi.Stock.features.Stock.StockCache;
@@ -106,12 +107,29 @@ public class OrderService {
             .toList();
     }
 
-	public List<myOrderDTO> getMyOrder(String userId) {
+	public List<myAllOrderDTO> getMyAllStockOrder(String userId) {
 		List<Order> orders = orderRepository.findByUserIdOrderByCreatedAtDesc(userId);
 		return orders.stream().map(order -> {
-			myOrderDTO dto = new myOrderDTO();
+			myAllOrderDTO dto = new myAllOrderDTO();
 			dto.setOrderId(order.getOrderId());
+			dto.setStockCode(order.getStockCode());
 			dto.setStockName(order.getStockName());
+			dto.setTradeType(order.getTradeType());
+			dto.setQuantity(order.getQuantity());
+			dto.setRemainingQuantity(order.getRemainingQuantity());
+			dto.setTradePrice(order.getTradePrice());
+			dto.setStatus(order.getStatus());
+			dto.setCreatedAt(order.getCreatedAt());
+			return dto;
+		}).collect(Collectors.toList());
+	}
+
+	public List<myStockOrderDTO> getMyStockOrder(String userId, String stockCode) {
+		List<Order> orders = orderRepository.findByUserIdAndStockCodeOrderByCreatedAtDesc(userId, stockCode);
+		return orders.stream().map(order -> {
+			myStockOrderDTO dto = new myStockOrderDTO();
+			dto.setOrderId(order.getOrderId());
+			dto.setStockCode(order.getStockCode());
 			dto.setTradeType(order.getTradeType());
 			dto.setQuantity(order.getQuantity());
 			dto.setRemainingQuantity(order.getRemainingQuantity());

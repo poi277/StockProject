@@ -9,10 +9,10 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class myOrderDTO {
+public class myStockOrderDTO {
 	private Long orderId;
-	private String stockName; // 종목코드
 	private tradeType tradeType; // BUY or SELL
+	private String stockCode;
 	private Integer quantity; // 주문 수량
 	private Integer remainingQuantity; // 남은 수량
 	private Integer tradePrice; // 주문 가격

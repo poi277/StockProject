@@ -10,3 +10,7 @@ export async function RegisterSumbitApi(formData) {
     body: JSON.stringify(formData)
   });
 }
+
+export async function UserHaveStock() {
+ return await apiFetch(`${USER_URL}/user/haveStock`)
+}

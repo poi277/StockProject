@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import Poi.Stock.DTO.user.getAssetDTO;
+import Poi.Stock.DTO.user.getHaveStockDTO;
 import Poi.Stock.repository.HaveStockRepository;
 import Poi.Stock.repository.StockUserRepository;
 import Poi.Stock.util.EnumUtil.tradeType;
@@ -74,5 +75,19 @@ public class UserAssetService {
 				.map(h -> new getAssetDTO.HoldingDTO(h.getStockCode(), h.getQuantity(), h.getAveragePrice()))
 				.collect(Collectors.toList());
 		return new getAssetDTO(user.getAsset(), holdingDTOs);
+	}
+
+	// Service
+	public List<getHaveStockDTO> userHaveStock(String userId) {
+		StockUser stockUser = stockUserRepository.findById(userId)
+				.orElseThrow(() -> new RuntimeException("유저 없음: " + userId));
+		return haveStockRepository.findByStockUser(stockUser).stream().map(h -> {
+			getHaveStockDTO dto = new getHaveStockDTO();
+			dto.setId(h.getId());
+			dto.setStockCode(h.getStockCode());
+			dto.setQuantity(h.getQuantity());
+			dto.setAvailableQuantity(h.getAvailableQuantity()); // 지금 활용가능한 주식
+			return dto;
+		}).collect(Collectors.toList());
 	}
 }

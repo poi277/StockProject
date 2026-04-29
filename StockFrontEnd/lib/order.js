@@ -33,3 +33,15 @@ export async function editOrderApi(orderId,tradeType,stockCode,quantity,tradePri
         }),
     })
 }
+
+export async function getMyStockOrder(stockCode) {
+   return await apiFetch(`${ORDER_API_URL}/order/myorder/${stockCode}`,{auth:true})
+}
+
+export async function getMyAllOrder() {
+   return await apiFetch(`${ORDER_API_URL}/order/myallorder`,{auth:true})
+}
+
+export async function cancelOrder(orderId) {
+   return await apiFetch(`${ORDER_API_URL}/order/cancel/${orderId}`, { auth: true, method: 'POST' })
+}

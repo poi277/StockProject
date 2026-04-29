@@ -14,7 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import Poi.Stock.DTO.user.ApiResponse;
 import Poi.Stock.DTO.user.TradeDTO;
-import Poi.Stock.DTO.user.myOrderDTO;
+import Poi.Stock.DTO.user.myAllOrderDTO;
+import Poi.Stock.DTO.user.myStockOrderDTO;
 import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.repository.OrderRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -45,15 +46,7 @@ public class OrderController {
         return ResponseEntity.ok(new ApiResponse(true, "주문 접수 완료"));
     }
 
-    @GetMapping("/orders/{stockCode}")
-	public ResponseEntity<?> getOrders(
-            @PathVariable("stockCode") String stockCode,
-            Authentication authentication) {
-        String userId = authentication.getName();
-        List<Order> myOrders = orderRepository
-            .findByUserIdAndStockCodeOrderByCreatedAtDesc(userId, stockCode);
-        return ResponseEntity.ok(myOrders);
-    }
+
 
     @GetMapping("/orderbook/{stockCode}")
     public ResponseEntity<?> getOrderHoga(@PathVariable("stockCode") String stockCode) {
@@ -61,10 +54,18 @@ public class OrderController {
         return ResponseEntity.ok(orderBook);
     }
 
-	@GetMapping("/myorder")
-	public ResponseEntity<ApiResponse> getMyOrder(Authentication authentication) {
+	@GetMapping("/myorder/{stockCode}")
+	public ResponseEntity<?> getMyStockOrders(@PathVariable("stockCode") String stockCode,
+			Authentication authentication) {
 		String userId = authentication.getName();
-		List<myOrderDTO> data = orderService.getMyOrder(userId);
+		List<myStockOrderDTO> myOrders = orderService.getMyStockOrder(userId, stockCode);
+		return ResponseEntity.ok(myOrders);
+	}
+
+	@GetMapping("/myallorder")
+	public ResponseEntity<ApiResponse> getMyAllStockOrder(Authentication authentication) {
+		String userId = authentication.getName();
+		List<myAllOrderDTO> data = orderService.getMyAllStockOrder(userId);
 		return ResponseEntity.ok(new ApiResponse(true, "조회완료", data));
 	}
 

@@ -7,12 +7,21 @@ import OrderSellForm from './Sell/OrderSellForm';
 import OrderPendingForm from './Edit/OrderPendingForm';
 import useOrderBuy from './Buy/useOrderBuy';
 import useOrderSell from './Sell/useOrderSell';
+import useOrderEdit from './Edit/useOrderEdit';
 
 export default function OrderForm({ selectedPrice, stockCode }) {
-    const [tradeTypeTab,setTradeTypeTab]=useState("BUY")
-    const [priceType,setPriceType]=useState("limit")
-    const {sellExcuteOrder,sellPrice, setSellPrice,sellQuantity, setSellQuantity} = useOrderSell(selectedPrice, stockCode,tradeTypeTab,priceType);
-    const {buyExecuteOrder,buyPrice, setBuyPrice,buyQuantity, setBuyQuantity} = useOrderBuy(selectedPrice, stockCode,tradeTypeTab,priceType);
+    const [tradeTypeTab, setTradeTypeTab] = useState("BUY")
+    const [priceType, setPriceType] = useState("limit")
+    const { sellExcuteOrder, sellPrice, setSellPrice, sellQuantity, setSellQuantity } = useOrderSell(selectedPrice, stockCode, tradeTypeTab, priceType);
+    const { buyExecuteOrder, buyPrice, setBuyPrice, buyQuantity, setBuyQuantity } = useOrderBuy(selectedPrice, stockCode, tradeTypeTab, priceType);
+    const { editExecuteOrder,
+        edit, setEdit,
+        editTarget, setEditTarget,
+        editPrice, setEditPrice,
+        editQuantity, setEditQuantity,
+        editPriceType, setEditPriceType,
+        handleEditOpen,
+        handleEditClose, stockOrders } = useOrderEdit(selectedPrice, stockCode, tradeTypeTab);
 
     return (
         <div className="sa1m6r0">
@@ -50,9 +59,23 @@ export default function OrderForm({ selectedPrice, stockCode }) {
                         )}
                         {tradeTypeTab === 'PENDING' && (
                             <OrderPendingForm
-                                 tradeTypeTab={tradeTypeTab}
+                                tradeTypeTab={tradeTypeTab}
                                 stockCode={stockCode}
                                 selectedPrice={selectedPrice}
+                                editExecuteOrder={editExecuteOrder}
+                                edit={edit}
+                                setEdit={setEdit}
+                                editTarget={editTarget}
+                                setEditTarget={setEditTarget}
+                                editPrice={editPrice}
+                                setEditPrice={setEditPrice}
+                                editQuantity={editQuantity}
+                                setEditQuantity={setEditQuantity}
+                                editPriceType={editPriceType}
+                                setEditPriceType={setEditPriceType}
+                                handleEditOpen={handleEditOpen}
+                                handleEditClose={handleEditClose}
+                                orders={stockOrders}
                             />
                         )}
                     </div>
@@ -64,8 +87,8 @@ export default function OrderForm({ selectedPrice, stockCode }) {
 
 function OrderTypeTab({ tradeType, setTradeType }) {
     const TABS = [
-        { value: 'BUY',     label: '구매', activeClass: 'xl0v5qo', containerClass: 'xl0v5qg' },
-        { value: 'SELL',    label: '판매', activeClass: 'xl0v5qp', containerClass: 'xl0v5qh' },
+        { value: 'BUY', label: '구매', activeClass: 'xl0v5qo', containerClass: 'xl0v5qg' },
+        { value: 'SELL', label: '판매', activeClass: 'xl0v5qp', containerClass: 'xl0v5qh' },
         { value: 'PENDING', label: '대기', activeClass: 'xl0v5qq', containerClass: 'xl0v5qi' },
     ];
     const currentIndex = TABS.findIndex(t => t.value === tradeType);

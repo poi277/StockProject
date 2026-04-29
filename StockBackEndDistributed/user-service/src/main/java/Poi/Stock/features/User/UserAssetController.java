@@ -1,5 +1,6 @@
 package Poi.Stock.features.User;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
@@ -10,7 +11,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import Poi.Stock.DTO.user.ApiResponse;
 import Poi.Stock.DTO.user.getAssetDTO;
+import Poi.Stock.DTO.user.getHaveStockDTO;
 import Poi.Stock.util.EnumUtil.tradeType;
 import lombok.RequiredArgsConstructor;
 
@@ -49,4 +52,11 @@ public class UserAssetController {
 				(String) body.get("stockCode"), (Integer) body.get("price"), (Integer) body.get("quantity"));
         return ResponseEntity.ok().build();
     }
+
+	@GetMapping("/haveStock")
+	public ResponseEntity<ApiResponse> getUserHaveStock(Authentication authentication) {
+		String userId = authentication.getName();
+		List<getHaveStockDTO> data = userAssetService.userHaveStock(userId);
+		return ResponseEntity.ok(new ApiResponse(true, "조회완료", data));
+	}
 }

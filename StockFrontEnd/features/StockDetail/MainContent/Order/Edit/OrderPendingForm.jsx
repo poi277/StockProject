@@ -1,20 +1,14 @@
 import { PriceForm, QuantityForm, SubmitButton } from "../Commonutil/OrderCommon";
 import useOrderEdit from "./useOrderEdit";
 
-export const DUMMY_PENDING_ORDERS = [
-    { id: 1, tradeType: 'BUY', price: 15000, quantity: 2, OrderStatus: 'PENDING' },
-    { id: 2, tradeType: 'SELL', price: 17000, quantity: 2, OrderStatus: 'PENDING' },
-];
-
-export default function OrderPendingForm({tradeTypeTab,stockCode,selectedPrice}) {
-    const { executeOrder,
-        edit,setEdit,
-        editTarget,setEditTarget,
+export default function OrderPendingForm({tradeTypeTab,stockCode,selectedPrice, edit, setEdit,
+        editTarget, setEditTarget,
         editPrice, setEditPrice,
         editQuantity, setEditQuantity,
         editPriceType, setEditPriceType,
         handleEditOpen,
-        handleEditClose} = useOrderEdit(selectedPrice, stockCode,tradeTypeTab);
+        handleEditClose, orders}) {
+  
 
     return (
         <div id="trade-pending-orders-section">
@@ -40,7 +34,7 @@ export default function OrderPendingForm({tradeTypeTab,stockCode,selectedPrice})
                  handleEditClose={handleEditClose}
                  editTarget={editTarget}
                     /> : 
-                 <OrderPendingListForm orders={DUMMY_PENDING_ORDERS} handleEditOpen={handleEditOpen} />}
+                 <OrderPendingListForm orders={orders} handleEditOpen={handleEditOpen} />}
                 </div>
             </form>
         </div>
@@ -58,14 +52,14 @@ function OrderPendingListForm({ orders, handleEditOpen }) {
                 <div data-viewport-type="element" style={{ width: "100%", height: "100%", position: "absolute", top: "0px" }}>
                     <div data-testid="virtuoso-item-list" style={{ boxSizing: "border-box", paddingTop: "0px", paddingBottom: "0px", marginTop: "0px" }}>
                         {orders.map((order) => (
-                            <div key={order.id} data-index={order.id} style={{ overflowAnchor: "none" }}>
+                            <div key={order.orderId} data-index={order.id} style={{ overflowAnchor: "none" }}>
                                 <div className="xl0v5qw">
                                     <div className="order-summary">
                                         <span className="tw3s-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
                                             <span className="tw3s-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": TRADE_COLOR[order.tradeType], "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>{TRADE_LABEL[order.tradeType]} </span>
                                             {`${order.quantity}주`}
                                         </span>
-                                        <span className="tw3s-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-regular)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>주당 {order.price.toLocaleString('ko-KR')}원</span>
+                                        <span className="tw3s-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-regular)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>주당 {order.tradePrice.toLocaleString('ko-KR')}원</span>
                                     </div>
                                     <div className="order-edit-buttons">
                                         <button onClick={() => handleEditOpen(order)} type="button" aria-disabled="false" className="tw3s-1wkoka52h tw3s-1wkoka59 tw3s-1wkoka5c tw3s-1wkoka513 tw3s-1wkoka5t tw3s-1wkoka5r tw3s-1wkoka5h tw3s-1wkoka524" data-tds-wts-button data-tossinvest-log="Button" data-contents-label="수정" data-contents-label-code="수정" data-contents-value="수정" data-content-tag="pendingOrder_correctionInProgress_진행중__수정" data-parent-name="PendingOrder">
