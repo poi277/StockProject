@@ -62,7 +62,7 @@ export default function OrderForm({ selectedPrice, stockCode }) {
                                 tradeTypeTab={tradeTypeTab}
                                 stockCode={stockCode}
                                 selectedPrice={selectedPrice}
-                                editExecuteOrder={editExecuteOrder}
+                                executeOrder={editExecuteOrder}
                                 edit={edit}
                                 setEdit={setEdit}
                                 editTarget={editTarget}

@@ -49,12 +49,12 @@ export default function useOrderEdit(selectedPrice, stockCode, tradeTypeTab) {
             );
             if (!res.success) throw new Error(res.message || "주문 실패");
 
-            // ✅ 낙관적 업데이트 (웹소켓 오기 전에 UI 먼저 반영)
-            setOrders(prev => prev.map(o =>
-                o.orderId === editTarget.id
-                    ? { ...o, price: numericPrice, quantity: Number(editQuantity) }
-                    : o
-            ));
+            // // ✅ 낙관적 업데이트 (웹소켓 오기 전에 UI 먼저 반영)
+            // setOrders(prev => prev.map(o =>
+            //     o.orderId === editTarget.id
+            //         ? { ...o, price: numericPrice, quantity: Number(editQuantity) }
+            //         : o
+            // ));
             handleEditClose();
             return res.data;
         } catch (err) {

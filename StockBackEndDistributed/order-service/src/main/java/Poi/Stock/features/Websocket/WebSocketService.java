@@ -8,9 +8,13 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import Poi.Stock.DTO.user.CandleDTO;
+import Poi.Stock.features.Bot.Bot;
+import Poi.Stock.features.Bot.BotCache;
+import Poi.Stock.features.Order.Order;
 import Poi.Stock.features.Order.OrderBookCache;
 import Poi.Stock.features.Stock.Stock;
 import Poi.Stock.features.Stock.StockCache;
+import Poi.Stock.object.MatchingResult;
 import Poi.Stock.object.TradeExecution;
 import Poi.Stock.repository.OrderRepository;
 import Poi.Stock.repository.StockRepository;
@@ -28,6 +32,7 @@ public class WebSocketService {
 	private final StockCache stockCache;
 	private final OrderBookCache orderBookCache;
 	private final OrderRepository orderRepository;
+	private final BotCache botCache;
 	// 웹소켓을 위해 메모리에 주식 정보 저장 (종목코드별 최신 데이터)
 
 //	-------------------------------
@@ -89,4 +94,42 @@ public class WebSocketService {
 		messagingTemplate.convertAndSend("/topic/candle/" + stockCode, payload);
 	}
 
+	// WebSocketService.sendOrderUpdate()
+	public void sendOrderUpdate(Stock stock, MatchingResult result) {
+		for (Order order : result.getCompletedResting()) {
+			if (isBot(order.getUserId()))
+				continue;
+			sendToUser(order.getUserId(), order, "FILLED");
+		}
+		for (Order order : result.getPartialResting()) {
+			if (isBot(order.getUserId()))
+				continue;
+			sendToUser(order.getUserId(), order, "PARTIAL");
+		}
+		Order incoming = result.getIncomingOrder();
+		if (incoming != null && !isBot(incoming.getUserId())) {
+			String status = incoming.isCompleted() ? "FILLED"
+					: result.getExecutions().isEmpty() ? "PENDING" : "PARTIAL";
+			sendToUser(incoming.getUserId(), incoming, status);
+		}
+	}
+
+	public void sendToUser(String userId, Order order, String status) {
+		Map<String, Object> payload = new HashMap<>();
+		payload.put("orderId", order.getOrderId());
+		payload.put("stockCode", order.getStockCode());
+		payload.put("stockName", order.getStockName());
+		payload.put("tradeType", order.getTradeType());
+		payload.put("quantity", order.getQuantity());
+		payload.put("remainingQuantity", order.getRemainingQuantity());
+		payload.put("tradePrice", order.getTradePrice());
+		payload.put("status", status);
+		System.out.println(userId);
+		messagingTemplate.convertAndSendToUser(userId, "/queue/orders", payload);
+	}
+
+	private boolean isBot(String userId) {
+		Bot bot = botCache.get(userId);
+		return bot != null && bot.getBotType() != null;
+	}
 }

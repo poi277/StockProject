@@ -14,23 +14,23 @@ export function useOrderSocket(client, connected) {
     if (!user) return;
     getOrders();
     getUserHaveStock();
+    console.log("내가 한 주문 : ", orders)
+    console.log("내가 가지고있는 주식 : ",haveStocks)
   }, [user]); // [] → [user] : 로그인 시점에 맞게
 
   const getOrders = async () => {
     try {
-      const res = await getMyAllOrder();
-      console.log(res)
-      if (!res.success) throw new Error(res.message);
-      setOrders(res.data); 
+        const res = await getMyAllOrder();
+        if (!res.success) throw new Error(res.message);
+        setOrders(res.data); 
     } catch (err) {
-      console.error('주문 조회 실패:', err.message);
+        console.error('주문 조회 실패:', err.message);
     }
-  };
+};
 
   const getUserHaveStock = async () => {
     try {
       const res = await UserHaveStock();
-      console.log(res)
       if (!res.success) throw new Error(res.message);
       setHaveStocks(res.data); 
     } catch (err) {
@@ -77,7 +77,8 @@ export function useOrderSocket(client, connected) {
         });
       }
     });
-
+    console.log("웹소켓 후 내가 한 주문 : ", orders)
+    console.log("웹소켓 후  내가 가지고있는 주식 : ",haveStocks)
     return () => sub.unsubscribe();
   }, [client, connected, user]);
 

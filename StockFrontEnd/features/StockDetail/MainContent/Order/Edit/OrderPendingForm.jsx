@@ -7,7 +7,7 @@ export default function OrderPendingForm({tradeTypeTab,stockCode,selectedPrice, 
         editQuantity, setEditQuantity,
         editPriceType, setEditPriceType,
         handleEditOpen,
-        handleEditClose, orders}) {
+        handleEditClose, orders,executeOrder}) {
   
 
     return (
@@ -57,7 +57,7 @@ function OrderPendingListForm({ orders, handleEditOpen }) {
                                     <div className="order-summary">
                                         <span className="tw3s-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
                                             <span className="tw3s-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": TRADE_COLOR[order.tradeType], "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>{TRADE_LABEL[order.tradeType]} </span>
-                                            {`${order.quantity}주`}
+                                            {`${order.remainingQuantity}주`}
                                         </span>
                                         <span className="tw3s-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-regular)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>주당 {order.tradePrice.toLocaleString('ko-KR')}원</span>
                                     </div>

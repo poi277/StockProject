@@ -132,6 +132,7 @@ public class OrderTradeService {
 			}
 			book.addOrder(order);
 		}
+		result.setIncomingOrder(order);
 		return result;
 	}
 
@@ -192,6 +193,7 @@ public class OrderTradeService {
 		}
 		LocalDateTime tradeTime = matchingResult.getLastExecutionTime();
 		webSocketService.SendCurrentPrice(stock, tradeTime);
+		webSocketService.sendOrderUpdate(stock, matchingResult);
 	}
 
 	public void updateStockCache(String stockCode, MatchingResult result) {

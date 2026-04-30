@@ -19,6 +19,7 @@ public class MatchingResult {
 	private List<TradeExecution> executions;
 	private List<Order> completedResting;
 	private List<Order> partialResting;
+	private Order incomingOrder;
 
 	// 초기화 생성자
 	public MatchingResult() {
