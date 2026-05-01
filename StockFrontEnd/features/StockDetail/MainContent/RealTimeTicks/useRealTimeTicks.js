@@ -1,6 +1,6 @@
 // useRealTimeTicks.js
 import { useState } from 'react'
-import { useWebSocket } from '../../../../util/WebSocket';
+import { useWebSocket } from '../../../../util/WebSocketContext';
 import { useExecutionSocket } from '../../../../util/useExecutionSocket';
 
 export function formatTime(timeStr) {

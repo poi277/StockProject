@@ -4,7 +4,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
-import { WEBSOCKET_API_URL } from '../util/URLconfig';
+import { WEBSOCKET_API_URL } from './URLconfig';
 import { useAuth } from '../context/AuthContext';
 
 const WebSocketContext = createContext(null);

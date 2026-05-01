@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { getWatchListApi } from "../../lib/watchlist";
 import { useRouter } from "next/navigation";
 import { useStockSocket } from "../../util/useStockSocket";
-import { useWebSocket } from "../../util/WebSocket";
+import { useWebSocket } from "../../util/WebSocketContext";
 
 export default function useWatchList(initialWatchList) {
     const [watchList, setWatchList] = useState(initialWatchList);

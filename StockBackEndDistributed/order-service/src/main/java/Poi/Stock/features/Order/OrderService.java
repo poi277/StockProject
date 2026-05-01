@@ -26,6 +26,7 @@ import Poi.Stock.features.kafka.KafkaProducer;
 import Poi.Stock.object.MatchingResult;
 import Poi.Stock.repository.CompletedOrderRepository;
 import Poi.Stock.repository.OrderRepository;
+import Poi.Stock.util.EnumUtil.OrderStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -70,6 +71,30 @@ public class OrderService {
             throw new RuntimeException(e.getMessage());
         }
     }
+
+	public Order validateEditOrder(String userId, TradeDTO tradeDTO, String accessToken) {
+		Order order = orderRepository.findById(tradeDTO.getOrderId()).orElseThrow(() -> new RuntimeException("주문 없음"));
+		if (!order.getUserId().equals(userId)) {
+			throw new RuntimeException("본인 주문이 아닙니다");
+		}
+		if (order.getStatus() != OrderStatus.PENDING && order.getStatus() != OrderStatus.PARTIAL) {
+			throw new RuntimeException("대기/부분체결 주문만 수정 가능합니다");
+		}
+		String url = userServiceUrl + "/user/validate-editOrder";
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("Authorization", "Bearer " + accessToken);
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		Map<String, Object> body = Map.of("tradeType", order.getTradeType().name(), "stockCode",
+				tradeDTO.getStockCode(), "newPrice", tradeDTO.getTradePrice(), "oldPrice", order.getTradePrice(),
+				"newQuantity", tradeDTO.getQuantity(), "RemainingQuantity", order.getRemainingQuantity()
+		);
+		try {
+			restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), Void.class);
+		} catch (Exception e) {
+			throw new RuntimeException(e.getMessage());
+		}
+		return order;
+	}
 
     @Transactional
     public void processOrder(TradeDTO tradeDTO) {
@@ -138,5 +163,36 @@ public class OrderService {
 			dto.setCreatedAt(order.getCreatedAt());
 			return dto;
 		}).collect(Collectors.toList());
+	}
+
+	public void stockEdit(TradeDTO tradeDTO, Order order) {
+		// 문제점 kafka를 이용하지않음
+		Integer oldPrice = order.getTradePrice();
+	    OrderBook book = orderBookCache.get(order.getStockCode());
+	    book.removeOrder(order);
+	    int filledQty = order.getQuantity() - order.getRemainingQuantity();
+	    order.setTradePrice(tradeDTO.getTradePrice());
+	    order.setQuantity(tradeDTO.getQuantity());
+	    order.setPriority(System.nanoTime());
+
+	    if (order.getStatus() == OrderStatus.PENDING) {
+	        order.setRemainingQuantity(tradeDTO.getQuantity());
+	    } else {
+	        if (tradeDTO.getQuantity() <= filledQty) {
+	            throw new RuntimeException("수정 수량이 이미 체결된 수량보다 작습니다");
+	        }
+	        order.setRemainingQuantity(tradeDTO.getQuantity() - filledQty);
+	    }
+
+	    Stock stock = stockCache.get(order.getStockCode());
+	    MatchingResult result = orderTradeService.matchLoop(order, book, stock);
+		// 수정된 값이 아닌 수정전 값을 갱신하기 위해 넣어야함
+		result.getMatchedPrices().add(oldPrice);
+	    orderTradeService.saveTradeHistories(result.getExecutions());
+	    orderTradeService.saveEditOrders(result, order);
+	    orderTradeService.settlement(result);
+	    orderTradeService.updateStockCache(order.getStockCode(), result);
+	    orderTradeService.updateCurrentCandle(order.getStockCode(), result);
+	    orderTradeService.sendWebSocket(result, book, stock);
 	}
 }

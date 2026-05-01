@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getOrderbookApi } from "../../../../lib/trade";
-import { useWebSocket } from "../../../../util/WebSocket";
+import { useWebSocket } from "../../../../util/WebSocketContext";
 import { useHogaSocket } from "../../../../util/useHogaSocket";
 import { useExecutionSocket } from "../../../../util/useExecutionSocket";
 

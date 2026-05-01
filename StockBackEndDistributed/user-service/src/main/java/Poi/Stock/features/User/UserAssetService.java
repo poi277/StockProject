@@ -46,6 +46,40 @@ public class UserAssetService {
 		stockUserRepository.save(user);
 	}
 
+	public void validateEditOrder(String userId, tradeType type, String stockCode, Integer newPrice,
+			Integer oldPrice, Integer newQuantity, Integer RemainingQuantity) {
+		StockUser user = stockUserRepository.findById(userId).orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
+		if (type == tradeType.BUY) {
+			int oldCost = oldPrice * RemainingQuantity;
+			int newCost = newPrice * newQuantity;
+			int diff = newCost - oldCost;
+			if (diff > 0) {
+				if (user.getAvailableAsset() < diff)
+					throw new RuntimeException(
+							String.format("자산이 부족합니다. 추가 필요: %d원, 보유: %d원", diff, user.getAvailableAsset()));
+				user.setAvailableAsset(user.getAvailableAsset() - diff); // 추가 차감
+			} else {
+				user.setAvailableAsset(user.getAvailableAsset() + Math.abs(diff));
+			}
+			stockUserRepository.save(user);
+		}
+
+		if (type == tradeType.SELL) {
+			HaveStock haveStock = haveStockRepository.findByStockUserAndStockCode(user, stockCode)
+					.orElseThrow(() -> new RuntimeException("보유한 주식이 없습니다."));
+			int diff = newQuantity - RemainingQuantity;
+			if (diff > 0) {
+				if (haveStock.getAvailableQuantity() < diff)
+					throw new RuntimeException(
+							String.format("보유 수량이 부족합니다. 추가 필요: %d주, 가능: %d주", diff, haveStock.getAvailableQuantity()));
+				haveStock.setAvailableQuantity(haveStock.getAvailableQuantity() - diff);
+			} else {
+				haveStock.setAvailableQuantity(haveStock.getAvailableQuantity() + Math.abs(diff));
+			}
+			haveStockRepository.save(haveStock);
+		}
+	}
+
 	@Transactional
 	public void cancelReserve(String userId, tradeType type, String stockCode, int price, int quantity) {
 		StockUser user = stockUserRepository.findById(userId).orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
@@ -90,4 +124,5 @@ public class UserAssetService {
 			return dto;
 		}).collect(Collectors.toList());
 	}
+
 }

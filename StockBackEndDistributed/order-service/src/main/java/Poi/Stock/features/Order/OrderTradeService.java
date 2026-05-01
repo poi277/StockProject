@@ -224,4 +224,26 @@ public class OrderTradeService {
 			candleService.updateCandle(stockCode, currentPrice, filledQty, lastExecutiontime);
 		}
 	}
+
+	public void saveEditOrders(MatchingResult result, Order incomingOrder) {
+		boolean incomingIsBot = isBot(incomingOrder.getUserId());
+		if (!result.getCompletedResting().isEmpty()) {
+			List<Order> completedToSave = result.getCompletedResting().stream()
+					.filter(o -> !isBot(o.getUserId()) || !incomingIsBot).toList();
+			if (!completedToSave.isEmpty()) {
+				completedOrderRepository
+						.saveAll(completedToSave.stream().map(CompletedOrder::setCompletedOrder).toList());
+			}
+			orderRepository.deleteAllInBatch(result.getCompletedResting());
+		}
+		if (!result.getPartialResting().isEmpty()) {
+			orderRepository.saveAll(result.getPartialResting());
+		}
+		if (incomingOrder.isCompleted()) {
+			completedOrderRepository.save(CompletedOrder.setCompletedOrder(incomingOrder));
+			orderRepository.delete(incomingOrder);
+		} else {
+			orderRepository.save(incomingOrder);
+		}
+	}
 }

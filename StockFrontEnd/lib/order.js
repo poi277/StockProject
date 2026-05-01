@@ -21,7 +21,7 @@ export async function getMyCompletedOrder() {
 
 export async function editOrderApi(orderId,tradeType,stockCode,quantity,tradePrice) {
   console.log(tradeType,stockCode,quantity,tradePrice)
-  return await apiFetch(`${ORDER_API_URL}/order/trade`,{
+  return await apiFetch(`${ORDER_API_URL}/order/edit`,{
     method: 'POST',
     auth: true,
     body: JSON.stringify({

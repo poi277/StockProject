@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getOrderbookApi } from '../../lib/trade';
 import { useHogaSocket } from '../../util/useHogaSocket';
-import { useWebSocket } from '../../util/WebSocket';
+import { useWebSocket } from '../../util/WebSocketContext';
 import { useExecutionSocket } from '../../util/useExecutionSocket';
 
 export default function HogaChart({ currentStock, selectedPrice, setSelectedPrice }) {

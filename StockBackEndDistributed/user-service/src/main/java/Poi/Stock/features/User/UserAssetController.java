@@ -31,19 +31,26 @@ public class UserAssetController {
     }
 
     @PostMapping("/validate-order")
-    public ResponseEntity<Void> validateOrder(
-            Authentication authentication,
-            @RequestBody Map<String, Object> body) {
+	public ResponseEntity<Void> validateOrder(Authentication authentication, @RequestBody Map<String, Object> body) {
         String userId = authentication.getName();
-        userAssetService.validateOrder(
-            userId,
-            tradeType.valueOf((String) body.get("tradeType")),
-            (String) body.get("stockCode"),
+		userAssetService.validateOrder(userId, tradeType.valueOf((String) body.get("tradeType")),
+				(String) body.get("stockCode"),
             (Integer) body.get("tradePrice"),
             (Integer) body.get("quantity")
         );
         return ResponseEntity.ok().build();
     }
+
+	@PostMapping("/validate-editOrder")
+	public ResponseEntity<Void> validateEditOrder(Authentication authentication,
+			@RequestBody Map<String, Object> body) {
+		String userId = authentication.getName();
+		userAssetService.validateEditOrder(userId, tradeType.valueOf((String) body.get("tradeType")),
+				(String) body.get("stockCode"), (Integer) body.get("newPrice"), (Integer) body.get("oldPrice"),
+				(Integer) body.get("newQuantity"), (Integer) body.get("RemainingQuantity")
+		);
+		return ResponseEntity.ok().build();
+	}
 
 	@PostMapping("/cancel-reserve")
 	public ResponseEntity<Void> cancelReserve(Authentication authentication, @RequestBody Map<String, Object> body) {

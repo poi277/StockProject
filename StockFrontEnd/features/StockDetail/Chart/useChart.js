@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { getCandleApi } from "../../../lib/candle";
 import { useCandleSocket } from "../../../util/useCandleSocket";
-import { useWebSocket } from "../../../util/WebSocket";
+import { useWebSocket } from "../../../util/WebSocketContext";
 
 function toUnixTime(timeStr) {
     return Math.floor(new Date(timeStr).getTime() / 1000);

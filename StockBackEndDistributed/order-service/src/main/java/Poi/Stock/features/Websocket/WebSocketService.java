@@ -18,6 +18,7 @@ import Poi.Stock.object.MatchingResult;
 import Poi.Stock.object.TradeExecution;
 import Poi.Stock.repository.OrderRepository;
 import Poi.Stock.repository.StockRepository;
+import Poi.Stock.util.EnumUtil.OrderStatus;
 import Poi.Stock.util.EnumUtil.tradeType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -94,27 +95,25 @@ public class WebSocketService {
 		messagingTemplate.convertAndSend("/topic/candle/" + stockCode, payload);
 	}
 
-	// WebSocketService.sendOrderUpdate()
 	public void sendOrderUpdate(Stock stock, MatchingResult result) {
-		for (Order order : result.getCompletedResting()) {
-			if (isBot(order.getUserId()))
-				continue;
-			sendToUser(order.getUserId(), order, "FILLED");
-		}
-		for (Order order : result.getPartialResting()) {
-			if (isBot(order.getUserId()))
-				continue;
-			sendToUser(order.getUserId(), order, "PARTIAL");
-		}
-		Order incoming = result.getIncomingOrder();
-		if (incoming != null && !isBot(incoming.getUserId())) {
-			String status = incoming.isCompleted() ? "FILLED"
-					: result.getExecutions().isEmpty() ? "PENDING" : "PARTIAL";
-			sendToUser(incoming.getUserId(), incoming, status);
-		}
+	    for (Order order : result.getCompletedResting()) {
+	        if (isBot(order.getUserId())) continue;
+			sendToUser(order.getUserId(), order, OrderStatus.COMPLETED);
+	    }
+	    for (Order order : result.getPartialResting()) {
+	        if (isBot(order.getUserId())) continue;
+	        sendToUser(order.getUserId(), order, OrderStatus.PARTIAL);
+	    }
+	    Order incoming = result.getIncomingOrder();
+	    if (incoming != null && !isBot(incoming.getUserId())) {
+	        OrderStatus status = incoming.isCompleted() ? OrderStatus.COMPLETED
+	                : result.getExecutions().isEmpty() ? OrderStatus.PENDING
+	                : OrderStatus.PARTIAL;
+	        sendToUser(incoming.getUserId(), incoming, status);
+	    }
 	}
 
-	public void sendToUser(String userId, Order order, String status) {
+	public void sendToUser(String userId, Order order, OrderStatus orderStatus) {
 		Map<String, Object> payload = new HashMap<>();
 		payload.put("orderId", order.getOrderId());
 		payload.put("stockCode", order.getStockCode());
@@ -123,8 +122,7 @@ public class WebSocketService {
 		payload.put("quantity", order.getQuantity());
 		payload.put("remainingQuantity", order.getRemainingQuantity());
 		payload.put("tradePrice", order.getTradePrice());
-		payload.put("status", status);
-		System.out.println(userId);
+		payload.put("status", orderStatus);
 		messagingTemplate.convertAndSendToUser(userId, "/queue/orders", payload);
 	}
 

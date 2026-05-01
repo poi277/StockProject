@@ -17,6 +17,7 @@ import Poi.Stock.features.CompletedOrder.CompletedOrder;
 import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.repository.CompletedOrderRepository;
 import Poi.Stock.repository.OrderRepository;
+import Poi.Stock.util.EnumUtil.OrderStatus;
 import Poi.Stock.util.EnumUtil.tradeType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,7 +64,7 @@ public class OrderCancelService {
 				: book.getSellBook().get(order.getTradePrice());
 		int remainingQty = level == null ? 0 : level.getTotalQuantity();
 		webSocketService.sendHoga(order.getStockCode(), order.getTradeType(), order.getTradePrice(), remainingQty);
-
+		webSocketService.sendToUser(userId, order, OrderStatus.CANCELLED);
 		CompletedOrder completedOrder = CompletedOrder.fromCancelledOrder(order);
 		completedOrderRepository.save(completedOrder);
 		orderRepository.delete(order);

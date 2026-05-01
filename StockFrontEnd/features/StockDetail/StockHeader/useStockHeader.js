@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useStockSocket } from "../../../util/useStockSocket";
-import { useWebSocket } from "../../../util/WebSocket";
+import { useWebSocket } from "../../../util/WebSocketContext";
 import { useStockDetailSocket } from "../../../util/useStockDetailSocket";
 
 export function useStockHeader(initStock) {

@@ -41,7 +41,7 @@ export default function useOrderEdit(selectedPrice, stockCode, tradeTypeTab) {
                 ? null
                 : Number(editPrice.replace(/,/g, ''));
             const res = await editOrderApi(
-                editTarget.id,
+                editTarget.orderId,
                 editTarget.tradeType,
                 stockCode,
                 editQuantity,

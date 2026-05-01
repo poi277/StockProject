@@ -13,6 +13,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
@@ -24,31 +25,25 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 		scheduler.setThreadNamePrefix("wss-heartbeat-thread-");
 		scheduler.initialize();
 
-		config.enableSimpleBroker("/topic", "/queue")
-              .setHeartbeatValue(new long[]{10000, 10000})
-				.setTaskScheduler(scheduler);
-        config.setApplicationDestinationPrefixes("/app");
+		config.enableSimpleBroker("/queue").setHeartbeatValue(new long[] { 10000, 10000 }).setTaskScheduler(scheduler);
+		config.setApplicationDestinationPrefixes("/app");
 		config.setUserDestinationPrefix("/user");
-    }
+	}
 
-    @Override
-    public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")
-                .withSockJS();
-    }
+	@Override
+	public void registerStompEndpoints(StompEndpointRegistry registry) {
+		registry.addEndpoint("/ws-user").setAllowedOriginPatterns("*").withSockJS();
+	}
 
-	// 연결 시 헤더에서 userId 꺼내서 Principal로 등록
-	// WebSocketConfig.java
 	@Override
 	public void configureClientInboundChannel(ChannelRegistration registration) {
 		registration.interceptors(new ChannelInterceptor() {
 			@Override
 			public Message<?> preSend(Message<?> message, MessageChannel channel) {
 				StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
-
 				if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
 					String userId = accessor.getFirstNativeHeader("userId");
+					System.out.println("User WebSocket 연결 userId: " + userId);
 					if (userId != null) {
 						accessor.setUser(new StompPrincipal(userId));
 					}
