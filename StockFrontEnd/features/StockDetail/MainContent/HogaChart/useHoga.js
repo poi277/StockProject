@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { getOrderbookApi } from "../../../../lib/trade";
-import { useWebSocket } from "../../../../util/WebSocketContext";
-import { useHogaSocket } from "../../../../util/useHogaSocket";
-import { useExecutionSocket } from "../../../../util/useExecutionSocket";
+import { useWebSocket } from "../../../../util/websocket/context/WebSocketContext";
+import { useHogaSocket } from "../../../../util/websocket/useHogaSocket";
+import { useExecutionSocket } from "../../../../util/websocket/useExecutionSocket";
 
 // useHoga.js — 상태 여기서만 관리
 export default function useHoga(stockCode) {

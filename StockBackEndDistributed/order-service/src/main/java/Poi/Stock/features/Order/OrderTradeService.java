@@ -26,7 +26,7 @@ import Poi.Stock.repository.OrderRepository;
 import Poi.Stock.repository.TradeHistoryRepository;
 import Poi.Stock.shared.event.SettlementEvent;
 import Poi.Stock.shared.event.SettlementEvent.AssetChange;
-import Poi.Stock.shared.event.SettlementEvent.StockChange;
+import Poi.Stock.shared.event.SettlementEvent.haveStockChange;
 import Poi.Stock.util.EnumUtil.OrderStatus;
 import Poi.Stock.util.EnumUtil.tradeType;
 import lombok.RequiredArgsConstructor;
@@ -73,20 +73,30 @@ public class OrderTradeService {
 	private SettlementEvent buildSettlementEvent(List<TradeExecution> executions) {
 		String stockCode = executions.get(0).getStockCode();
 		Map<String, Integer> assetDelta = new HashMap<>();
-		List<StockChange> stockChanges = new ArrayList<>();
+		List<haveStockChange> stockChanges = new ArrayList<>();
+
 		for (TradeExecution ex : executions) {
 			boolean buyerIsBot = isBot(ex.getBuyerId());
 			boolean sellerIsBot = isBot(ex.getSellerId());
 			int total = ex.getPrice() * ex.getQuantity();
+
+			// ✅ 여기 추가
+			log.info("buyerId={}, sellerId={}, price={}, qty={}, total={}, buyerIsBot={}, sellerIsBot={}",
+					ex.getBuyerId(), ex.getSellerId(), ex.getPrice(), ex.getQuantity(), total, buyerIsBot, sellerIsBot);
+
 			if (!buyerIsBot) {
-				stockChanges.add(new StockChange(ex.getBuyerId(), stockCode, ex.getQuantity(), ex.getPrice()));
-				assetDelta.merge(ex.getBuyerId(), -total, Integer::sum); // 추가: 매수자 asset 차감
+				stockChanges.add(new haveStockChange(ex.getBuyerId(), stockCode, ex.getQuantity(), ex.getPrice()));
+				assetDelta.merge(ex.getBuyerId(), -total, Integer::sum);
 			}
 			if (!sellerIsBot) {
-				stockChanges.add(new StockChange(ex.getSellerId(), stockCode, -ex.getQuantity(), ex.getPrice()));
+				stockChanges.add(new haveStockChange(ex.getSellerId(), stockCode, -ex.getQuantity(), ex.getPrice()));
 				assetDelta.merge(ex.getSellerId(), total, Integer::sum);
 			}
 		}
+
+		// ✅ 여기도 추가
+		log.info("assetDelta={}, stockChanges={}", assetDelta, stockChanges);
+
 		List<AssetChange> assetChanges = assetDelta.entrySet().stream()
 				.map(e -> new AssetChange(e.getKey(), e.getValue())).toList();
 		return new SettlementEvent(stockCode, assetChanges, stockChanges);

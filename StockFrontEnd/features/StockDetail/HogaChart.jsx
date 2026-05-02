@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { getOrderbookApi } from '../../lib/trade';
-import { useHogaSocket } from '../../util/useHogaSocket';
-import { useWebSocket } from '../../util/WebSocketContext';
-import { useExecutionSocket } from '../../util/useExecutionSocket';
+import { useHogaSocket } from '../../util/websocket/useHogaSocket';
+import { useWebSocket } from '../../util/websocket/context/WebSocketContext';
+import { useExecutionSocket } from '../../util/websocket/useExecutionSocket';
 
 export default function HogaChart({ currentStock, selectedPrice, setSelectedPrice }) {
   const { connected, client } = useWebSocket();

@@ -1,6 +1,5 @@
 package Poi.Stock.features.User;
 
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
@@ -12,8 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import Poi.Stock.DTO.user.ApiResponse;
-import Poi.Stock.DTO.user.getAssetDTO;
-import Poi.Stock.DTO.user.getHaveStockDTO;
+import Poi.Stock.features.UserWebsocket.UserWebsocketService;
 import Poi.Stock.util.EnumUtil.tradeType;
 import lombok.RequiredArgsConstructor;
 
@@ -23,12 +21,7 @@ import lombok.RequiredArgsConstructor;
 public class UserAssetController {
 
     private final UserAssetService userAssetService;
-
-    @GetMapping("/asset")
-    public ResponseEntity<getAssetDTO> getMyAsset(Authentication authentication) {
-        String userId = authentication.getName();
-        return ResponseEntity.ok(userAssetService.getMyAsset(userId));
-    }
+	private final UserWebsocketService userWebsocketService;
 
     @PostMapping("/validate-order")
 	public ResponseEntity<Void> validateOrder(Authentication authentication, @RequestBody Map<String, Object> body) {
@@ -60,10 +53,10 @@ public class UserAssetController {
         return ResponseEntity.ok().build();
     }
 
-	@GetMapping("/haveStock")
+	@GetMapping("/haveAsset")
 	public ResponseEntity<ApiResponse> getUserHaveStock(Authentication authentication) {
 		String userId = authentication.getName();
-		List<getHaveStockDTO> data = userAssetService.userHaveStock(userId);
+		Map<String, Object> data = userAssetService.userHaveAsset(userId);
 		return ResponseEntity.ok(new ApiResponse(true, "조회완료", data));
 	}
 }

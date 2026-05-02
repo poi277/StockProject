@@ -11,6 +11,6 @@ export async function RegisterSumbitApi(formData) {
   });
 }
 
-export async function UserHaveStock() {
- return await apiFetch(`${USER_URL}/user/haveStock`)
+export async function UserHaveAsset() {
+ return await apiFetch(`${USER_URL}/user/haveAsset`)
 }

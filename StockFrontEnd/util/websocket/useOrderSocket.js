@@ -1,7 +1,7 @@
 // useOrderSocket.js
 import { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { getMyAllOrder } from '../lib/order';
+import { useAuth } from '../../context/AuthContext';
+import { getMyAllOrder } from '../../lib/order';
 
 export function useOrderSocket(client, connected) {
   const [orders, setOrders] = useState([]);

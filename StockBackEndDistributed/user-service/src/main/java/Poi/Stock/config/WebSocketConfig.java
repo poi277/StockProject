@@ -43,7 +43,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 				StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 				if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
 					String userId = accessor.getFirstNativeHeader("userId");
-					System.out.println("User WebSocket 연결 userId: " + userId);
 					if (userId != null) {
 						accessor.setUser(new StompPrincipal(userId));
 					}

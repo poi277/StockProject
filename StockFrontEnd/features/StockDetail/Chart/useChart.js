@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { getCandleApi } from "../../../lib/candle";
-import { useCandleSocket } from "../../../util/useCandleSocket";
-import { useWebSocket } from "../../../util/WebSocketContext";
+import { useWebSocket } from "../../../util/websocket/context/WebSocketContext";
+import { useCandleSocket } from "../../../util/websocket/useCandleSocket";
 
 function toUnixTime(timeStr) {
     return Math.floor(new Date(timeStr).getTime() / 1000);

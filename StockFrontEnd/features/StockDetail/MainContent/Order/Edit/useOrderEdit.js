@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { editOrderApi } from "../../../../../lib/order"; 
 import { useAuth } from "../../../../../context/AuthContext";
-import { useOrder } from "../../../../../util/OrderSocket";
+import { useOrder } from "../../../../../util/UserStockProvider";
 
 export default function useOrderEdit(selectedPrice, stockCode, tradeTypeTab) {
 

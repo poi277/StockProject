@@ -1,11 +1,11 @@
 'use client';
 import { useState } from 'react';
 import { AuthProvider } from "../context/AuthContext"
-import { WebSocketProvider } from "../util/WebSocketContext"
+import { WebSocketProvider } from "../util/websocket/context/WebSocketContext"
 import './globals.css'
 import '../tossCss/toss-layout.css'
-import { OrderProvider } from '../util/OrderSocket';
-import { UserWebSocketProvider } from '../util/UserWebSocketContext';
+import { UserWebSocketProvider } from '../util/websocket/context/UserWebSocketContext';
+import { UserStockProvider } from '../util/UserStockProvider';
 
 export default function RootLayout({ children }) {
   return (<html  lang="ko"    data-theme="dark" data-wts-theme="dark" className="tw3v-n7og3x0"style={{ colorScheme: 'dark' }} >
@@ -20,9 +20,9 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           <WebSocketProvider>
             <UserWebSocketProvider> 
-             <OrderProvider>
+             <UserStockProvider>
                {children}
-            </OrderProvider>
+            </UserStockProvider>
             </UserWebSocketProvider> 
           </WebSocketProvider>
         </AuthProvider>

@@ -1,5 +1,5 @@
-import { useStockSocket } from "../../util/useStockSocket";
-import { useWebSocket } from "../../util/WebSocketContext";
+import { useStockSocket } from "../../util/websocket/useStockSocket";
+import { useWebSocket } from "../../util/websocket/context/WebSocketContext";
 
 export function StockList(stockCode,initialStocks) {
 

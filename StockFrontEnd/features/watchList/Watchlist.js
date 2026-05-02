@@ -3,8 +3,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { getWatchListApi } from "../../lib/watchlist";
 import { useRouter } from "next/navigation";
-import { useStockSocket } from "../../util/useStockSocket";
-import { useWebSocket } from "../../util/WebSocketContext";
+import { useStockSocket } from "../../util/websocket/useStockSocket";
+import { useWebSocket } from "../../util/websocket/context/WebSocketContext";
 
 export default function useWatchList(initialWatchList) {
     const [watchList, setWatchList] = useState(initialWatchList);
