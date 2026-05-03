@@ -7,6 +7,7 @@ import StockTabSelection from './StockHeader/StockTabSelection/StockTabSelection
 import StockRollingBar from './StockRollingBar/StockRollingBar';
 import MainContent from './MainContent/MainContent';
 import '../../tossCss/toss-layout.css'
+import SideBar from '../UI/SideBar';
 
 export default function StockDetailForm({ stock }) {
 
@@ -68,6 +69,7 @@ export default function StockDetailForm({ stock }) {
             </div>
           </main>
         </div>
+        <SideBar/>
       </div>
     </div>
   </div>
