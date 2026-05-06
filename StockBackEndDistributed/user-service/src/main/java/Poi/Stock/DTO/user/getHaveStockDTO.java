@@ -11,4 +11,5 @@ public class getHaveStockDTO {
 	private String stockCode;
 	private Integer quantity;
 	private Integer availableQuantity;
+	private Integer averagePrice;
 }

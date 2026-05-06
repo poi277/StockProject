@@ -28,4 +28,6 @@ public interface StockRepository extends JpaRepository<Stock, StockDailyPriceId>
 	@Query("SELECT s FROM Stock s WHERE s.date = "
 			+ "(SELECT MAX(s2.date) FROM Stock s2 WHERE s2.stockCode = s.stockCode)")
 	List<Stock> findLatestStocks();
+
+	List<Stock> findByStockCodeIn(List<String> codes);
 }

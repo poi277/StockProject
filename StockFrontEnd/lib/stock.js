@@ -11,6 +11,11 @@ export async function StockDetailApi(stockId) {
   return await apiFetch(`${STOCK_URL}/stock/${stockId}`);
 }
 
-export async function getAssetApi() {
-  return await apiFetch(`${STOCK_URL}/stock/myAsset`,{auth: true});
+export async function getStocksByCodesApi(stockCodes) {
+  const res = await apiFetch(`${STOCK_URL}/stock/stocks/info`, {
+        method: 'POST',
+        auth: true,
+        body: JSON.stringify({ codes: stockCodes })
+    });
+    return res
 }

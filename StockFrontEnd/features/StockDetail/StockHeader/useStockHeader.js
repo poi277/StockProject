@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useStockSocket } from "../../../util/websocket/useStockSocket";
+import { useStocksSocket } from "../../../util/websocket/useStocksSocket";
 import { useWebSocket } from "../../../util/websocket/context/WebSocketContext";
 import { useStockDetailSocket } from "../../../util/websocket/useStockDetailSocket";
 

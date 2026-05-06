@@ -117,6 +117,7 @@ public class UserAssetService {
 			getHaveStockDTO dto = new getHaveStockDTO();
 			dto.setId(h.getId());
 			dto.setStockCode(h.getStockCode());
+			dto.setAveragePrice((int) h.getAveragePrice());
 			dto.setQuantity(h.getQuantity());
 			dto.setAvailableQuantity(h.getAvailableQuantity());
 			return dto;

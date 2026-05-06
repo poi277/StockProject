@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { UserHaveAsset } from '../lib/user';
+import { useAuth } from '../../context/AuthContext';
+import { UserHaveAsset } from '../../lib/user';
 
 export function useUserHaveAssetSocket(userClient, userConnected) {
   const [haveStocks, setHaveStocks] = useState([]);
@@ -8,7 +8,7 @@ export function useUserHaveAssetSocket(userClient, userConnected) {
   const [availableAsset, setAvailableAsset] = useState(0);
   const { user } = useAuth();
 
-  const getHaveStocks = async () => {
+  const getHaveAsset = async () => {
     try {
       const res = await UserHaveAsset();
       if (!res.success) throw new Error(res.message);
@@ -23,7 +23,7 @@ export function useUserHaveAssetSocket(userClient, userConnected) {
   useEffect(() => {
     if (!userClient || !userConnected || !user) return;
 
-    getHaveStocks();
+    getHaveAsset();
 
     const subStock = userClient.subscribe('/user/queue/havestock', message => {
       const data = JSON.parse(message.body);

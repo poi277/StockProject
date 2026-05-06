@@ -1,8 +1,26 @@
+.ho2myi0 {
+    display: flex;
+    z-index: 0;
+    position: relative;
+    isolation: isolate;
+}
+._1kestwg2 {
+    padding-right: 56px;
+}
+.ho2myi1 {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1;
+    min-width: 0;
+    align-items: center;
+    min-height: 100vh;
+}
 .ho2myi2 {
     width: 100%;
     flex: 1 1;
     isolation: isolate;
 }
+
 ._2ozzgc8 {
     height: 100%;
 }
@@ -39,4 +57,9 @@
     flex: 1 1;
     margin-bottom: 24px;
     min-height: 0; /* ← 이것만 추가 */
+}
+@media screen and (min-width: 1280px) {
+    ._1kestwg2 {
+        padding-right: 0;
+    }
 }

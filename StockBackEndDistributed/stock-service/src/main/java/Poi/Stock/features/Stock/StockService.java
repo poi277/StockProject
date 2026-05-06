@@ -1,18 +1,17 @@
 package Poi.Stock.features.Stock;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+
 import Poi.Stock.DTO.user.getAssetDTO;
 import Poi.Stock.repository.StockRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -73,4 +72,8 @@ public class StockService {
         stock.setChangeRate((double) changeAmount / stock.getOpenPrice() * 100);
         stockCache.put(stockCode, stock);
     }
+
+	public List<Stock> findByCodes(List<String> codes) {
+		return stockRepository.findByStockCodeIn(codes);
+	}
 }

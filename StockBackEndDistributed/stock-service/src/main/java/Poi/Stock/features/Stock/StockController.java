@@ -1,16 +1,17 @@
 package Poi.Stock.features.Stock;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import Poi.Stock.DTO.user.ApiResponse;
-import Poi.Stock.DTO.user.getAssetDTO;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -39,13 +40,11 @@ public class StockController {
 		return ResponseEntity.ok(stock);
 	}
 
-    @GetMapping("/myAsset")
-    public ResponseEntity<ApiResponse> getMyAsset(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        String token = (authHeader != null && authHeader.startsWith("Bearer "))
-                ? authHeader.substring(7) : null;
+	@PostMapping("/stocks/info")
+	public ResponseEntity<ApiResponse> getStocksByCode(@RequestBody Map<String, List<String>> body) {
+		List<String> codes = body.get("codes");
+		List<Stock> stocks = stockService.findByCodes(codes);
+		return ResponseEntity.ok(new ApiResponse(true, "내가 가지고있는 주식 상세 리스트 반환 완료", stocks));
+	}
 
-        getAssetDTO asset = stockService.getMyAsset(token);
-        return ResponseEntity.ok(new ApiResponse(true, "자산 불러오기 완료", asset));
-    }
 }

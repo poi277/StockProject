@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { editOrderApi } from "../../../../../lib/order"; 
 import { useAuth } from "../../../../../context/AuthContext";
-import { useOrder } from "../../../../../util/UserStockProvider";
+import { UserHaveAssetContext } from "../../../../../util/websocket/UserHaveAssetProvider";
 
 export default function useOrderEdit(selectedPrice, stockCode, tradeTypeTab) {
 
     const { user } = useAuth();
-    const { orders=[], setOrders } = useOrder();
+    const { orders=[], setOrders } = UserHaveAssetContext();
 
     const [edit, setEdit] = useState(false);
     const [editTarget, setEditTarget] = useState(null);

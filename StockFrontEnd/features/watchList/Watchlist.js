@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { getWatchListApi } from "../../lib/watchlist";
 import { useRouter } from "next/navigation";
-import { useStockSocket } from "../../util/websocket/useStockSocket";
+import { useStocksSocket } from "../../util/websocket/useStocksSocket";
 import { useWebSocket } from "../../util/websocket/context/WebSocketContext";
 
 export default function useWatchList(initialWatchList) {
@@ -24,7 +24,7 @@ export default function useWatchList(initialWatchList) {
     const stockCodes = useMemo(() => watchList.map(item => item.stockCode), [watchList]);
     const initialStocks = useMemo(() => Object.fromEntries(watchList.map(item => [item.stockCode, item])), [watchList]);
 
-    const { stocks } = useStockSocket(client, connected, stockCodes, initialStocks);
+    const { stocks } = useStocksSocket(client, connected, stockCodes, initialStocks);
 
     // ✅ 소켓 데이터로 watchList 업데이트
     useEffect(() => {

@@ -7,7 +7,7 @@ import StockTabSelection from './StockHeader/StockTabSelection/StockTabSelection
 import StockRollingBar from './StockRollingBar/StockRollingBar';
 import MainContent from './MainContent/MainContent';
 import '../../tossCss/toss-layout.css'
-import SideBar from '../UI/SideBar';
+import SideBar from '../UI/SideBar/SideBar';
 
 export default function StockDetailForm({ stock }) {
 

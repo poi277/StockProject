@@ -1,16 +1,10 @@
 'use client';
 
-import TradeForm from "../Trade/TradeForm";
-import { StockList } from "./StockList";
-import { useRouter } from 'next/navigation';
+import { useStockList } from "./useStockList";
 
-export default function StockListForm({ stocklist }) {
+export default function StockListForm() {
 
-  const router = useRouter();
-
-  const stockCodes = stocklist.map(stock => stock.stockCode);
-  const initialStocks = Object.fromEntries(stocklist.map(s => [s.stockCode, s])); // ✅ 추가
-const { connected, stocks } = StockList(stockCodes, initialStocks);
+  const { connected, stocks,router } = useStockList();
 
   return (
     <>
@@ -26,10 +20,8 @@ const { connected, stocks } = StockList(stockCodes, initialStocks);
         </p>
 
         <div style={{ marginTop: '20px' }}>
-          {stocklist.map(stock => {
-
-            const currentStock = stocks[stock.stockCode] || stock;
-
+          {Object.values(stocks).map(stock => {
+            const currentStock = stock;
             return (
               <div
                 key={stock.stockCode}
