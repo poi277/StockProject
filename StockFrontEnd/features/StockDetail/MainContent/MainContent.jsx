@@ -7,6 +7,7 @@ import HogaChart from './HogaChart/HogaChart';
 import OrderForm from './Order/OrderForm';
 import ChartForm from '../Chart/ChartForm';
 import useMainContent from './useMainContent';
+import HaveStock from './HaveStockDetail/HaveStock';
 
 export default function StockContent({stock}) {
   const {
@@ -82,6 +83,7 @@ export default function StockContent({stock}) {
                   <input type="hidden" value='{"typeId":"myStockInformation","title":"보유 주식","hide":"false"}' />
                   <div className="tw3v-1ftc7zl0">
                     <MainContentForm/>
+                    <HaveStock stockCode = {stock.stockCode}/>
                   </div>
                 </div>
 

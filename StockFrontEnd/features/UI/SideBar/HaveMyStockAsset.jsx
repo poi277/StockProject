@@ -1,17 +1,20 @@
-import useHaveMyStockAssect from "./useHaveMyStockAssect"
+import useHaveMyStockAsset from "./useHaveMyStockAssect"
 
 export default function HaveMyStockAsset() {
-    const { SEGMENT_ITEMS,totalInvestment } = useHaveMyStockAssect()
+    const { SEGMENT_ITEMS, totalInvestment, totalDiff, totalRate, stocks, haveStocks } = useHaveMyStockAsset()
 
     return (
         <div className="_1oe23q53" data-section-name="내투자">
-            <HaveMyStockMoney totalInvestment={totalInvestment} />
-            <HaveMyStock SEGMENT_ITEMS={SEGMENT_ITEMS} />
+            <HaveMyStockMoney totalInvestment={totalInvestment} totalDiff={totalDiff} totalRate={totalRate} />
+            <HaveMyStock SEGMENT_ITEMS={SEGMENT_ITEMS} stocks={stocks} haveStocks={haveStocks} />
         </div>
     )
 }
 
-function HaveMyStockMoney({totalInvestment}) {
+function HaveMyStockMoney({ totalInvestment,totalDiff,totalRate }) {
+    const isPositive = totalDiff >= 0;
+    const diffColor = isPositive ? "var(--wts-adaptive-red500)" : "var(--wts-adaptive-blue500)";
+
     return (
         <section>
             <div style={{ display: "flex", flexDirection: "row", gap: "0px", justifyContent: "space-between", alignItems: "center", height: "24px" }}>
@@ -40,13 +43,13 @@ function HaveMyStockMoney({totalInvestment}) {
                 <a data-tossinvest-log="Link" data-contents-value="770,145원" data-content-tag="formatPrice" data-parent-name="AssetsSummary" className="_11fusij0 tw6g-gduhvu0" href="/investment-portfolio">
                     <div style={{ display: "flex", flexDirection: "column", gap: "0px", justifyContent: "normal", alignItems: "normal", width: "fit-content" }}>
                         <span className="tw6g-1r5dc8g0 _1p5yqoh0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-bold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "24px" }}>
-                            {totalInvestment.toLocaleString()}원 
+                            {totalInvestment.toLocaleString()}원
                         </span>
-                        <span className="tw6g-1r5dc8g0 _1p5yqoh0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-blue500)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
-                            {"-14,856원"}
+                        <span className="tw6g-1r5dc8g0 _1p5yqoh0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": diffColor, "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
+                            {(totalDiff > 0 ? "+" : "") + totalDiff.toLocaleString() + "원"}
                             {" ("}
-                            {"1.89%"}
-                            {")"}
+                            {(totalDiff > 0 ? "+" : "") + totalRate}
+                            {"%)"}
                         </span>
                     </div>
                 </a>
@@ -55,7 +58,7 @@ function HaveMyStockMoney({totalInvestment}) {
     )
 }
 
-function HaveMyStock({ SEGMENT_ITEMS }) {
+function HaveMyStock({ SEGMENT_ITEMS, stocks }) {
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "0px", justifyContent: "normal", alignItems: "normal", flex: "1 1 0%", minHeight: "0px" }}>
             <div style={{ display: "flex", flexDirection: "row", gap: "0px", justifyContent: "space-between", alignItems: "center" }}>
@@ -87,7 +90,7 @@ function HaveMyStock({ SEGMENT_ITEMS }) {
             <div style={{ flex: "0 0 auto", height: "12px" }}></div>
             <div className="_1a6f6te0 deq21q0" style={{ margin: "0px -8px" }}>
                 <div style={{ height: "107.375px", width: "100%", position: "relative" }}>
-                    <HaveMyStockList />
+                    <HaveMyStockList stocks={stocks} />
                 </div>
             </div>
             <div id="DndDescribedBy-8" style={{ display: "none" }}> ... </div>
@@ -95,44 +98,80 @@ function HaveMyStock({ SEGMENT_ITEMS }) {
         </div>
     )
 }
-function HaveMyStockList() {
+function HaveMyStockList({ stocks = [] }) {
+
     return (
         <ul data-tabster='{"mover":{"cyclic":false,"direction":1,"memorizeCurrent":true}}' style={{ position: "absolute", top: "0px", left: "0px", width: "100%", transform: "translateY(0px)" }}>
-            <div data-index="0">
-                <a data-tossinvest-log="StockRow" data-contents-value="맥도날드" data-content-tag="item_stockName" data-parent-name="EvaluatedAmountListRow" tabIndex={0} className="" role="button" aria-disabled="false" aria-roledescription="sortable" aria-describedby="DndDescribedBy-8" data-state="closed" href="/stocks/US19660705001/order">
-                    <div className="tw6g-1e8fj1a2 tw6g-1e8fj1a0 tw6g-1e8fj1aj tw6g-1e8fj1ak" style={{ transition: "none", visibility: "visible" }}>
-                        <div className="tw6g-1e8fj1a3 tw6g-1e8fj1a8 tw6g-1e8fj1a6">
-                            <div data-nosnippet="true" className="favgr63 favgr60">
-                                <div className="c3f3of0 favgr6c favgr69">
-                                    <img alt="logo" loading="lazy" width="30" height="30" decoding="async" data-nimg="1" srcSet="https://images.tossinvest.com/https%3A%2F%2Fstatic.toss.im%2Fpng-icons%2Fsecurities%2Ficn-sec-fill-NYS000PLS-E0.png?width=32&height=32 1x, https://images.tossinvest.com/https%3A%2F%2Fstatic.toss.im%2Fpng-icons%2Fsecurities%2Ficn-sec-fill-NYS000PLS-E0.png?width=64&height=64 2x" src="https://images.tossinvest.com/https%3A%2F%2Fstatic.toss.im%2Fpng-icons%2Fsecurities%2Ficn-sec-fill-NYS000PLS-E0.png?width=64&height=64" style={{ color: "transparent" }} />
+            {stocks?.map((stock, index) => {
+                const isPositive = stock.diff >= 0;
+                const changeColor = isPositive
+                    ? "var(--wts-adaptive-red500)"
+                    : "var(--wts-adaptive-blue500)";
+
+                return (
+                    <div key={stock.stockCode} data-index={index}>
+                        <a
+                            data-tossinvest-log="StockRow"
+                            data-contents-value={stock.stockName}
+                            data-content-tag="item_stockName"
+                            data-parent-name="EvaluatedAmountListRow"
+                            tabIndex={0}
+                            className=""
+                            role="button"
+                            aria-disabled="false"
+                            aria-roledescription="sortable"
+                            aria-describedby="DndDescribedBy-8"
+                            data-state="closed"
+                            href={`/stocks/${stock.stockCode}/order`}
+                        >
+                            <div className="tw6g-1e8fj1a2 tw6g-1e8fj1a0 tw6g-1e8fj1aj tw6g-1e8fj1ak" style={{ transition: "none", visibility: "visible" }}>
+                                <div className="tw6g-1e8fj1a3 tw6g-1e8fj1a8 tw6g-1e8fj1a6">
+                                    <div data-nosnippet="true" className="favgr63 favgr60">
+                                        <div className="c3f3of0 favgr6c favgr69">
+                                            <img
+                                                alt="logo"
+                                                loading="lazy"
+                                                width="30"
+                                                height="30"
+                                                decoding="async"
+                                                data-nimg="1"
+                                                srcSet={`https://images.tossinvest.com/https%3A%2F%2Fstatic.toss.im%2Fpng-icons%2Fsecurities%2Ficn-sec-fill-${stock.stockCode}-E0.png?width=32&height=32 1x, https://images.tossinvest.com/https%3A%2F%2Fstatic.toss.im%2Fpng-icons%2Fsecurities%2Ficn-sec-fill-${stock.stockCode}-E0.png?width=64&height=64 2x`}
+                                                src={`https://images.tossinvest.com/https%3A%2F%2Fstatic.toss.im%2Fpng-icons%2Fsecurities%2Ficn-sec-fill-${stock.stockCode}-E0.png?width=64&height=64`}
+                                                style={{ color: "transparent" }}
+                                            />
+                                        </div>
+                                        <span className="favgr6u favgr6r favgr6q"></span>
+                                    </div>
                                 </div>
-                                <span className="favgr6u favgr6r favgr6q"></span>
-                            </div>
-                        </div>
-                        <div className="tw6g-1e8fj1a9">
-                            <div className="tw6g-1e8fj1aa tw6g-1e8fj1ad tw6g-1e8fj1ac tw6g-1e8fj1ag" style={{ gridTemplateColumns: "minmax(0px, 1fr) max-content" }}>
-                                <span className="tw6g-1e8fj1am">
-                                    <div className="tw6g-1ia8ofc0 tw6g-1ia8ofc1">
-                                        <span className="tw6g-1r5dc8g0 fmiok60" data-contents-label="종목명" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-greyOpacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
-                                            <span>맥도날드</span>
+                                <div className="tw6g-1e8fj1a9">
+                                    <div className="tw6g-1e8fj1aa tw6g-1e8fj1ad tw6g-1e8fj1ac tw6g-1e8fj1ag" style={{ gridTemplateColumns: "minmax(0px, 1fr) max-content" }}>
+                                        <span className="tw6g-1e8fj1am">
+                                            <div className="tw6g-1ia8ofc0 tw6g-1ia8ofc1">
+                                                <span className="tw6g-1r5dc8g0 fmiok60" data-contents-label="종목명" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-greyOpacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
+                                                    <span>{stock.stockName}</span>
+                                                </span>
+                                                <span className="tw6g-1r5dc8g0" data-contents-label="현재가" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>
+                                                    {stock.quantity + "주"}
+                                                </span>
+                                            </div>
                                         </span>
-                                        <span className="tw6g-1r5dc8g0" data-contents-label="보유수량" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>
-                                            {"0.926453"}
-                                            {"주"}
+                                        <span className="tw6g-1e8fj1am tw6g-1e8fj1ao">
+                                            <div className="tw6g-1ia8ofc0 tw6g-1ia8ofc1 _1p5yqoh0">
+                                                <span className="tw6g-1r5dc8g0" data-contents-label="거래량" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-bold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
+                                                    {stock.evaluatedAmount.toLocaleString() + "원"}
+                                                </span>
+                                                <span className="tw6g-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": changeColor, "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>
+                                                    {(stock.diff > 0 ? "+" : "") + stock.diff.toLocaleString() + "원 (" + stock.rate + "%)"}
+                                                </span>
+                                            </div>
                                         </span>
                                     </div>
-                                </span>
-                                <span className="tw6g-1e8fj1am tw6g-1e8fj1ao">
-                                    <div className="tw6g-1ia8ofc0 tw6g-1ia8ofc1 _1p5yqoh0">
-                                        <span className="tw6g-1r5dc8g0" data-contents-label="보유금액" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-bold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>392,837원</span>
-                                        <span className="tw6g-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-blue500)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>-23,545원 (5.65%)</span>
-                                    </div>
-                                </span>
+                                </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
-                </a>
-            </div>
+                );
+            })}
         </ul>
-    )
+    );
 }

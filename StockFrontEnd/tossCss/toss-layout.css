@@ -21266,7 +21266,36 @@ html:not(_)[data-wts-theme=dark]::-webkit-scrollbar-thumb {
     --tw6g-emtxt74: var(--wts-adaptive-greyOpacity300);
     --tw6g-emtxt75: var(--wts-adaptive-greyOpacity100);
 }
-
+.tw6g-nkz6ce1 {
+    padding: 0 3px;
+    border-radius: 5px;
+    min-height: 20px;
+}
+.tw6g-nkz6ce0 {
+    display: flex;
+    align-items: center;
+    width: -moz-fit-content;
+    width: fit-content;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: background .2s ease;
+}
+.tw6g-nkz6ce6 {
+    border: 0;
+    clip: rect(0 0 0 0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+    white-space: nowrap;
+    pointer-events: none;
+}
+.tw6g-nkz6ce7 {
+    transition: color .1s ease;
+}
 ._1nux3s1:not(:last-child):after {
     content: "";
     display: block;

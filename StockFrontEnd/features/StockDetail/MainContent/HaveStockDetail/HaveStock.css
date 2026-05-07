@@ -1,0 +1,13 @@
+.sa1m6r0 {
+    box-sizing: border-box;
+    padding: 8px;
+    isolation: isolate;
+}
+.sa1m6r0, .sa1m6r1 {
+    flex: 1 1;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
