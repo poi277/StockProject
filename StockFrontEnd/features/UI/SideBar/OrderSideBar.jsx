@@ -1,8 +1,10 @@
 import useOrderSideBar from "./useOrderSideBar"
+import './OrderSideBar.css'
+import useCancelStore from "../../../store/cancelStore";
 
 export default function OrderSideBar() {
 
-    const {TAB_ITEMS} = useOrderSideBar();
+    const { TAB_ITEMS, orders, setOrders } = useOrderSideBar();
 
     return (
         <section data-section-name="주문내역">
@@ -38,7 +40,7 @@ export default function OrderSideBar() {
                                 <div data-testid="virtuoso-scroller" data-virtuoso-scroller="true" tabIndex={0} style={{ height: "100%", outline: "none", overflowY: "auto", position: "relative" }}>
                                     <div data-viewport-type="element" style={{ width: "100%", height: "100%", position: "absolute", top: "0px" }}>
                                         <div data-testid="virtuoso-item-list" style={{ boxSizing: "border-box", paddingTop: "0px", paddingBottom: "0px", marginTop: "0px" }}>
-                                            <OrderList />
+                                            <OrderList orders={orders} />
                                         </div>
                                     </div>
                                 </div>
@@ -82,50 +84,71 @@ function OrderHistory() {
 
 
 
-function OrderList() {
+function OrderList({ orders }) {
+    const { openCancel } = useCancelStore();
+
     return (
-        <div data-index="0" data-known-size="49" data-item-index="0" style={{ overflowAnchor: "none" }}>
-            <div>
-                <div>
-                    <a data-tossinvest-log="Link" data-contents-value="효성" data-content-tag="displayName" data-parent-name="AllItem" className="dgtq01" href="/stocks/A093370/order">
-                        <div className="tw6g-1e8fj1a2 tw6g-1e8fj1a0 tw6g-1e8fj1aj tw6g-1e8fj1ak dgtq02 dgtq00">
-                            <div className='tw6g-1e8fj1a3 tw6g-1e8fj1a7 tw6g-1e8fj1a6'>
-                                <span role="presentation" className="tw6g-m6rqix2 tw6g-m6rqix0" style={{ lineHeight: 0, display: "inline-block", height: "30px", width: "30px" }}>
-                                    <img alt="" draggable="false" loading="lazy" width="30" height="30" decoding="async" data-nimg="1" srcSet="https://images.tossinvest.com/https%3A%2F%2Fstatic.toss.im%2Fpng-icons%2Fsecurities%2Ficn-sec-fill-093370.png?width=32&height=32 1x, https://images.tossinvest.com/https%3A%2F%2Fstatic.toss.im%2Fpng-icons%2Fsecurities%2Ficn-sec-fill-093370.png?width=64&height=64 2x" src="https://images.tossinvest.com/https%3A%2F%2Fstatic.toss.im%2Fpng-icons%2Fsecurities%2Ficn-sec-fill-093370.png?width=64&height=64" style={{ color: "transparent", width: "100%" }} />
-                                </span>
-                            </div>
-                            <div className="tw6g-1e8fj1a9">
-                                <div className="tw6g-1e8fj1aa tw6g-1e8fj1ad tw6g-1e8fj1ab tw6g-1e8fj1af" style={{ gridTemplateColumns: "minmax(0px, 1fr) minmax(0px, 1fr)" }}>
-                                    <span className="tw6g-1e8fj1am">
-                                        <div className="tw6g-1ia8ofc0 tw6g-1ia8ofc1">
-                                            <span className="tw6g-1r5dc8g0 dgtq0a" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>효성</span>
-                                        </div>
-                                    </span>
-                                    <span className="tw6g-1e8fj1am tw6g-1e8fj1ao">
-                                        <div className="xl0v5qw" style={{ height: "auto" }}>
-                                            <div className="dgtq06 order-edit-buttons">
-                                                <button type="button" aria-disabled="false" className="tw6g-1wkoka52h tw6g-1wkoka59 tw6g-1wkoka5c tw6g-1wkoka513 tw6g-1wkoka5t tw6g-1wkoka5r tw6g-1wkoka5h tw6g-1wkoka524" data-tds-wts-button data-tossinvest-log="Button" data-contents-label="수정" data-contents-label-code="수정" data-contents-value="수정" data-content-tag="correctionInProgress_진행중__수정" data-parent-name="EditCancelButtons">
-                                                    <span className="tw6g-1wkoka52g">수정</span>
-                                                </button>
-                                                <button type="button" aria-disabled="false" className="tw6g-1wkoka52h tw6g-1wkoka51 tw6g-1wkoka5c tw6g-1wkoka513 tw6g-1wkoka5t tw6g-1wkoka5r tw6g-1wkoka5h tw6g-1wkoka524" data-tds-wts-button data-tossinvest-log="Button" data-contents-label="취소" data-contents-label-code="cancelText" data-contents-value="취소 " data-content-tag="cancelText_cancelInProgress_진행중_" data-parent-name="EditCancelButtons">
-                                                    <span className="tw6g-1wkoka52g">취소</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="tw6g-1ia8ofc0 tw6g-1ia8ofc1 dgtq07">
-                                            <span className="tw6g-1r5dc8g0 dgtq0a" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>주당 9,270원</span>
-                                            <span className="tw6g-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": "var(--wts-adaptive-red600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>
-                                                {"1주"}
-                                                {"구매"}
+        <>
+            {orders?.map((order) => (
+                <div key={order.orderId} data-index="0" data-known-size="49" data-item-index="0" style={{ overflowAnchor: "none" }}>
+                    <div>
+                        <div>
+                            <a data-tossinvest-log="Link" data-contents-value={order.stockName} data-content-tag="displayName" data-parent-name="AllItem" className="dgtq01" href={`/stock/${order.stockCode}`}>
+                                <div className="tw6g-1e8fj1a2 tw6g-1e8fj1a0 tw6g-1e8fj1aj tw6g-1e8fj1ak dgtq02 dgtq00">
+                                    <div className='tw6g-1e8fj1a3 tw6g-1e8fj1a7 tw6g-1e8fj1a6'>
+                                        <span role="presentation" className="tw6g-m6rqix2 tw6g-m6rqix0" style={{ lineHeight: 0, display: "inline-block", height: "30px", width: "30px" }}>
+                                            <img
+                                                alt=""
+                                                draggable="false"
+                                                loading="lazy"
+                                                width="30"
+                                                height="30"
+                                                decoding="async"
+                                                data-nimg="1"
+                                                srcSet={`https://images.tossinvest.com/https%3A%2F%2Fstatic.toss.im%2Fpng-icons%2Fsecurities%2Ficn-sec-fill-${order.stockCode}.png?width=32&height=32 1x, https://images.tossinvest.com/https%3A%2F%2Fstatic.toss.im%2Fpng-icons%2Fsecurities%2Ficn-sec-fill-${order.stockCode}.png?width=64&height=64 2x`}
+                                                src={`https://images.tossinvest.com/https%3A%2F%2Fstatic.toss.im%2Fpng-icons%2Fsecurities%2Ficn-sec-fill-${order.stockCode}.png?width=64&height=64`}
+                                                style={{ color: "transparent", width: "100%" }}
+                                            />
+                                        </span>
+                                    </div>
+                                    <div className="tw6g-1e8fj1a9">
+                                        <div className="tw6g-1e8fj1aa tw6g-1e8fj1ad tw6g-1e8fj1ab tw6g-1e8fj1af" style={{ gridTemplateColumns: "minmax(0px, 1fr) minmax(0px, 1fr)" }}>
+                                            <span className="tw6g-1e8fj1am">
+                                                <div className="tw6g-1ia8ofc0 tw6g-1ia8ofc1">
+                                                    <span className="tw6g-1r5dc8g0 dgtq0a" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
+                                                        {order.stockName}
+                                                    </span>
+                                                </div>
+                                            </span>
+                                            <span className="tw6g-1e8fj1am tw6g-1e8fj1ao">
+                                                <div className="xl0v5qw" style={{ height: "auto" }}>
+                                                    <div className="dgtq06 order-edit-buttons">
+                                                        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} type="button" aria-disabled="false" className="tw6g-1wkoka52h tw6g-1wkoka59 tw6g-1wkoka5c tw6g-1wkoka513 tw6g-1wkoka5t tw6g-1wkoka5r tw6g-1wkoka5h tw6g-1wkoka524" data-tds-wts-button>
+                                                            <span className="tw6g-1wkoka52g">수정</span>
+                                                        </button>
+                                                        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); openCancel(order, 'sidebar'); }} type="button" aria-disabled="false" className="tw6g-1wkoka52h tw6g-1wkoka51 tw6g-1wkoka5c tw6g-1wkoka513 tw6g-1wkoka5t tw6g-1wkoka5r tw6g-1wkoka5h tw6g-1wkoka524" data-tds-wts-button>
+                                                            <span className="tw6g-1wkoka52g">취소</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div className="tw6g-1ia8ofc0 tw6g-1ia8ofc1 dgtq07">
+                                                    <span className="tw6g-1r5dc8g0 dgtq0a" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
+                                                        {"주당 " + order.tradePrice.toLocaleString() + "원"}
+                                                    </span>
+                                                    <span className="tw6g-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": order.tradeType === "BUY" ? "var(--wts-adaptive-red600)" : "var(--wts-adaptive-blue600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>
+                                                        {order.remainingQuantity + "주 "}
+                                                        {order.tradeType === "BUY" ? "구매" : "판매"}
+                                                    </span>
+                                                </div>
                                             </span>
                                         </div>
-                                    </span>
+                                    </div>
                                 </div>
-                            </div>
+                            </a>
                         </div>
-                    </a>
+                    </div>
                 </div>
-            </div>
-        </div>
-    )
+            ))}
+        </>
+    );
 }

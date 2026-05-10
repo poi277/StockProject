@@ -83,6 +83,7 @@ public class UserAssetService {
 			}
 			haveStockRepository.save(haveStock);
 		}
+		userWebsocketService.sendUserAsset(user);
 	}
 
 	@Transactional
@@ -101,6 +102,7 @@ public class UserAssetService {
 			haveStock.setAvailableQuantity(haveStock.getAvailableQuantity() + quantity);
 			haveStockRepository.save(haveStock);
 		}
+		userWebsocketService.sendUserAsset(user);
 	}
 
 	public List<HaveStock> getMyStocks(String userId) {

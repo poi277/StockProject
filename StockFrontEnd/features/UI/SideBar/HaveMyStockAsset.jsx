@@ -122,7 +122,7 @@ function HaveMyStockList({ stocks = [] }) {
                             aria-roledescription="sortable"
                             aria-describedby="DndDescribedBy-8"
                             data-state="closed"
-                            href={`/stocks/${stock.stockCode}/order`}
+                            href={`/stock/${stock.stockCode}`}
                         >
                             <div className="tw6g-1e8fj1a2 tw6g-1e8fj1a0 tw6g-1e8fj1aj tw6g-1e8fj1ak" style={{ transition: "none", visibility: "visible" }}>
                                 <div className="tw6g-1e8fj1a3 tw6g-1e8fj1a8 tw6g-1e8fj1a6">

@@ -166,7 +166,7 @@ export default function StockContent({stock}) {
                     <div style={{ background: 'linear-gradient(90deg, rgba(100,168,255,0) 0%, rgb(100,168,255) 50%, rgba(100,168,255,0) 100%)', flex: '1 1 0%', height: '4px', width: 0 }}></div>
                   </div>
                 </div>
-
+                
               </div>
             </div>
           </div>

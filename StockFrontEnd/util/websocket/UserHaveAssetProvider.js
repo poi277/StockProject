@@ -10,7 +10,7 @@ const UserContext = createContext(null);
 export function UserHaveAssetProvider({ children }) {
     const { client, connected } = useWebSocket();
     const { userClient, userConnected } = useUserWebSocket();
-    const { orders, setOrders } = useOrderSocket(client, connected);
+    const { orders, setOrders,notifications  } = useOrderSocket(client, connected);
     const { haveStocks, setHaveStocks, asset, setAsset, availableAsset, setAvailableAsset, initialStocks } = useUserHaveAssetSocket(userClient, userConnected);
     
     const stockCodes = haveStocks?.map(stock => stock.stockCode) ?? [];
@@ -32,7 +32,7 @@ export function UserHaveAssetProvider({ children }) {
 
     return (
         <UserContext.Provider value={{
-            orders, setOrders,
+            orders, setOrders,notifications,
             asset, setAsset,
             haveStocks, setHaveStocks,
             availableAsset, setAvailableAsset,

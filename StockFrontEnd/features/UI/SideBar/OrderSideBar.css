@@ -1,0 +1,32 @@
+.xl0v5qw .order-edit-buttons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dgtq06 {
+    display: none !important;
+}
+.dgtq07 {
+    display: flex;
+}
+.dgtq00:hover .dgtq07, .dgtq01:focus-within .dgtq07 {
+    display: none;
+}
+
+.dgtq00:hover .dgtq06, .dgtq01:focus-within .dgtq06 {
+    display: flex !important;
+}
+.dgtq0a {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+.xl0v5qw {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 48px;
+}

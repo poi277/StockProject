@@ -86,8 +86,9 @@ public class OrderController {
             @PathVariable("orderId") Long orderId,
             Authentication authentication,
             HttpServletRequest request) {
-        String userId = authentication.getName();
-        String accessToken = resolveToken(request);
+		System.out.println(orderId);
+		String userId = authentication.getName();
+		String accessToken = resolveToken(request);
 		orderCancelService.cancelOrder(userId, orderId, accessToken);
         return ResponseEntity.ok(new ApiResponse(true, "주문 취소 완료"));
     }

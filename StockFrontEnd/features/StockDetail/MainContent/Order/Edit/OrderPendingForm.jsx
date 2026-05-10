@@ -1,3 +1,5 @@
+import useCancelStore from "../../../../../store/cancelStore";
+import CancelForm from "../Cancel/CancelForm";
 import { PriceForm, QuantityForm, SubmitButton } from "../Commonutil/OrderCommon";
 import useOrderEdit from "./useOrderEdit";
 
@@ -43,6 +45,7 @@ export default function OrderPendingForm({tradeTypeTab,stockCode,selectedPrice, 
 
 
 function OrderPendingListForm({ orders, handleEditOpen }) {
+    const { openCancel } = useCancelStore();
     const TRADE_LABEL = { BUY: '구매', SELL: '판매' };
     const TRADE_COLOR = { BUY: 'var(--wts-adaptive-red500)', SELL: 'var(--wts-adaptive-blue500)' };
 
@@ -65,7 +68,7 @@ function OrderPendingListForm({ orders, handleEditOpen }) {
                                         <button onClick={() => handleEditOpen(order)} type="button" aria-disabled="false" className="tw3s-1wkoka52h tw3s-1wkoka59 tw3s-1wkoka5c tw3s-1wkoka513 tw3s-1wkoka5t tw3s-1wkoka5r tw3s-1wkoka5h tw3s-1wkoka524" data-tds-wts-button data-tossinvest-log="Button" data-contents-label="수정" data-contents-label-code="수정" data-contents-value="수정" data-content-tag="pendingOrder_correctionInProgress_진행중__수정" data-parent-name="PendingOrder">
                                             <span className="tw3s-1wkoka52g">수정</span>
                                         </button>
-                                        <button type="button" aria-disabled="false" className="tw3s-1wkoka52h tw3s-1wkoka51 tw3s-1wkoka5c tw3s-1wkoka513 tw3s-1wkoka5t tw3s-1wkoka5r tw3s-1wkoka5h tw3s-1wkoka524" data-tds-wts-button data-tossinvest-log="Button" data-contents-label="취소" data-contents-label-code="취소" data-contents-value="취소" data-content-tag="pendingOrder_cancellInProgress_진행중_취소" data-parent-name="PendingOrder">
+                                        <button onClick={() => openCancel(order, 'order')} type="button" aria-disabled="false" className="tw3s-1wkoka52h tw3s-1wkoka51 tw3s-1wkoka5c tw3s-1wkoka513 tw3s-1wkoka5t tw3s-1wkoka5r tw3s-1wkoka5h tw3s-1wkoka524" data-tds-wts-button data-tossinvest-log="Button" data-contents-label="취소" data-contents-label-code="취소" data-contents-value="취소" data-content-tag="pendingOrder_cancellInProgress_진행중_취소" data-parent-name="PendingOrder">
                                             <span className="tw3s-1wkoka52g">취소</span>
                                         </button>
                                     </div>
@@ -143,7 +146,8 @@ function OrderEditForm({tradeTypeTab, editPriceType, setEditPriceType,editPrice,
                     </div>
                 </div>
             </div>
-            <SubmitButton tradeTypeTab={tradeTypeTab} tradeType={editTarget.tradeType} />
+            <SubmitButton tradeTypeTab={tradeTypeTab} tradeType={editTarget.tradeType} handleEditClose={handleEditClose} />
+          
         </>
     )
 }
