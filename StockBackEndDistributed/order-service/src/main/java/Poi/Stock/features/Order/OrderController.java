@@ -50,10 +50,8 @@ public class OrderController {
 	@PostMapping("/edit")
 	public ResponseEntity<ApiResponse> stockEdit(@RequestBody @Valid TradeDTO tradeDTO,
 			Authentication authentication, HttpServletRequest request) {
-		System.out.println("ddd");
 		String accessToken = resolveToken(request);
 		String userId = authentication.getName();
-		// 주문도 똑같이 검증
 		Order order = orderService.validateEditOrder(userId, tradeDTO, accessToken);
 		orderService.stockEdit(tradeDTO, order);
 		return ResponseEntity.ok(new ApiResponse(true, "주문 접수 완료"));

@@ -1,6 +1,7 @@
 import useOrderSideBar from "./useOrderSideBar"
 import './OrderSideBar.css'
 import useCancelStore from "../../../store/cancelStore";
+import useEditStore from "../../../store/editStore";
 
 export default function OrderSideBar() {
 
@@ -86,6 +87,7 @@ function OrderHistory() {
 
 function OrderList({ orders }) {
     const { openCancel } = useCancelStore();
+    const { openEdit } = useEditStore();
 
     return (
         <>
@@ -123,7 +125,7 @@ function OrderList({ orders }) {
                                             <span className="tw6g-1e8fj1am tw6g-1e8fj1ao">
                                                 <div className="xl0v5qw" style={{ height: "auto" }}>
                                                     <div className="dgtq06 order-edit-buttons">
-                                                        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} type="button" aria-disabled="false" className="tw6g-1wkoka52h tw6g-1wkoka59 tw6g-1wkoka5c tw6g-1wkoka513 tw6g-1wkoka5t tw6g-1wkoka5r tw6g-1wkoka5h tw6g-1wkoka524" data-tds-wts-button>
+                                                        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEdit(order)}} type="button" aria-disabled="false" className="tw6g-1wkoka52h tw6g-1wkoka59 tw6g-1wkoka5c tw6g-1wkoka513 tw6g-1wkoka5t tw6g-1wkoka5r tw6g-1wkoka5h tw6g-1wkoka524" data-tds-wts-button>
                                                             <span className="tw6g-1wkoka52g">수정</span>
                                                         </button>
                                                         <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); openCancel(order, 'sidebar'); }} type="button" aria-disabled="false" className="tw6g-1wkoka52h tw6g-1wkoka51 tw6g-1wkoka5c tw6g-1wkoka513 tw6g-1wkoka5t tw6g-1wkoka5r tw6g-1wkoka5h tw6g-1wkoka524" data-tds-wts-button>

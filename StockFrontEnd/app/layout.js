@@ -8,6 +8,7 @@ import { UserWebSocketProvider } from '../util/websocket/context/UserWebSocketCo
 import { UserHaveAssetProvider } from '../util/websocket/UserHaveAssetProvider';
 import NotificationForm from '../features/UI/notification/NotificationForm';
 import SideBarCancelForm from '../features/StockDetail/MainContent/Order/Cancel/SideBarCancelForm';
+import SideBarEditForm from '../features/StockDetail/MainContent/Order/Edit/SideBarEditForm';
 
 export default function RootLayout({ children }) {
   return (<html lang="ko" data-theme="dark" data-wts-theme="dark" className="tw3v-n7og3x0" style={{ colorScheme: 'dark' }} >
@@ -26,6 +27,7 @@ export default function RootLayout({ children }) {
               <NotificationForm />
               {children}
               <SideBarCancelForm/>
+              <SideBarEditForm/>
             </UserHaveAssetProvider>
           </UserWebSocketProvider>
         </WebSocketProvider>
