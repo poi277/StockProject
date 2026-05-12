@@ -2,6 +2,8 @@ import React from 'react';
 import './ChartForm.css';
 import ChartComponent from './ChartComponent';
 
+const TIME_BUTTONS = ['일', '주', '월', '년'];
+
 export default function ChartForm({stockCode}) {
     return (
         <div className="sa1m6r0">
@@ -10,7 +12,7 @@ export default function ChartForm({stockCode}) {
                     <ChartConfig />
                     <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingTop: "8px" }}></div>
                     <div style={{ flex: "0 0 auto", height: "16px", backgroundColor: "var(--wts-adaptive-background)" }}></div>
-                   <div className="mnc8st3"  data-section-name="종목상세__차트" data-ignore-auto-section-prefix="true" >
+                   <div className="mnc8st3" >
                         <ChartComponent stockCode={stockCode}/> 
                     </div>
                 </div>
@@ -23,14 +25,14 @@ function ChartConfig()
 {
     return(
     <div style={{ position: "relative" }}>
-        <div data-tossinvest-log="div" data-parent-name="MovablePanelHandle" style={{ position: "absolute", inset: "-8px -8px 0px", cursor: "move", touchAction: "none", userSelect: "none" }}>&nbsp;</div>
-        <div className="_1owxq230" data-section-name="종목상세__차트" data-ignore-auto-section-prefix="true">
-            <div data-tossinvest-log="div" data-parent-name="MovablePanelHandle" style={{ position: "absolute", inset: "0px", cursor: "move", touchAction: "none", userSelect: "none" }}>&nbsp;</div>        
+        <div style={{ position: "absolute", inset: "-8px -8px 0px", cursor: "move", touchAction: "none", userSelect: "none" }}>&nbsp;</div>
+        <div className="_1owxq230">
+            <div style={{ position: "absolute", inset: "0px", cursor: "move", touchAction: "none", userSelect: "none" }}>&nbsp;</div>        
             <ChartTimeConfig/>
             <div className="_1owxq233">
                 <div className="_1owxq235 _1owxq234">
                 <div className="_1owxq232"></div>
-                 <button className="tw3v-emtxt715 tw3v-emtxt7p tw3v-emtxt7t tw3v-emtxt710" aria-disabled="false" aria-label="차트모양" data-theme="grey" data-variant="clear" data-mode="dark" data-tossinvest-log="IconButton" data-contents-value="차트모양" data-content-tag="label" data-parent-name="ControllerButton" data-state="closed" data-tossinvest-priority-log="Tooltip.Trigger">
+                 <button className="tw3v-emtxt715 tw3v-emtxt7p tw3v-emtxt7t tw3v-emtxt710" aria-disabled="false" aria-label="차트모양" data-theme="grey" data-variant="clear" data-mode="dark" data-state="closed">
                     <span className="tw3v-17xiat90" aria-hidden="false" role="presentation" style={{ height: "14px", width: "14px", minWidth: "14px", color: "var(--wts-adaptive-grey700)" }}>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="">
                             <path fill="none" stroke="#fc2d4c" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit="10" d="M4 10.98v5.84"></path>
@@ -41,7 +43,7 @@ function ChartConfig()
                         </svg>
                     </span>
                 </button>
-                <button className="tw3v-emtxt715 tw3v-emtxt7p tw3v-emtxt7t tw3v-emtxt710" aria-disabled="false" aria-label="지표 및 그리기 제거" data-theme="grey" data-variant="clear" data-mode="dark" data-tossinvest-log="IconButton" data-contents-value="지표 및 그리기 제거" data-content-tag="label" data-parent-name="ControllerButton" data-state="closed" data-tossinvest-priority-log="Tooltip.Trigger">
+                <button className="tw3v-emtxt715 tw3v-emtxt7p tw3v-emtxt7t tw3v-emtxt710" aria-disabled="false" aria-label="지표 및 그리기 제거" data-theme="grey" data-variant="clear" data-mode="dark" data-state="closed">
                     <span className="tw3v-17xiat90 tw3v-17xiat91" aria-hidden="false" role="presentation" style={{ height: "14px", width: "14px", minWidth: "14px", color: "var(--wts-adaptive-grey700)" }}>
                         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <g fill="#b0b8c1">
@@ -52,7 +54,7 @@ function ChartConfig()
                         </svg>
                     </span>
                 </button>
-                <button className="tw3v-emtxt715 tw3v-emtxt7p tw3v-emtxt7t tw3v-emtxt710" aria-disabled="false" aria-label="설정" data-theme="grey" data-variant="clear" data-mode="dark" data-tossinvest-log="IconButton" data-contents-value="설정" data-content-tag="label" data-parent-name="ControllerButton" data-state="closed" data-tossinvest-priority-log="Tooltip.Trigger">
+                <button className="tw3v-emtxt715 tw3v-emtxt7p tw3v-emtxt7t tw3v-emtxt710" aria-disabled="false" aria-label="설정" data-theme="grey" data-variant="clear" data-mode="dark" data-state="closed">
                     <span className="tw3v-17xiat90 tw3v-17xiat91" aria-hidden="false" role="presentation" style={{ height: "14px", width: "14px", minWidth: "14px", color: "var(--wts-adaptive-grey700)" }}>
                         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path d="m 22 14.85 l -1 -0.8 c -0.5 -0.5 -0.8 -1.2 -0.8 -1.9 s 0.3 -1.4 0.8 -1.9 l 0.9 -1 c 0.4 -0.4 0.5 -1 0.2 -1.5 l -1.3 -2.2 c -0.3 -0.5 -0.8 -0.7 -1.4 -0.6 l -1.3 0.3 c -0.7 0.2 -1.5 0.1 -2.1 -0.3 s -1.1 -0.9 -1.3 -1.6 l -0.4 -1.3 c 0 -0.6 -0.5 -1 -1 -1 h -2.5 c -0.6 0 -1 0.4 -1.2 0.9 l -0.4 1.4 c -0.2 0.6 -0.6 1.2 -1.2 1.5 c -0.1 0 -0.1 0.1 -0.2 0.1 c -0.6 0.3 -1.3 0.4 -1.9 0.3 l -1.4 -0.4 c -0.5 -0.1 -1.1 0.1 -1.4 0.6 l -1.3 2.2 c -0.3 0.5 -0.2 1.1 0.2 1.5 l 0.9 1 c 0.5 0.5 0.8 1.2 0.8 1.9 s -0.3 1.4 -0.8 1.9 l -0.5 0.5 c -0.6 0.7 -0.8 1.7 -0.3 2.5 l 0.9 1.6 c 0.3 0.5 0.8 0.7 1.4 0.6 l 1.4 -0.4 c 0.6 -0.2 1.3 -0.1 1.9 0.3 c 0.1 0 0.1 0.1 0.2 0.1 c 0.6 0.3 1 0.9 1.2 1.5 l 0.4 1.4 c 0.2 0.5 0.6 0.9 1.2 0.9 h 2.5 c 0.6 0 1 -0.4 1.2 -0.9 l 0.4 -1.4 c 0.2 -0.6 0.6 -1.2 1.2 -1.5 c 0.1 0 0.1 -0.1 0.2 -0.1 c 0.6 -0.3 1.3 -0.4 1.9 -0.3 l 1.4 0.4 c 0.5 0.1 1.1 -0.1 1.4 -0.6 l 1.3 -2.2 c 0.3 -0.5 0.2 -1.1 -0.2 -1.5 Z m -10 0.9 c -2 0 -3.7 -1.6 -3.7 -3.7 s 1.6 -3.7 3.7 -3.7 s 3.7 1.6 3.7 3.7 s -1.7 3.7 -3.7 3.7 Z" fill="#b0b8c1" fillRule="evenodd"></path>
@@ -61,14 +63,14 @@ function ChartConfig()
                 </button>
                 </div>
                 <div className="_1owxq234">
-                    <button className="tw3v-emtxt715 tw3v-emtxt7p tw3v-emtxt7t tw3v-emtxt710" aria-disabled="false" aria-label="보조지표" data-theme="grey" data-variant="clear" data-mode="dark" data-tossinvest-log="IconButton" data-contents-value="보조지표" data-content-tag="label" data-parent-name="ControllerButton" data-state="closed" data-tossinvest-priority-log="Tooltip.Trigger">
+                    <button className="tw3v-emtxt715 tw3v-emtxt7p tw3v-emtxt7t tw3v-emtxt710" aria-disabled="false" aria-label="보조지표" data-theme="grey" data-variant="clear" data-mode="dark" data-state="closed">
                         <span className="tw3v-17xiat90 tw3v-17xiat91" aria-hidden="false" role="presentation" style={{ height: "14px", width: "14px", minWidth: "14px", color: "var(--wts-adaptive-grey700)" }}>
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="line-icon">
                                 <path fill="#B0B8B1" d="M 20.318 10.8 h -7 v -7 a 1.2 1.2 0 1 0 -2.4 0 v 7 h -7 a 1.2 1.2 0 1 0 0 2.4 h 7 v 7 a 1.2 1.2 0 1 0 2.4 0 v -7 h 7 a 1.2 1.2 0 1 0 0 -2.4" fillRule="evenodd"></path>
                             </svg>
                         </span>
                     </button>
-                    <button className="tw3v-emtxt715 tw3v-emtxt7p tw3v-emtxt7t tw3v-emtxt710" aria-disabled="false" aria-label="그리기" data-theme="grey" data-variant="clear" data-mode="dark" data-tossinvest-log="IconButton" data-contents-value="그리기" data-content-tag="label" data-parent-name="ControllerButton" data-state="closed" data-tossinvest-priority-log="Tooltip.Trigger">
+                    <button className="tw3v-emtxt715 tw3v-emtxt7p tw3v-emtxt7t tw3v-emtxt710" aria-disabled="false" aria-label="그리기" data-theme="grey" data-variant="clear" data-mode="dark" data-state="closed">
                         <span className="tw3v-17xiat90 tw3v-17xiat91" aria-hidden="false" role="presentation" style={{ height: "14px", width: "14px", minWidth: "14px", color: "var(--wts-adaptive-grey700)" }}>
                             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <g fill="none" stroke="#b1b8c1">
@@ -81,7 +83,7 @@ function ChartConfig()
                             </svg>
                         </span>
                     </button>
-                    <button className="tw3v-emtxt715 tw3v-emtxt7p tw3v-emtxt7t tw3v-emtxt710" aria-disabled="false" aria-label="종목비교" data-theme="grey" data-variant="clear" data-mode="dark" data-tossinvest-log="IconButton" data-contents-value="종목비교" data-content-tag="label" data-parent-name="ControllerButton" data-state="closed" data-tossinvest-priority-log="Tooltip.Trigger">
+                    <button className="tw3v-emtxt715 tw3v-emtxt7p tw3v-emtxt7t tw3v-emtxt710" aria-disabled="false" aria-label="종목비교" data-theme="grey" data-variant="clear" data-mode="dark" data-state="closed">
                         <span className="tw3v-17xiat90 tw3v-17xiat91" aria-hidden="false" role="presentation" style={{ height: "14px", width: "14px", minWidth: "14px", color: "var(--wts-adaptive-grey700)" }}>
                             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <g fill="#b0b8c1">
@@ -112,77 +114,17 @@ function ChartConfig()
     )
 }
 
-function ChartTimeConfig()
-{
-    return(
-        <div className="_1owxq237">
-            <button type="button" tabIndex="0" aria-disabled="false" className="tw3v-1wkoka52h tw3v-1wkoka58 tw3v-1wkoka541 tw3v-1wkoka5e tw3v-1wkoka517 tw3v-1wkoka5x tw3v-1wkoka5r tw3v-1wkoka5l tw3v-1wkoka528" data-tds-wts-button data-tossinvest-log="Button" data-contents-value="1분" data-content-tag="isMinutes_chartState_resolutions_resolution_분_validLastMinutesResolution_분" data-parent-name="Resolutions" id="radix-_r_ign_" aria-haspopup="menu" aria-expanded="false" data-state="closed" data-tossinvest-priority-log="Dropdown.Trigger">
-                <span className="tw3v-1wkoka52g">1분∨</span>
-            </button>
-            <button type="button" aria-disabled="false" className="tw3v-1wkoka52h tw3v-1wkoka5a tw3v-1wkoka5e tw3v-1wkoka517 tw3v-1wkoka5x tw3v-1wkoka5r tw3v-1wkoka5l tw3v-1wkoka528" data-tds-wts-button data-tossinvest-log="Button" data-contents-value="일" data-content-tag="dayResolutionMap_resolution" data-parent-name="Resolutions">
-                <span className="tw3v-1wkoka52g">일</span>
-            </button>
-            <button type="button" aria-disabled="false" className="tw3v-1wkoka52h tw3v-1wkoka5a tw3v-1wkoka5e tw3v-1wkoka517 tw3v-1wkoka5x tw3v-1wkoka5r tw3v-1wkoka5l tw3v-1wkoka528" data-tds-wts-button data-tossinvest-log="Button" data-contents-value="주" data-content-tag="dayResolutionMap_resolution" data-parent-name="Resolutions">
-                <span className="tw3v-1wkoka52g">주</span>
-            </button>
-            <button type="button" aria-disabled="false" className="tw3v-1wkoka52h tw3v-1wkoka5a tw3v-1wkoka5e tw3v-1wkoka517 tw3v-1wkoka5x tw3v-1wkoka5r tw3v-1wkoka5l tw3v-1wkoka528" data-tds-wts-button data-tossinvest-log="Button" data-contents-value="월" data-content-tag="dayResolutionMap_resolution" data-parent-name="Resolutions">
-                <span className="tw3v-1wkoka52g">월</span>
-            </button>
-            <button type="button" aria-disabled="false" className="tw3v-1wkoka52h tw3v-1wkoka5a tw3v-1wkoka5e tw3v-1wkoka517 tw3v-1wkoka5x tw3v-1wkoka5r tw3v-1wkoka5l tw3v-1wkoka528" data-tds-wts-button data-tossinvest-log="Button" data-contents-value="년" data-content-tag="dayResolutionMap_resolution" data-parent-name="Resolutions">
-                <span className="tw3v-1wkoka52g">년</span>
-            </button>
-        </div>
-    )
+function ChartTimeConfig() {
+  return (
+    <div className="_1owxq237">
+      <button type="button" tabIndex="0" aria-disabled="false" className="tw3v-1wkoka52h tw3v-1wkoka58 tw3v-1wkoka541 tw3v-1wkoka5e tw3v-1wkoka517 tw3v-1wkoka5x tw3v-1wkoka5r tw3v-1wkoka5l tw3v-1wkoka528" data-tds-wts-button id="radix-_r_ign_" aria-haspopup="menu" aria-expanded="false" data-state="closed">
+        <span className="tw3v-1wkoka52g">1분∨</span>
+      </button>
+      {TIME_BUTTONS.map((label) => (
+        <button key={label} type="button" aria-disabled="false" className="tw3v-1wkoka52h tw3v-1wkoka5a tw3v-1wkoka5e tw3v-1wkoka517 tw3v-1wkoka5x tw3v-1wkoka5r tw3v-1wkoka5l tw3v-1wkoka528" data-tds-wts-button>
+          <span className="tw3v-1wkoka52g">{label}</span>
+        </button>
+      ))}
+    </div>
+  );
 }
-// function Chart() {
-//   const chartContainerRef = useRef(null);
-
-//   useEffect(() => {
-//     // 1. 브라우저 환경이 아니면 실행 안 함
-//     if (typeof window === 'undefined' || !chartContainerRef.current) return;
-
-//     let chart;
-
-//     // 2. 라이브러리를 dynamic하게 로드
-//     const initChart = async () => {
-//       const { createChart, ColorType } = await import('lightweight-charts');
-
-//       chart = createChart(chartContainerRef.current, {
-//         layout: {
-//           background: { type: ColorType.Solid, color: 'transparent' },
-//           textColor: '#B0B8C1',
-//         },
-//         width: chartContainerRef.current.clientWidth,
-//         height: 400,
-//         autoSize: true,
-//       });
-
-//       const candleSeries = chart.addCandlestickSeries({
-//         upColor: '#fc2d4c',
-//         downColor: '#007ff3',
-//         borderVisible: false,
-//         wickUpColor: '#fc2d4c',
-//         wickDownColor: '#007ff3',
-//       });
-
-//       candleSeries.setData([
-//         { time: '2024-04-10', open: 150, high: 155, low: 148, close: 152 },
-//         { time: '2024-04-11', open: 152, high: 160, low: 151, close: 158 },
-//         { time: '2024-04-12', open: 158, high: 162, low: 157, close: 161 },
-//       ]);
-//     };
-
-//     initChart();
-
-//     return () => {
-//       if (chart) chart.remove();
-//     };
-//   }, []);
-
-//   return (
-//     <div 
-//       ref={chartContainerRef} 
-//       style={{ width: '100%', height: '100%', minHeight: '400px' }} 
-//     />
-//   );
-// }

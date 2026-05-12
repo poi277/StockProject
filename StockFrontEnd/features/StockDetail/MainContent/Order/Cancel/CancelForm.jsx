@@ -9,8 +9,8 @@ export default function CancelForm() {
     return (
         <>
             <div className="tw6g-1ahjvge0">
-                <div className="tw6g-1ahjvge5 tw6g-1ahjvge7" data-tossinvest-log="Overlay" data-parent-name="AlertDialogContent" style={{ opacity: 1 }} data-aria-hidden="true" aria-hidden="true"></div>
-                <div className="tw6g-1ahjvge1" role="alertdialog" id="radix-_r_rq_" aria-describedby="radix-_r_rs_" aria-labelledby="radix-_r_rr_" data-state="open" data-overlay-type="AlertDialog" data-section-name="AlertDialog__ConfirmDialog" tabIndex={-1} style={{ opacity: 1, transform: "none", pointerEvents: "auto" }}>
+                <div className="tw6g-1ahjvge5 tw6g-1ahjvge7" style={{ opacity: 1 }} data-aria-hidden="true" aria-hidden="true"></div>
+                <div className="tw6g-1ahjvge1" role="alertdialog" id="radix-_r_rq_" aria-describedby="radix-_r_rs_" aria-labelledby="radix-_r_rr_" data-state="open" tabIndex={-1} style={{ opacity: 1, transform: "none", pointerEvents: "auto" }}>
                     <div className="tw6g-1ahjvge2">
                         <div className="tw6g-1r5dc8g0" id="radix-_r_rr_" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-bold)", "--tds-wts-foreground-color": "var(--wts-adaptive-greyOpacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "17px" }}>구매를 취소할까요?</div>
                     </div>
@@ -23,10 +23,10 @@ export default function CancelForm() {
                         </div>
                     </div>
                     <div className="tw6g-1ahjvge3">
-                        <button onClick={closeCancel} type="button" aria-disabled="false" className="tw6g-1wkoka52h tw6g-1wkoka58 tw6g-1wkoka541 tw6g-1wkoka5f tw6g-1wkoka519 tw6g-1wkoka5z tw6g-1wkoka5s tw6g-1wkoka5n tw6g-1wkoka52a" data-tds-wts-button data-tossinvest-log="AlertDialog.CancelButton" data-parent-name="ConfirmDialog" data-contents-label="닫기" data-contents-label-code="cancelText" data-contents-value="닫기" data-content-tag="cancelText">
+                        <button onClick={closeCancel} type="button" aria-disabled="false" className="tw6g-1wkoka52h tw6g-1wkoka58 tw6g-1wkoka541 tw6g-1wkoka5f tw6g-1wkoka519 tw6g-1wkoka5z tw6g-1wkoka5s tw6g-1wkoka5n tw6g-1wkoka52a" data-tds-wts-button>
                             <span className="tw6g-1wkoka52g">닫기</span>
                         </button>
-                        <button onClick={() => executeCancel()} type="button" aria-disabled="false" className="tw6g-1wkoka52h tw6g-1wkoka50 tw6g-1wkoka541 tw6g-1wkoka5f tw6g-1wkoka519 tw6g-1wkoka5z tw6g-1wkoka5s tw6g-1wkoka5n tw6g-1wkoka52a" data-tds-wts-button data-tossinvest-log="AlertDialog.CancelButton" data-parent-name="ConfirmDialog" data-contents-label="취소하기" data-contents-label-code="confirmText" data-contents-value="취소하기" data-content-tag="confirmText">
+                        <button onClick={() => executeCancel()} type="button" aria-disabled="false" className="tw6g-1wkoka52h tw6g-1wkoka50 tw6g-1wkoka541 tw6g-1wkoka5f tw6g-1wkoka519 tw6g-1wkoka5z tw6g-1wkoka5s tw6g-1wkoka5n tw6g-1wkoka52a" data-tds-wts-button>
                             <span className="tw6g-1wkoka52g">취소하기</span>
                         </button>
                     </div>

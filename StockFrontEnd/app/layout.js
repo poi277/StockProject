@@ -1,5 +1,4 @@
 'use client';
-import { useState } from 'react';
 import { AuthProvider } from "../context/AuthContext"
 import { WebSocketProvider } from "../util/websocket/context/WebSocketContext"
 import './globals.css'
@@ -9,6 +8,8 @@ import { UserHaveAssetProvider } from '../util/websocket/UserHaveAssetProvider';
 import NotificationForm from '../features/UI/notification/NotificationForm';
 import SideBarCancelForm from '../features/StockDetail/MainContent/Order/Cancel/SideBarCancelForm';
 import SideBarEditForm from '../features/StockDetail/MainContent/Order/Edit/SideBarEditForm';
+import Header from '../features/UI/Header';
+import SideBar from "../features/UI/SideBar/SideBar";
 
 export default function RootLayout({ children }) {
   return (<html lang="ko" data-theme="dark" data-wts-theme="dark" className="tw3v-n7og3x0" style={{ colorScheme: 'dark' }} >
@@ -24,15 +25,26 @@ export default function RootLayout({ children }) {
         <WebSocketProvider>
           <UserWebSocketProvider>
             <UserHaveAssetProvider>
-              <NotificationForm />
-              {children}
-              <SideBarCancelForm/>
-              <SideBarEditForm/>
+              <div id="_next">
+                <div data-nosnippet="true" id="unsupported-device-section" className="f2xx2r0"></div>
+                <div id="main-content">
+                  <div className="ho2myi0 _1kestwgq _1kestwg2">
+                    <div className="ho2myi1">
+                      <NotificationForm />
+                      <Header />
+                      {children}
+                    </div>
+                    <SideBar />
+                  </div>
+                </div>
+              </div>
+              <SideBarCancelForm />
+              <SideBarEditForm />
             </UserHaveAssetProvider>
           </UserWebSocketProvider>
         </WebSocketProvider>
       </AuthProvider>
     </body>
-  </html>
+  </html >
   );
 }

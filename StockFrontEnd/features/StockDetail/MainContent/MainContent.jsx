@@ -178,9 +178,9 @@ export default function StockContent({stock}) {
 
 function MainContentForm() {
   return (
-    <div className="tw3v-1ftc7zl1" data-section-name="일별실시간시세">
+    <div className="tw3v-1ftc7zl1">
       <div className="tw3v-1ftc7zl2">
-        <div data-tossinvest-log="div" data-parent-name="MovablePanelHandle" style={{ cursor: "move", touchAction: "none", userSelect: "none" }} >
+        <div style={{ cursor: "move", touchAction: "none", userSelect: "none" }} >
           <div className="tw3v-1ftc7zl4" aria-label="패널 이동">
             <span className="rc5u-d3e6jc0 rc5u-d3e6jc2 rc5u-d3e6jc1" aria-hidden="false" role="presentation" style={{ "--standard-icon-size": "14px" }} >
               <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="line-icon">
@@ -193,9 +193,9 @@ function MainContentForm() {
         </div>
         <div className="tw3v-13vbc5y0"> 
           <div className="tw3v-pmssay6" aria-hidden="true"> 
-            <div role="tab" tabIndex={0} aria-disabled="false" aria-roledescription="sortable" aria-describedby="" aria-selected="true" className="tw3v-pmssay2" data-tab-id="bba3fb5f-b825-45bc-b69a-b3711c5d7ee8" data-selected="true" data-closable="true" data-tossinvest-log="PanelCompact.TabItem" data-contents-value="시세" data-content-tag="tab_label" data-parent-name="TabbedPanelHeader" data-clickable="true">
+            <div role="tab" tabIndex={0} aria-disabled="false" aria-roledescription="sortable" aria-describedby="" aria-selected="true" className="tw3v-pmssay2" data-tab-id="bba3fb5f-b825-45bc-b69a-b3711c5d7ee8" data-selected="true" data-closable="true">
               <span className="tw3v-pmssay3">시세</span>
-              <button type="button" data-tossinvest-log="slots.closeButton" data-parent-name="PanelTabItem" className="tw3v-pmssay4" aria-label="탭 닫기">
+              <button type="button" className="tw3v-pmssay4" aria-label="탭 닫기">
                 <span className="rc5u-d3e6jc0 rc5u-d3e6jc2 rc5u-d3e6jc1" aria-hidden="false" role="presentation" style={{ "--standard-icon-size": "14px" }}>
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="line-icon">
                     <path fill="#BOB8C1" fillRule="evenodd" d="M 13.815 12 l 5.651 -5.651 a 1.2 1.2 0 0 0 -1.697 -1.698 l -5.651 5.652 l -5.652 -5.652 a 1.201 1.201 0 0 0 -1.697 1.698 L 10.421 12 l -5.652 5.651 a 1.202 1.202 0 0 0 0.849 2.049 c 0.307 0 0.614 -0.117 0.848 -0.351 l 5.652 -5.652 l 5.651 5.652 a 1.198 1.198 0 0 0 1.697 0 a 1.2 1.2 0 0 0 0 -1.698 L 13.815 12z" />
@@ -205,9 +205,9 @@ function MainContentForm() {
             </div>
           </div>
           <div role="tablist" className="tw3v-pmssay0">
-            <div role="tab" tabIndex={0} aria-disabled="false" aria-roledescription="sortable" aria-describedby="DndDescribedBy-68" aria-selected="true" className="tw3v-pmssay2" data-tab-id="bba3fb5f-b825-45bc-b69a-b3711c5d7ee8" data-selected="true" data-closable="true" data-tossinvest-log="PanelCompact.TabItem" data-contents-value="시세" data-content-tag="tab_label" data-parent-name="TabbedPanelHeader" data-clickable="true">
+            <div role="tab" tabIndex={0} aria-disabled="false" aria-roledescription="sortable" aria-describedby="DndDescribedBy-68" aria-selected="true" className="tw3v-pmssay2" data-tab-id="bba3fb5f-b825-45bc-b69a-b3711c5d7ee8" data-selected="true" data-closable="true">
               <span className="tw3v-pmssay3">시세</span>
-              <button type="button" data-tossinvest-log="slots.closeButton" data-parent-name="PanelTabItem" className="tw3v-pmssay4" aria-label="탭 닫기">
+              <button type="button" className="tw3v-pmssay4" aria-label="탭 닫기">
                 <span className="rc5u-d3e6jc0 rc5u-d3e6jc2 rc5u-d3e6jc1" aria-hidden="false" role="presentation" style={{ "--standard-icon-size": "14px" }}>
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="line-icon">
                     <path fill="#BOB8C1" fillRule="evenodd" d="M13.815 12 l 5.651 -5.651 a 1.2 1.2 0 0 0 -1.697 -1.698 l -5.651 5.652 l -5.652 -5.652 a 1.201 1.201 0 0 0 -1.697 1.698 L 10.421 12 l -5.652 5.651 a 1.202 1.202 0 0 0 0.849 2.049 c 0.307 0 0.614 -0.117 0.848 -0.351 l 5.652 -5.652 l 5.651 5.652 a 1.198 1.198 0 0 0 1.697 0 a 1.2 1.2 0 0 0 0 -1.698 L 13.815 12z" />
@@ -219,7 +219,7 @@ function MainContentForm() {
           <div id="DndDescribedBy-68" style={{ display: "none" }}> </div>
           <div id="DndLiveRegion-68" role="status" aria-live="assertive" aria-atomic="true" style={{ position: "fixed", top: 0, left: 0, width: "1px", height: "1px", margin: "-1px", border: 0, padding: "0px", overflow: "hidden", clip: "rect(0px, 0px, 0px, 0px)", clipPath: "inset(100%)", whiteSpace: "nowrap" }}>
           </div>
-          <button className="tw3v-emtxt715 tw3v-emtxt7p tw3v-emtxt7t tw3v-emtxt710 tw3v-ta8c3h1" aria-disabled="false" aria-label="탭 추가" data-theme="grey" data-variant="clear" data-mode="dark" aria-haspopup="menu" aria-expanded="false" data-state="closed" data-tossinvest-log="DropdownMenu.Trigger" data-parent-name="TabbedPanelHeader" data-tossinvest-priority-log="Dropdown.Trigger" data-contents-value="탭 추가" data-content-tag="탭_추가">
+          <button className="tw3v-emtxt715 tw3v-emtxt7p tw3v-emtxt7t tw3v-emtxt710 tw3v-ta8c3h1" aria-disabled="false" aria-label="탭 추가" data-theme="grey" data-variant="clear" data-mode="dark" aria-haspopup="menu" aria-expanded="false" data-state="closed">
             <span className="tw3v-17xiat90 tw3v-17xiat91" aria-hidden="false" role="presentation" style={{ height: "14px", width: "14px", minWidth: "14px" }}>
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="line-icon">
                 <path fill="#BOB8C1" d="M 20.318 10.8 h -7 v -7 a 1.2 1.2 0 1 0 -2.4 0 v 7 h -7 a 1.2 1.2 0 1 0 0 2.4 h 7 v 7 a 1.2 1.2 0 1 0 2.4 0 v -7 h 7 a 1.2 1.2 0 1 0 0 -2.4" fillRule="evenodd" />
@@ -227,7 +227,7 @@ function MainContentForm() {
             </span>
           </button>
           <div className="tw3v-1y1hl1j1">
-            <button type="button" className="tw3v-1y1hl1j9" aria-haspopup="dialog" aria-expanded="false" aria-controls="radix-_r97d_" data-state="closed" data-tossinvest-log="RadixPopover.Trigger" data-contents-label="[object Object]" data-contents-label-code="child" data-parent-name="PopoverTrigger$1">
+            <button type="button" className="tw3v-1y1hl1j9" aria-haspopup="dialog" aria-expanded="false" aria-controls="radix-_r97d_" data-state="closed">
               <span className="tw3v-1y1hl1ja">0개 더보기</span>
               <span className="rc5u-d3e6jc0 rc5u-d3e6jc2 rc5u-d3e6jc1" aria-hidden="false" role="presentation" style={{ "--standard-icon-size": "14px" }}>
                 <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">

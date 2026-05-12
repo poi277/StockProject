@@ -8,7 +8,7 @@ export default function HeaderProfile({ onClose })
     return(
         <>
             <div data-radix-popper-content-wrapper style={{ position: "fixed", left: "0px", top: "0px", transform: "translate(1180px, 42px)", minWidth: "max-content", "--radix-popper-transform-origin": "100% 0px", zIndex: "auto", "--radix-popper-available-width": "1870px", "--radix-popper-available-height": "891px", "--radix-popper-anchor-width": "32px", "--radix-popper-anchor-height": "32px" }}>
-                <div data-side="bottom" data-align="end" data-state="open" role="dialog" id="radix-_r_a_" aria-labelledby="radix-_r_8_" aria-describedby="radix-_r_9_" className="tw3s-gduhvu0 tw3s-1h3jdxo4 tw3s-1h3jdxo7 tw3s-1h3jdxo5 _1gwjmki4" data-overlay-type="Popover" data-section-name="Popover__UserProfile" data-contents-label="profile" tabIndex={-1} style={{ "--tw3s-1h3jdxo0": "8px", "--radix-popover-content-transform-origin": "var(--radix-popper-transform-origin)", "--radix-popover-content-available-width": "var(--radix-popper-available-width)", "--radix-popover-content-available-height": "var(--radix-popper-available-height)", "--radix-popover-trigger-width": "var(--radix-popper-anchor-width)", "--radix-popover-trigger-height": "var(--radix-popper-anchor-height)", opacity: 1, transform: "none" }}>
+                <div data-side="bottom" data-align="end" data-state="open" role="dialog" id="radix-_r_a_" aria-labelledby="radix-_r_8_" aria-describedby="radix-_r_9_" className="tw3s-gduhvu0 tw3s-1h3jdxo4 tw3s-1h3jdxo7 tw3s-1h3jdxo5 _1gwjmki4" tabIndex={-1} style={{ "--tw3s-1h3jdxo0": "8px", "--radix-popover-content-transform-origin": "var(--radix-popper-transform-origin)", "--radix-popover-content-available-width": "var(--radix-popper-available-width)", "--radix-popover-content-available-height": "var(--radix-popper-available-height)", "--radix-popover-trigger-width": "var(--radix-popper-anchor-width)", "--radix-popover-trigger-height": "var(--radix-popper-anchor-height)", opacity: 1, transform: "none" }}>
                     <div className="_1gwjmki7">
                         <header className="_1gwjmki5">
                             <div className="_1gwjmki8">
@@ -41,8 +41,8 @@ export default function HeaderProfile({ onClose })
 
 function HeaderButton({ isLink, label, tag, onClick }) {
     return (
-        <button data-tossinvest-log="button" data-contents-value={label} data-content-tag={tag} className="ul8b8q2" role="menuitem" onClick={onClick}>
-            <div data-tossinvest-log="ListRow" data-contents-label={label} data-contents-label-code="title" data-contents-value={label} data-content-tag="title" className="tw3s-1e8fj1a2 tw3s-1e8fj1a0 tw3s-1e8fj1aj tw3s-1e8fj1ak ul8b8q3">
+        <button className="ul8b8q2" role="menuitem" onClick={onClick}>
+            <div className="tw3s-1e8fj1a2 tw3s-1e8fj1a0 tw3s-1e8fj1aj tw3s-1e8fj1ak ul8b8q3">
                 <div className="tw3s-1e8fj1a9">
                     <HeaderBar label={label} />
                     {isLink ? <HeaderLink /> : null}

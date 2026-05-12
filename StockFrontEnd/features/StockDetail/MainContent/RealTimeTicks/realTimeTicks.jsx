@@ -7,7 +7,7 @@ export default function RealTimeTicks({ stockCode }) {
   return (
     <div className="sa1m6r0">
       <div className="sa1m6r1">
-        <div className="ro36d1" data-section-name="종목상세__일별실시간시세" data-ignore-auto-section-prefix="true">
+        <div className="ro36d1">
 
           {/* 실시간/일별 탭 */}
           <div role="radiogroup" aria-required="false" dir="ltr"

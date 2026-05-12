@@ -1,8 +1,8 @@
 export default function AccountBenner() {
     return (
         <div className="_1oe23q54">
-            <div data-section-name="인텔리전스배너" data-ignore-auto-section-prefix="true">
-                <a data-tossinvest-log="Link" data-contents-label="[object Object]" data-contents-label-code="content" data-contents-value="asset intelligence banner" data-content-tag="asset_intelligence_banner" data-parent-name="AssetBanner" className="lyl4021" href="/stocks/A000660/order?modal=transfer-limit-document">
+            <div>
+                <a className="lyl4021" href="/stocks/A000660/order?modal=transfer-limit-document">
                     <div className="lyl4022">
                         <img alt="" loading="lazy" width="24" height="24" decoding="async" data-nimg="1" srcSet="https://images.tossinvest.com/https%3A%2F%2Fstatic.toss.im%2Ficons%2Fpng%2F4x%2Ficon-coin-yellow.png?width=32&height=32 1x, https://images.tossinvest.com/https%3A%2F%2Fstatic.toss.im%2Ficons%2Fpng%2F4x%2Ficon-coin-yellow.png?width=48&height=48 2x" src="https://images.tossinvest.com/https%3A%2F%2Fstatic.toss.im%2Ficons%2Fpng%2F4x%2Ficon-coin-yellow.png?width=48&height=48" style={{ color: "transparent" }} />
                     </div>
