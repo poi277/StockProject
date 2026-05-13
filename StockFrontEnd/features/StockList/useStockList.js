@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect, useState } from "react";
 import { useStocksSocket } from "../../util/websocket/useStocksSocket";
 import { useWebSocket } from "../../util/websocket/context/WebSocketContext";

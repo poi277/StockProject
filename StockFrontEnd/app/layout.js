@@ -10,7 +10,7 @@ import SideBarCancelForm from '../features/StockDetail/MainContent/Order/Cancel/
 import SideBarEditForm from '../features/StockDetail/MainContent/Order/Edit/SideBarEditForm';
 import Header from '../features/UI/Header';
 import SideBar from "../features/UI/SideBar/SideBar";
-
+import '../features/StockDetail/StockDetailForm.css'
 export default function RootLayout({ children }) {
   return (<html lang="ko" data-theme="dark" data-wts-theme="dark" className="tw3v-n7og3x0" style={{ colorScheme: 'dark' }} >
     <body
