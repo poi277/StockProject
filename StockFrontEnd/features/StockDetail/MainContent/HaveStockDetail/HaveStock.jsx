@@ -1,10 +1,11 @@
+import { getDiffColor } from '../../../../util/function/getDiffColor';
 import './HaveStock.css'
 import useHaveStock from './useHaveStock'
 
-export default function HaveStock({stockCode}) {
+export default function HaveStock({ stockCode }) {
 
     const { STOCK_INFO_ROWS, totalDiff, totalRate, stock } = useHaveStock({ stockCode });
-    
+
     return (
         <div className="sa1m6r0" style={{ overflow: "auto" }}>
             <div className="sa1m6r1">
@@ -14,7 +15,15 @@ export default function HaveStock({stockCode}) {
                             <div style={{ display: "flex", flexFlow: "wrap", gap: "8px", justifyContent: "space-between", alignItems: "normal", padding: "4px" }}>
                                 <h3 className="tw6g-1r5dc8g0 _60z0ev1 _60z0ev2 _60z0ev0" style={{ padding: "0px 4px", "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey700)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
                                     총 수익
-                                    <span className="tw6g-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-bold)", "--tds-wts-foreground-color": totalDiff >= 0 ? "var(--wts-adaptive-red500)" : "var(--wts-adaptive-blue500)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
+                                    <span
+                                        className="tw6g-1r5dc8g0"
+                                        style={{
+                                            "--tds-wts-font-weight": "var(--tw-font-weight-bold)",
+                                            "--tds-wts-foreground-color": getDiffColor(totalDiff),
+                                            "--tds-wts-line-height": "1.45",
+                                            "--tds-wts-font-size": "14px"
+                                        }}
+                                    >
                                         {" " + (totalDiff > 0 ? "+" : "") + totalDiff.toLocaleString() + "원 (" + totalRate + "%)"}
                                     </span>
                                 </h3>

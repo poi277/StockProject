@@ -228,13 +228,13 @@ public class OrderTradeService {
 
 	public void updateCurrentCandle(String stockCode, MatchingResult result) {
 		Integer currentPrice = result.getLastExecutionPrice();
-		int filledQty = result.getTotalFilledQty();
 		LocalDateTime lastExecutiontime = result.getLastExecutionTime();
+
 		if (currentPrice != null && currentPrice > 0 && lastExecutiontime != null) {
-			candleService.updateCandle(stockCode, currentPrice, filledQty, lastExecutiontime);
+			candleService.saveCandleOrder(stockCode, currentPrice, result.getBuyFilledQty(),
+					result.getSellFilledQty(), result.getTotalTradeAmount(), lastExecutiontime);
 		}
 	}
-
 	public void saveEditOrders(MatchingResult result, Order incomingOrder) {
 		boolean incomingIsBot = isBot(incomingOrder.getUserId());
 		if (!result.getCompletedResting().isEmpty()) {

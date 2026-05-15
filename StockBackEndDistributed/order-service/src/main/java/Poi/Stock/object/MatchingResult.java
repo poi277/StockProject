@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 import Poi.Stock.features.Order.Order;
+import Poi.Stock.util.EnumUtil.tradeType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -49,5 +50,19 @@ public class MatchingResult {
 		if (executions.isEmpty())
 			return null;
 		return executions.get(executions.size() - 1).getChangeRate();
+	}
+
+	public int getBuyFilledQty() {
+		return executions.stream().filter(e -> e.getTradeType() == tradeType.BUY).mapToInt(TradeExecution::getQuantity)
+				.sum();
+	}
+
+	public int getSellFilledQty() {
+		return executions.stream().filter(e -> e.getTradeType() == tradeType.SELL).mapToInt(TradeExecution::getQuantity)
+				.sum();
+	}
+
+	public long getTotalTradeAmount() {
+		return executions.stream().mapToLong(e -> (long) e.getPrice() * e.getQuantity()).sum();
 	}
 }

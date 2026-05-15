@@ -7,7 +7,7 @@ export default function useOrderSell(selectedPrice, stockCode,tradeTypeTab,price
     const [sellPrice,setSellPrice] = useState("")
     // 호가창 price 선택 시 현재 tradeType의 price에 반영 (BUY/SELL만)
     useEffect(() => {
-        if (selectedPrice != null && tradeTypeTab=='BUY') {
+        if (selectedPrice != null && tradeTypeTab=='SELL') {
             setSellPrice(selectedPrice.toLocaleString('ko-KR'));
         }
     }, [selectedPrice]);

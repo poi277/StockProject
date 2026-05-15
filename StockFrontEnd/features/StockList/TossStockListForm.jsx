@@ -1,8 +1,7 @@
 'use client'
 
 import './StockList.css'
-import { useStockList } from './useStockList'
-
+import { formatPrice, formatChangeRate, formatValue, getChangeColor, useStockList } from './useStockList'
 export default function TossStockList() {
 
     return (
@@ -25,7 +24,7 @@ export default function TossStockList() {
 
 function StockMainForm() {
 
-    const {stocks} = useStockList()
+    const { stocklist } = useStockList()
 
     return (
         <div className="_2luxl21" style={{ display: 'flex', flexDirection: 'column', gap: '0px', justifyContent: 'normal', alignItems: 'normal' }}  >
@@ -48,7 +47,7 @@ function StockMainForm() {
                         <div style={{ flex: '0 0 auto', height: '8px' }}></div>
                     </div>
                     <div className="_1vjo0mn0">
-                        <LiveChartList stocks={stocks}/>
+                        <LiveChartList stocklist={stocklist} />
 
                         <LiveChartListSide />
                     </div>
@@ -58,8 +57,26 @@ function StockMainForm() {
     )
 }
 
-function LiveChartList({stocks}) {
+const TABLE_COLUMNS = [
+    { className: '_5x01f0', width: '268.859px', wrapClass: 'tw6g-kvawo25', align: null, label: <span className="tw6g-1r5dc8g0" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-grey600)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '14px' }}>순위 · 오늘 18:40 기준</span> },
+    { className: '_5x01f1', width: '134.422px', wrapClass: 'tw6g-kvawo27', align: 'right', label: '현재가' },
+    { className: '_5x01f2', width: '145.625px', wrapClass: 'tw6g-kvawo27', align: 'right', label: '등락률' },
+    { className: '_5x01f3', width: '134.422px', wrapClass: 'tw6g-kvawo27', align: 'right', label: <span className="tw6g-1r5dc8g0" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-bold)', '--tds-wts-foreground-color': 'var(--wts-adaptive-grey800)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '14px' }}>거래대금 순</span> },
+    { className: '_5x01f5', width: '154.594px', wrapClass: 'tw6g-kvawo27', align: null, label: <>토스증권 거래 비율<span className="t00n7r0" data-state="closed" data-tossinvest-priority-log="Tooltip.Trigger" data-contents-value="툴팁" data-content-tag="툴팁" data-parent-name="QuestionmarkTooltip" style={{ width: '0.9em' }} /></> },
+    { className: '_5x01f6', width: '179.266px', wrapClass: 'tw6g-kvawo27', align: null, label: <>토스증권 AI 요약<span className="t00n7r0" data-state="closed" data-tossinvest-priority-log="Tooltip.Trigger" data-contents-value="툴팁" data-content-tag="툴팁" data-parent-name="QuestionmarkTooltip" style={{ width: '0.9em' }}><svg xmlns="http://www.w3.org/2000/svg" viewBox="143 -1757 2014 2014" style={{ width: '1em' }}><path shapeRendering="geometricPrecision" d="M645 121.5Q414-14 278.5-245T143-750 278.5-1255 645-1621.5 1150-1757 1655-1621.5 2021.5-1255 2157-750 2021.5-245 1655 121.5 1150 257 645 121.5ZM1590 8.5Q1786-104 1898-303T2010-750 1898-1197 1590-1508.5 1150-1621 710-1508.5 402-1197 290-750 402-303 710 8.5 1150 121 1590 8.5ZM1078-761.5Q1102-801 1169-844 1233-881 1260.5-917.5T1288-1005Q1288-1061 1246-1099.5T1135-1138Q1068-1138 1023.5-1102T973-1008H820Q828-1081 872.5-1140.5T987-1234 1139-1268Q1227-1268 1295-1234T1401-1141 1439-1009Q1439-930 1403.5-870.5T1291-761Q1249-736 1230.5-720.5T1204.5-688 1197-642V-550H1054V-657Q1054-722 1078-761.5ZM1051.5-279.5Q1021-310 1021-354T1051.5-428.5 1125-459Q1169-459 1200-428.5T1231-354 1200-279.5 1125-249Q1082-249 1051.5-279.5Z" fill="currentColor" /></svg></span></> },
+]
 
+const HIDDEN_TD_STYLE = {
+    height: '37px',
+    padding: '0px',
+    borderWidth: 'medium',
+    borderStyle: 'none',
+    borderColor: 'currentColor',
+    borderImage: 'initial',
+    visibility: 'hidden',
+}
+
+function LiveChartList({ stocklist }) {
     return (
         <>
             <div className="_1vjo0mn1" data-section-name="실시간차트">
@@ -70,166 +87,119 @@ function LiveChartList({stocks}) {
                             <table className="tw6g-kvawo28 tw6g-kvawo29 tw6g-kvawo2b tw6g-kvawo2e _15ndk3s1" data-section-name="토스증권 거래대금">
                                 <thead className="tw6g-4pu5o90 fpyfvc1" data-tabster='{"mover":{"cyclic":false,"direction":2,"memorizeCurrent":true}}' style={{ position: 'absolute', top: '0px' }}>
                                     <tr className="auto-zebra-pattern">
-                                        <th className="tw6g-1apn5az0 fpyfvc0 _5x01f0" style={{ width: '268.859px', minWidth: '268.859px', maxWidth: '268.859px' }}>
-                                            <div className="tw6g-1apn5az2 tw6g-1apn5az1 tw6g-1apn5az4 tw6g-kvawo25">
-                                                <div className="tw6g-1apn5azd">
-                                                    <span className="tw6g-1r5dc8g0" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-grey600)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '14px' }}>
-                                                        순위 · 오늘 18:40 기준
-                                                    </span>
+                                        {TABLE_COLUMNS.map((col) => (
+                                            <th key={col.className} className={`tw6g-1apn5az0 fpyfvc0 ${col.className}`} style={{ width: col.width, minWidth: col.width, maxWidth: col.width }}>
+                                                <div className={`tw6g-1apn5az2 tw6g-1apn5az1 tw6g-1apn5az4 ${col.wrapClass}`}>
+                                                    <div className="tw6g-1apn5azd" style={col.align ? { textAlign: col.align } : undefined}>
+                                                        {col.label}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </th>
-
-                                        {/* 현재가 영역 */}
-                                        <th className="tw6g-1apn5az0 fpyfvc0 _5x01f1" style={{ width: '134.422px', minWidth: '134.422px', maxWidth: '134.422px' }}>
-                                            <div className="tw6g-1apn5az2 tw6g-1apn5az1 tw6g-1apn5az4 tw6g-kvawo27">
-                                                <div className="tw6g-1apn5azd" style={{ textAlign: 'right' }}>현재가</div>
-                                            </div>
-                                        </th>
-
-                                        {/* 등락률 영역 */}
-                                        <th className="tw6g-1apn5az0 fpyfvc0 _5x01f2" style={{ width: '145.625px', minWidth: '145.625px', maxWidth: '145.625px' }}>
-                                            <div className="tw6g-1apn5az2 tw6g-1apn5az1 tw6g-1apn5az4 tw6g-kvawo27">
-                                                <div className="tw6g-1apn5azd" style={{ textAlign: 'right' }}>등락률</div>
-                                            </div>
-                                        </th>
-
-                                        {/* 거래대금 순 영역 */}
-                                        <th className="tw6g-1apn5az0 fpyfvc0 _5x01f3" style={{ width: '134.422px', minWidth: '134.422px', maxWidth: '134.422px' }}>
-                                            <div className="tw6g-1apn5az2 tw6g-1apn5az1 tw6g-1apn5az4 tw6g-kvawo27">
-                                                <div className="tw6g-1apn5azd" style={{ textAlign: 'right' }}>
-                                                    <span className="tw6g-1r5dc8g0" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-bold)', '--tds-wts-foreground-color': 'var(--wts-adaptive-grey800)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '14px' }}>
-                                                        거래대금 순
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </th>
-
-                                        {/* 토스증권 거래 비율 영역 */}
-                                        <th className="tw6g-1apn5az0 fpyfvc0 _5x01f5" style={{ width: '154.594px', minWidth: '154.594px', maxWidth: '154.594px' }}>
-                                            <div className="tw6g-1apn5az2 tw6g-1apn5az1 tw6g-1apn5az4 tw6g-kvawo27">
-                                                <div className="tw6g-1apn5azd">
-                                                    토스증권 거래 비율
-                                                    <span className="t00n7r0" data-state="closed" data-tossinvest-priority-log="Tooltip.Trigger" data-contents-value="툴팁" data-content-tag="툴팁" data-parent-name="QuestionmarkTooltip" style={{ width: '0.9em' }}></span>
-                                                </div>
-                                            </div>
-                                        </th>
-                                        <th className="tw6g-1apn5az0 fpyfvc0 _5x01f6" style={{ width: '179.266px', minWidth: '179.266px', maxWidth: '179.266px' }}>
-                                            <div className="tw6g-1apn5az2 tw6g-1apn5az1 tw6g-1apn5az4 tw6g-kvawo27">
-                                                <div className="tw6g-1apn5azd">
-                                                    토스증권 AI 요약
-                                                    <span className="t00n7r0" data-state="closed" data-tossinvest-priority-log="Tooltip.Trigger" data-contents-value="툴팁" data-content-tag="툴팁" data-parent-name="QuestionmarkTooltip" style={{ width: '0.9em' }}>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="143 -1757 2014 2014" style={{ width: '1em' }}>
-                                                            <path shapeRendering="geometricPrecision" d="M645 121.5Q414-14 278.5-245T143-750 278.5-1255 645-1621.5 1150-1757 1655-1621.5 2021.5-1255 2157-750 2021.5-245 1655 121.5 1150 257 645 121.5ZM1590 8.5Q1786-104 1898-303T2010-750 1898-1197 1590-1508.5 1150-1621 710-1508.5 402-1197 290-750 402-303 710 8.5 1150 121 1590 8.5ZM1078-761.5Q1102-801 1169-844 1233-881 1260.5-917.5T1288-1005Q1288-1061 1246-1099.5T1135-1138Q1068-1138 1023.5-1102T973-1008H820Q828-1081 872.5-1140.5T987-1234 1139-1268Q1227-1268 1295-1234T1401-1141 1439-1009Q1439-930 1403.5-870.5T1291-761Q1249-736 1230.5-720.5T1204.5-688 1197-642V-550H1054V-657Q1054-722 1078-761.5ZM1051.5-279.5Q1021-310 1021-354T1051.5-428.5 1125-459Q1169-459 1200-428.5T1231-354 1200-279.5 1125-249Q1082-249 1051.5-279.5Z" fill="currentColor"></path>
-                                                        </svg>
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </th>
+                                            </th>
+                                        ))}
                                     </tr>
                                 </thead>
                                 <tbody data-tabster='{"mover":{"cyclic":false,"direction":3,"memorizeCurrent":true}}' style={{ '--m3gzbu0': '50.75px' }}>
+                                    {/* 레이아웃용 숨김 행 */}
                                     <tr aria-hidden="true">
-                                        <td className="_5x01f0" style={{ height: '37px', padding: '0px', borderWidth: 'medium', borderStyle: 'none', borderColor: 'currentColor', borderImage: 'initial', visibility: 'hidden' }}></td>
-                                        <td className="_5x01f1" style={{ height: '37px', padding: '0px', borderWidth: 'medium', borderStyle: 'none', borderColor: 'currentColor', borderImage: 'initial', visibility: 'hidden' }}></td>
-                                        <td className="_5x01f2" style={{ height: '37px', padding: '0px', borderWidth: 'medium', borderStyle: 'none', borderColor: 'currentColor', borderImage: 'initial', visibility: 'hidden' }}></td>
-                                        <td className="_5x01f3" style={{ height: '37px', padding: '0px', borderWidth: 'medium', borderStyle: 'none', borderColor: 'currentColor', borderImage: 'initial', visibility: 'hidden' }}></td>
-                                        <td className="_5x01f5" style={{ height: '37px', padding: '0px', borderWidth: 'medium', borderStyle: 'none', borderColor: 'currentColor', borderImage: 'initial', visibility: 'hidden' }}></td>
-                                        <td className="_5x01f6" style={{ height: '37px', padding: '0px', borderWidth: 'medium', borderStyle: 'none', borderColor: 'currentColor', borderImage: 'initial', visibility: 'hidden' }}></td>
+                                        {TABLE_COLUMNS.map((col) => (
+                                            <td key={col.className} className={col.className} style={HIDDEN_TD_STYLE} />
+                                        ))}
                                     </tr>
 
                                     {/* 실제 데이터 행 */}
-                                    <tr className="tw6g-1s07rpw0 yozeuq0" data-tossinvest-log="AnimatedRankingListRow" data-contents-value="워크 메디컬 테크놀로지 그룹" data-content-tag="product_name" data-parent-name="RankingRow">
-                                        <td className="tw6g-mq48z20 _1cblj813 _5x01f0" data-tabster='{"groupper":{},"focusable":{}}'>
-                                            <i tabIndex="0" role="none" data-tabster-dummy="" aria-hidden="true" style={{ position: 'fixed', height: '1px', width: '1px', opacity: 0.001, zIndex: -1, contentVisibility: 'hidden', top: '0px', left: '0px' }}></i>
-                                            <a data-tossinvest-log="Link" data-contents-value="안텔로페 엔터프라이즈 홀딩스" data-content-tag="product_name" data-parent-name="AnimatedRankingListRow" className="tw6g-mq48z22 tw6g-kvawo25 tw6g-mq48z2a" href="/stocks/US20201015001/order">
-                                                <div className="tw6g-mq48z23">
-                                                    <div className="tw6g-1e8fj1ar">
-                                                        <button className="tw6g-emtxt715 tw6g-emtxt7p tw6g-emtxt7u tw6g-emtxt710 tw6g-emtxt716 _1ejaul80 _1cblj811" type="button" aria-disabled="false" aria-label="관심종목설정하기" data-theme="grey" data-variant="clear" data-mode="dark" data-tossinvest-log="ListRow.IconButton" data-contents-label="안텔로페 엔터프라이즈 홀딩스" data-contents-value="안텔로페 엔터프라이즈 홀딩스" data-content-tag="productName">
-                                                            <span className="tw6g-17xiat90 tw6g-17xiat91" aria-hidden="false" role="presentation" style={{ height: '14px', width: '14px', minWidth: '14px' }}>
-                                                                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                                    <path d="m22.223 5.572c-1.107-1.842-2.963-2.94-4.966-2.94-2.969 0-4.549 1.865-5.257 3.062-.708-1.197-2.288-3.062-5.257-3.062-2.003 0-3.858 1.099-4.966 2.94-1.329 2.211-1.317 5.047.031 7.586 1.973 3.714 6.359 6.977 8.798 8.59.424.28.908.421 1.394.421s.97-.141 1.394-.421c2.438-1.613 6.825-4.876 8.798-8.59 1.349-2.539 1.36-5.375.031-7.586z" fill='#b0b8c1' />
-                                                                </svg>
+                                    {stocklist.map((stocklist, index) => {
+                                        const href = `/stock/${stocklist.stock.stockCode}`
+
+                                        return (
+                                            <tr key={stocklist.stock.stockCode} className="tw6g-1s07rpw0 yozeuq0" data-tossinvest-log="AnimatedRankingListRow" data-contents-value={stocklist.stock.stockName} data-content-tag="product_name" data-parent-name="RankingRow">
+                                                <td className="tw6g-mq48z20 _1cblj813 _5x01f0" data-tabster='{"groupper":{},"focusable":{}}'>
+                                                    <i tabIndex="0" role="none" data-tabster-dummy="" aria-hidden="true" style={{ position: 'fixed', height: '1px', width: '1px', opacity: 0.001, zIndex: -1, contentVisibility: 'hidden', top: '0px', left: '0px' }} />
+                                                    <a data-tossinvest-log="Link" data-contents-value={stocklist.stock.stockName} data-content-tag="product_name" data-parent-name="AnimatedRankingListRow" className="tw6g-mq48z22 tw6g-kvawo25 tw6g-mq48z2a" href={href}>
+                                                        <div className="tw6g-mq48z23">
+                                                            <div className="tw6g-1e8fj1ar">
+                                                                <button className="tw6g-emtxt715 tw6g-emtxt7p tw6g-emtxt7u tw6g-emtxt710 tw6g-emtxt716 _1ejaul80 _1cblj811" type="button" aria-disabled="false" aria-label="관심종목설정하기" data-theme="grey" data-variant="clear" data-mode="dark" data-tossinvest-log="ListRow.IconButton" data-contents-label={stocklist.stock.stockName} data-contents-value={stocklist.stock.stockName} data-content-tag="productName">
+                                                                    <span className="tw6g-17xiat90 tw6g-17xiat91" aria-hidden="false" role="presentation" style={{ height: '14px', width: '14px', minWidth: '14px' }}>
+                                                                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                            <path d="m22.223 5.572c-1.107-1.842-2.963-2.94-4.966-2.94-2.969 0-4.549 1.865-5.257 3.062-.708-1.197-2.288-3.062-5.257-3.062-2.003 0-3.858 1.099-4.966 2.94-1.329 2.211-1.317 5.047.031 7.586 1.973 3.714 6.359 6.977 8.798 8.59.424.28.908.421 1.394.421s.97-.141 1.394-.421c2.438-1.613 6.825-4.876 8.798-8.59 1.349-2.539 1.36-5.375.031-7.586z" fill='#b0b8c1' />
+                                                                        </svg>
+                                                                    </span>
+                                                                </button>
+                                                            </div>
+                                                            <span className="tw6g-7u17ff0 _1cblj812">
+                                                                <span className="tw6g-1r5dc8g0" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'inherit', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '15px' }}>{index + 1}</span>
                                                             </span>
-                                                        </button>
-                                                    </div>
-                                                    <span className="tw6g-7u17ff0 _1cblj812">
-                                                        <span className="tw6g-1r5dc8g0" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'inherit', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '15px' }}>1</span>
-                                                    </span>
-                                                    <div data-nosnippet="true" className="favgr63 favgr60">
-                                                        <div className="c3f3of0 favgr6c favgr69">
-                                                            <img alt="logo" loading="lazy" width="30" height="30" decoding="async" data-nimg="1" srcSet="https://images.tossinvest.com/... 1x, https://images.tossinvest.com/... 2x" src="https://images.tossinvest.com/..." style={{ color: 'transparent' }} />
+                                                            <div data-nosnippet="true" className="favgr63 favgr60">
+                                                                <div className="c3f3of0 favgr6c favgr69">
+                                                                    <img alt="logo" loading="lazy" width="30" height="30" decoding="async" src={`https://images.tossinvest.com/...`} style={{ color: 'transparent' }} />
+                                                                </div>
+                                                                <span className="favgr6u favgr6r favgr6q" />
+                                                            </div>
                                                         </div>
-                                                        <span className="favgr6u favgr6r favgr6q"></span>
-                                                    </div>
-                                                </div>
-                                                <div className="tw6g-mq48z2h">
-                                                    <span className="tw6g-1r5dc8g0 _1cblj810 _60z0ev1 _60z0ev2 _60z0ev0" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-semibold)', '--tds-wts-foreground-color': 'var(--wts-adaptive-grey800)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '15px' }}>안텔로페 엔터프라이즈 홀딩스</span>
-                                                </div>
-                                            </a>
-                                            <i tabIndex="0" role="none" data-tabster-dummy="" aria-hidden="true" style={{ position: 'fixed', height: '1px', width: '1px', opacity: 0.001, zIndex: -1, contentVisibility: 'hidden', top: '0px', left: '0px' }}></i>
-                                        </td>
-                                        <td className="tw6g-mq48z20 _1p5yqoh0 _5x01f1">
-                                            <a data-tossinvest-log="Link" data-contents-value="이오스 에너지 엔터프라이지스" data-content-tag="product_name" data-parent-name="AnimatedRankingListRow" className="tw6g-mq48z22 tw6g-kvawo27 tw6g-mq48z2a" href="/stocks/US20201117002/order">
-                                                <div className="tw6g-mq48z2h">
-                                                    <span className="tw6g-1r5dc8g0" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-grey800)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '15px' }}>
-                                                        <span className="_1p5yqoh0">15,837원</span>
-                                                    </span>
-                                                </div>
-                                            </a>
-                                        </td>
-                                        <td className="tw6g-mq48z20 _1p5yqoh0 _5x01f2">
-                                            <a data-tossinvest-log="Link" data-contents-value="이오스 에너지 엔터프라이지스" data-content-tag="product_name" data-parent-name="AnimatedRankingListRow" className="tw6g-mq48z22 tw6g-kvawo27 tw6g-mq48z2a" href="/stocks/US20201117002/order">
-                                                <div className="tw6g-mq48z2h">
-                                                    <div className="_14c0oc30">
-                                                        <span className="tw6g-1r5dc8g0" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-grey800)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '15px' }}>
-                                                            <span className="_1p5yqoh0" style={{ color: 'var(--wts-adaptive-red500)' }}>+31.72%</span>
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </td>
-                                        <td className="tw6g-mq48z20 _1p5yqoh0 _5x01f3">
-                                            <a data-tossinvest-log="Link" data-contents-value="이오스 에너지 엔터프라이지스" data-content-tag="product_name" data-parent-name="AnimatedRankingListRow" className="tw6g-mq48z22 tw6g-kvawo27 tw6g-mq48z2a" href="/stocks/US20201117002/order">
-                                                <div className="tw6g-mq48z2h">
-                                                    <span className="tw6g-1r5dc8g0" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-grey800)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '15px' }}>
-                                                        15,793원
-                                                    </span>
-                                                </div>
-                                            </a>
-                                        </td>
-                                        <td className="tw6g-mq48z20 _5x01f5">
-                                            <a data-tossinvest-log="Link" data-contents-value="이오스 에너지 엔터프라이지스" data-content-tag="product_name" data-parent-name="AnimatedRankingListRow" className="tw6g-mq48z22 tw6g-kvawo27 tw6g-mq48z2a" href="/stocks/US20201117002/order">
-                                                <div className="tw6g-mq48z2h">
-                                                    <div className="_6ivj9p0">
-                                                        <div className="_6ivj9p1">
-                                                            <div className="_6ivj9p2" style={{ backgroundColor: 'var(--wts-adaptive-blue100)', width: '45px' }}></div>
-                                                            <div className="_6ivj9p2" style={{ backgroundColor: 'var(--wts-adaptive-red600)', width: '55px' }}></div>
+                                                        <div className="tw6g-mq48z2h">
+                                                            <span className="tw6g-1r5dc8g0 _1cblj810 _60z0ev1 _60z0ev2 _60z0ev0" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-semibold)', '--tds-wts-foreground-color': 'var(--wts-adaptive-grey800)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '15px' }}>{stocklist.stock.stockName}</span>
                                                         </div>
-                                                        <div className="_6ivj9p1">
-                                                            <span className="tw6g-1r5dc8g0" style={{ textAlign: 'start', '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-blue600)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '12px' }}>45</span>
-                                                            <span className="tw6g-1r5dc8g0" style={{ textAlign: 'end', '--tds-wts-font-weight': 'var(--tw-font-weight-regular)', '--tds-wts-foreground-color': 'var(--wts-adaptive-red600)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '12px' }}>55</span>
+                                                    </a>
+                                                    <i tabIndex="0" role="none" data-tabster-dummy="" aria-hidden="true" style={{ position: 'fixed', height: '1px', width: '1px', opacity: 0.001, zIndex: -1, contentVisibility: 'hidden', top: '0px', left: '0px' }} />
+                                                </td>
+                                                <td className="tw6g-mq48z20 _1p5yqoh0 _5x01f1">
+                                                    <a data-tossinvest-log="Link" data-contents-value={stocklist.stockName} data-content-tag="product_name" data-parent-name="AnimatedRankingListRow" className="tw6g-mq48z22 tw6g-kvawo27 tw6g-mq48z2a" href={href}>
+                                                        <div className="tw6g-mq48z2h">
+                                                            <span className="tw6g-1r5dc8g0" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-grey800)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '15px' }}>
+                                                                <span className="_1p5yqoh0">{formatPrice(stocklist.stock.closePrice)}</span>
+                                                            </span>
                                                         </div>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </td>
-                                        <td className="tw6g-mq48z20 _5x01f6">
-                                            <a data-tossinvest-log="Link" data-contents-value="네비우스 그룹" data-content-tag="product_name" data-parent-name="AnimatedRankingListRow" className="tw6g-mq48z22 tw6g-kvawo27 tw6g-mq48z2a" href="/stocks/US20110524001/order">
-                                                <div className="tw6g-mq48z2h">
-                                                    <span className="tw6g-1r5dc8g0" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-grey800)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '14px' }}>
-                                                        AI 연구팀 인수
-                                                    </span>
-                                                </div>
-                                            </a>
-                                        </td>
-                                    </tr>
+                                                    </a>
+                                                </td>
+                                                <td className="tw6g-mq48z20 _1p5yqoh0 _5x01f2">
+                                                    <a data-tossinvest-log="Link" data-contents-value={stocklist.stock.stockName} data-content-tag="product_name" data-parent-name="AnimatedRankingListRow" className="tw6g-mq48z22 tw6g-kvawo27 tw6g-mq48z2a" href={href}>
+                                                        <div className="tw6g-mq48z2h">
+                                                            <div className="_14c0oc30">
+                                                                <span className="tw6g-1r5dc8g0" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-grey800)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '15px' }}>
+                                                                    <span className="_1p5yqoh0" style={{ color: getChangeColor(stocklist.stock.changeRate) }}>{formatChangeRate(stocklist.stock.changeRate)}</span>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </a>
+                                                </td>
+                                                <td className="tw6g-mq48z20 _1p5yqoh0 _5x01f3">
+                                                    <a data-tossinvest-log="Link" data-contents-value={stocklist.stockName} data-content-tag="product_name" data-parent-name="AnimatedRankingListRow" className="tw6g-mq48z22 tw6g-kvawo27 tw6g-mq48z2a" href={href}>
+                                                        <div className="tw6g-mq48z2h">
+                                                            <span className="tw6g-1r5dc8g0" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-grey800)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '15px' }}>
+                                                                {formatValue(stocklist.stock.value)}
+                                                            </span>
+                                                        </div>
+                                                    </a>
+                                                </td>
+                                                <td className="tw6g-mq48z20 _5x01f5">
+                                                    <a data-tossinvest-log="Link" data-contents-value={stocklist.stockName} data-content-tag="product_name" data-parent-name="AnimatedRankingListRow" className="tw6g-mq48z22 tw6g-kvawo27 tw6g-mq48z2a" href={href}>
+                                                        <div className="tw6g-mq48z2h">
+                                                            <div className="_6ivj9p0">
+                                                                <div className="_6ivj9p1">
+                                                                    <div className="_6ivj9p2" style={{ backgroundColor: 'var(--wts-adaptive-blue100)', width: '45px' }} />
+                                                                    <div className="_6ivj9p2" style={{ backgroundColor: 'var(--wts-adaptive-red600)', width: '55px' }} />
+                                                                </div>
+                                                                <div className="_6ivj9p1">
+                                                                    <span className="tw6g-1r5dc8g0" style={{ textAlign: 'start', '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-blue600)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '12px' }}>45</span>
+                                                                    <span className="tw6g-1r5dc8g0" style={{ textAlign: 'end', '--tds-wts-font-weight': 'var(--tw-font-weight-regular)', '--tds-wts-foreground-color': 'var(--wts-adaptive-red600)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '12px' }}>55</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </a>
+                                                </td>
+                                                <td className="tw6g-mq48z20 _5x01f6">
+                                                    <a data-tossinvest-log="Link" data-contents-value={stocklist.stockName} data-content-tag="product_name" data-parent-name="AnimatedRankingListRow" className="tw6g-mq48z22 tw6g-kvawo27 tw6g-mq48z2a" href={href}>
+                                                        <div className="tw6g-mq48z2h" />
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
-                <div style={{ flex: '0 0 auto', height: '200px' }}></div>
+                <div style={{ flex: '0 0 auto', height: '200px' }} />
             </div>
         </>
     )
@@ -336,30 +306,30 @@ function StockDangerListFilter() {
 }
 
 function StockMainTab() {
-  const tabs = [
-    { id: 'realtime_chart', label: '실시간 차트' },
-    { id: 'trending_category', label: '지금 뜨는 카테고리' }
-  ];
-  const activeTab = 'realtime_chart';
+    const tabs = [
+        { id: 'realtime_chart', label: '실시간 차트' },
+        { id: 'trending_category', label: '지금 뜨는 카테고리' }
+    ];
+    const activeTab = 'realtime_chart';
 
-  return (
-    <div dir="ltr" data-orientation="horizontal" className="tw6g-336bzic tw6g-336bzie" style={{ padding: '0px 8px' }} data-section-name="메인탭">
-      <div className="tw6g-336bzix">
-        <div role="tablist" aria-orientation="horizontal" className="tw6g-336bzih" tabIndex="0" data-orientation="horizontal" style={{ outline: 'none' }} data-scrollable="false">
-          <div className="tw6g-336bziw tw6g-336bziu" style={{ width: '68px', transform: 'none' }}></div>
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button key={tab.id} type="button" role="tab" aria-selected={isActive} aria-controls={`radix-_r7b7_-content-${tab.id}`} data-state={isActive ? "active" : "inactive"} id={`radix-_r7b7_-trigger-${tab.id}`} data-tossinvest-log="Tab.Item" data-contents-value={tab.label} data-content-tag="category_label" className="tw6g-336bzit tw6g-336bzil tw6g-336bzir" data-tds-wts-tab-fit="" tabIndex="-1" data-orientation="horizontal" data-radix-collection-item="">
-                <div style={{ position: 'relative' }}>
-                  <span className="tw6g-1r5dc8g0 tw6g-336bzij tw6g-336bzii tw6g-336bziy" aria-hidden="true" data-tds-wts-tab-item="false" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-semibold)', '--tds-wts-foreground-color': 'var(--wts-adaptive-greyOpacity800)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '15px' }}>{tab.label}</span>
-                  <span className="tw6g-1r5dc8g0 tw6g-336bzij tw6g-336bzii" data-tds-wts-tab-item={isActive ? "true" : "false"} style={{ '--tds-wts-font-weight': isActive ? 'var(--tw-font-weight-semibold)' : 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-greyOpacity800)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '15px' }}>{tab.label}</span>
+    return (
+        <div dir="ltr" data-orientation="horizontal" className="tw6g-336bzic tw6g-336bzie" style={{ padding: '0px 8px' }} data-section-name="메인탭">
+            <div className="tw6g-336bzix">
+                <div role="tablist" aria-orientation="horizontal" className="tw6g-336bzih" tabIndex="0" data-orientation="horizontal" style={{ outline: 'none' }} data-scrollable="false">
+                    <div className="tw6g-336bziw tw6g-336bziu" style={{ width: '68px', transform: 'none' }}></div>
+                    {tabs.map((tab) => {
+                        const isActive = activeTab === tab.id;
+                        return (
+                            <button key={tab.id} type="button" role="tab" aria-selected={isActive} aria-controls={`radix-_r7b7_-content-${tab.id}`} data-state={isActive ? "active" : "inactive"} id={`radix-_r7b7_-trigger-${tab.id}`} data-tossinvest-log="Tab.Item" data-contents-value={tab.label} data-content-tag="category_label" className="tw6g-336bzit tw6g-336bzil tw6g-336bzir" data-tds-wts-tab-fit="" tabIndex="-1" data-orientation="horizontal" data-radix-collection-item="">
+                                <div style={{ position: 'relative' }}>
+                                    <span className="tw6g-1r5dc8g0 tw6g-336bzij tw6g-336bzii tw6g-336bziy" aria-hidden="true" data-tds-wts-tab-item="false" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-semibold)', '--tds-wts-foreground-color': 'var(--wts-adaptive-greyOpacity800)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '15px' }}>{tab.label}</span>
+                                    <span className="tw6g-1r5dc8g0 tw6g-336bzij tw6g-336bzii" data-tds-wts-tab-item={isActive ? "true" : "false"} style={{ '--tds-wts-font-weight': isActive ? 'var(--tw-font-weight-semibold)' : 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-greyOpacity800)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '15px' }}>{tab.label}</span>
+                                </div>
+                            </button>
+                        );
+                    })}
                 </div>
-              </button>
-            );
-          })}
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }

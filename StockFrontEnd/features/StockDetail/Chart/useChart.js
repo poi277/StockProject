@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { getCandleApi } from "../../../lib/candle";
-import { useWebSocket } from "../../../util/websocket/context/WebSocketContext";
 import { useCandleSocket } from "../../../util/websocket/useCandleSocket";
+import { useOrderWebSocket } from "../../../util/websocket/context/OrderWebSocketContext";
 
 function toUnixTime(timeStr) {
     return Math.floor(new Date(timeStr).getTime() / 1000);
@@ -11,7 +11,7 @@ function toUnixTime(timeStr) {
 
 export default function useCandle(stockCode, type = "ONE_MINUTE") {
     const [candles, setCandles] = useState([]);
-    const { client, connected } = useWebSocket();
+    const { client, connected } = useOrderWebSocket();
     const { liveCandle } = useCandleSocket(client, connected, stockCode);
 
     const timeRangeRef = useRef({

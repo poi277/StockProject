@@ -2,31 +2,40 @@
 
 import { useEffect, useState } from "react";
 import { useStocksSocket } from "../../util/websocket/useStocksSocket";
-import { useWebSocket } from "../../util/websocket/context/WebSocketContext";
 import { stockListApi } from "../../lib/stock";
 import { useRouter } from "next/navigation";
+import { useOrderWebSocket } from "../../util/websocket/context/OrderWebSocketContext";
+
+export const formatPrice = (price) => price.toLocaleString() + '원'
+export const formatChangeRate = (rate) => {
+    if (rate > 0) return `+${rate}%`
+    if (rate < 0) return `${rate}%`
+    return '0.00%'
+}
+export const formatValue = (value) => {
+    if (value >= 100000000) return (value / 100000000).toFixed(0) + '억원'
+    if (value >= 10000) return (value / 10000).toFixed(0) + '만원'
+    return value.toLocaleString() + '원'
+}
+export const getChangeColor = (rate) => {
+    if (rate > 0) return 'var(--wts-adaptive-red500)'
+    if (rate < 0) return 'var(--wts-adaptive-blue500)'
+    return 'var(--wts-adaptive-grey600)'
+}
+
 
 export function useStockList() {
     const router = useRouter();
-    const { connected, client } = useWebSocket();
-    const [stockCodes, setStockCodes] = useState([]);
-    const [initialStocks, setInitialStocks] = useState({});
+    const { connected, client } = useOrderWebSocket();
+    const [initialStocks, setInitialStocks] = useState([]);
 
     useEffect(() => {
         const fetchStocks = async () => {
             try {
                 const stocklist = await stockListApi();
+                console.log("ddd" , stocklist.data)
                 const stockArray = Array.isArray(stocklist.data) ? stocklist.data : [];
-
-                // stockCode 배열 추출
-                const codes = stockArray.map(stock => stock.stockCode);
-                setStockCodes(codes);
-
-                // 초기 stocks 객체 생성
-                const initial = Object.fromEntries(
-                    stockArray.map(s => [s.stockCode, s])
-                );
-                setInitialStocks(initial);
+                setInitialStocks(stockArray);
             } catch (err) {
                 console.error('주식 목록 조회 실패:', err.message);
             }
@@ -35,11 +44,7 @@ export function useStockList() {
         fetchStocks();
     }, []);
 
-    const { stocks } = useStocksSocket(client, connected, stockCodes, initialStocks);
+    const { stocklist } = useStocksSocket(client, connected, initialStocks);
 
-    return {
-        connected,
-        stocks,
-        router
-    };
+    return { connected, stocklist, router };
 }

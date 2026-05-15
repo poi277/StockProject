@@ -1,24 +1,14 @@
 import './HogaChart.css'
 import React, { useState, useEffect } from 'react';
-import useHoga from './useHoga';
+import useHoga, { getHogaChangeRateStr, getHogaPriceColor } from './useHoga';
 
 const PRICE_STYLE = (color) => ({ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": color, "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" });
 const RATE_STYLE = (color) => ({ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": color, "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" });
 const TEXT_STYLE = (weight, color, size = "12px") => ({ "--tds-wts-font-weight": `var(--tw-font-weight-${weight})`, "--tds-wts-foreground-color": color, "--tds-wts-line-height": "1.45", "--tds-wts-font-size": size });
 
-function getPriceColor(price, openPrice) {
-  if (!openPrice || price === openPrice) return "var(--wts-adaptive-grey700)";
-  return price > openPrice ? "var(--wts-adaptive-red500)" : "var(--wts-adaptive-blue500)";
-}
-
-function getChangeRateStr(price, openPrice) {
-  if (!openPrice) return "0.00%";
-  const rate = (price - openPrice) / openPrice * 100;
-  return `${rate > 0 ? '+' : ''}${rate.toFixed(2)}%`;
-}
 
 export default function HogaChart({ stock, onPriceSelect }) {
-  const { sellOrders, buyOrders, maxQuantity, getBarWidth, totalSellQuantity, totalBuyQuantity, executions, closePrice, lastExecutionPrice } = useHoga(stock.stockCode);
+  const { sellOrders, buyOrders, maxQuantity, getBarWidth, totalSellQuantity, totalBuyQuantity, executions, closePrice, lastExecutionPrice } = useHoga(stock.stockCode ,stock.closePrice );
 
   return (
     <div className="sa1m6r0" style={{ paddingLeft: "0px", paddingRight: "0px" }}>
@@ -68,8 +58,8 @@ function OrderBook({ type, orders, getBarWidth, openPrice, lastExecutionPrice, o
   return (
     <ul className={isSell ? "_1oug70of" : "_1oug70og"}>
       {orders.map((order, i) => {
-        const priceColor = getPriceColor(order.price, openPrice);
-        const changeRateStr = getChangeRateStr(order.price, openPrice);
+        const priceColor = getHogaPriceColor(order.price, openPrice);
+        const changeRateStr = getHogaChangeRateStr(order.price, openPrice);
         const isActive = order.price === keyDownPrice;
 
         const quantityDiv = (

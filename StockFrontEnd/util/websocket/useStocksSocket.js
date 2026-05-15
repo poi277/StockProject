@@ -1,44 +1,38 @@
-// useStockSocket.js
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+export function useStocksSocket(client, connected, initialStocks = []) {
+  const [stocklist, setStocklist] = useState([]);
+  // 배열로 정규화
+  const stocksArray = Array.isArray(initialStocks)
+    ? initialStocks
+    : Object.values(initialStocks ?? {});
 
-export function useStocksSocket(client, connected, stockCodes = [], initialStocks = {}) {
-  const [stocks, setStocks] = useState({});
-
-  const codesKey = stockCodes.join(',');
-  
   useEffect(() => {
-    if (Object.keys(initialStocks).length > 0) {
-      setStocks(initialStocks);
+    if (stocksArray.length > 0) {
+      setStocklist(stocksArray);
     }
-  }, [JSON.stringify(initialStocks)]); 
-
+  }, [JSON.stringify(stocksArray)]);
 
   useEffect(() => {
-    if (!client || !connected) return;
-    if (!stockCodes || stockCodes.length === 0) return;
+    if (!client || !connected || stocksArray.length === 0) return;
 
-    const codes = codesKey.split(',').filter(Boolean);
-    console.log('주식 여러개  구독 시작:', codes);
+    const validStocks = stocksArray.filter(s => s && typeof s === "object" && s.stockCode);
+    console.log("validStocks:", validStocks);
 
-    const subscriptions = codes.map(code =>
-      client.subscribe(`/topic/stock/${code}`, message => {
-        console.log('RAW 메시지:', message.body);
+    const subscriptions = validStocks.map(({ stockCode }) =>
+      client.subscribe(`/topic/stock/${stockCode}`, message => {
         const data = JSON.parse(message.body);
-        setStocks(prev => ({
-          ...prev,
-          [data.stockCode]: {
-            ...prev[data.stockCode],  //  기존 데이터 유지
-            closePrice: data.currentPrice,  // 현재가만 업데이트
-          }
-        }));
+        setStocklist(prev =>
+          prev.map(stock =>
+            stock.stockCode === data.stockCode
+              ? { ...stock, closePrice: data.currentPrice, changeRate: data.changeRate, value: data.value }
+              : stock
+          )
+        );
       })
     );
 
-    return () => {
-      subscriptions.forEach(sub => sub.unsubscribe());
-    };
+    return () => subscriptions.forEach(sub => sub.unsubscribe());
+  }, [client, connected, JSON.stringify(stocksArray)]);
 
-  }, [client, connected, codesKey]); //  배열 대신 문자열 사용
-
-  return { stocks };
+  return {  stocklist };
 }

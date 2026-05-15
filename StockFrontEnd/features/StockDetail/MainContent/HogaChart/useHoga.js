@@ -1,12 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
 import { getOrderbookApi } from "../../../../lib/trade";
-import { useWebSocket } from "../../../../util/websocket/context/WebSocketContext";
+import { useOrderWebSocket } from "../../../../util/websocket/context/OrderWebSocketContext";
 import { useHogaSocket } from "../../../../util/websocket/useHogaSocket";
 import { useExecutionSocket } from "../../../../util/websocket/useExecutionSocket";
 
+export function getHogaPriceColor(price, openPrice) {
+  if (!openPrice || price === openPrice) return "var(--wts-adaptive-grey700)";
+  return price > openPrice ? "var(--wts-adaptive-red500)" : "var(--wts-adaptive-blue500)";
+}
+
+export function getHogaChangeRateStr(price, openPrice) {
+  if (!openPrice) return "0.00%";
+  const rate = (price - openPrice) / openPrice * 100;
+  return `${rate > 0 ? '+' : ''}${rate.toFixed(2)}%`;
+}
+
+
 // useHoga.js — 상태 여기서만 관리
 export default function useHoga(stockCode) {
-  const { client, connected } = useWebSocket();
+  const { client, connected } = useOrderWebSocket();
   const { executions } = useExecutionSocket(client, connected, stockCode);
   const [sellOrders, setSellOrders] = useState([]);
   const [buyOrders, setBuyOrders] = useState([]);
@@ -61,5 +73,5 @@ export default function useHoga(stockCode) {
     executions[0]?.price ?? null
     , [executions]);
 
-  return { sellOrders, buyOrders, maxQuantity, getBarWidth, totalSellQuantity, totalBuyQuantity,executions,lastExecutionPrice };
+  return { sellOrders, buyOrders, maxQuantity, getBarWidth, totalSellQuantity, totalBuyQuantity,executions,lastExecutionPrice,getHogaPriceColor,getHogaChangeRateStr };
 }

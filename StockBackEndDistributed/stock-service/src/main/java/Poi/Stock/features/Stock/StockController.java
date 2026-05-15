@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import Poi.Stock.DTO.stock.StockListResponseDto;
 import Poi.Stock.DTO.user.ApiResponse;
 import lombok.RequiredArgsConstructor;
 
@@ -23,8 +24,10 @@ public class StockController {
 
     @GetMapping("/stocklist")
     public ResponseEntity<ApiResponse> stockList() {
-        List<Stock> stocklist = stockService.getAllStocks();
-        return ResponseEntity.ok(new ApiResponse(true, "리스트 불러오기 완료", stocklist));
+
+		List<StockListResponseDto> stocklist = stockService.getAllStocks();
+
+		return ResponseEntity.ok(new ApiResponse(true, "리스트 불러오기 완료", stocklist));
     }
 
     @GetMapping("/{stockId}")

@@ -9,7 +9,7 @@ export function QuantityForm({ quantity, setQuantity, isPending }) {
                         <label className="tw3v-1r5dc8g0" htmlFor="trading-form-quantity" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>수량</label>
                     </div>
                     <div>
-                        <OrderInputBox value={quantity} setValue={setQuantity} label="수량" unit="" maxWidth="80px" placeholder="최대 5주 가능" contentTag="수량" parentName="QuantityFieldsSet" />
+                        <OrderInputBox value={quantity} setValue={setQuantity} label="수량" unit={quantity ? "주" : ""}  maxWidth="80px" placeholder="최대 5주 가능" contentTag="수량" parentName="QuantityFieldsSet" />
                         {!isPending && <OrderPercentButton />}
                     </div>
                 </div>
@@ -163,6 +163,16 @@ export function SubmitButton({ tradeTypeTab,tradeType }) {
 }
 
 export function OrderInputBox({ value, setValue, label, unit, placeholder, maxWidth, contentTag, parentName }) {
+    const handleDown = () => {
+        const num = Number(String(value).replace(/,/g, ''));
+        if (!isNaN(num) && num > 1) setValue((num - 1).toLocaleString('ko-KR'));
+    };
+
+    const handleUp = () => {
+        const num = Number(String(value).replace(/,/g, ''));
+        if (!isNaN(num)) setValue((num + 1).toLocaleString('ko-KR'));
+    };
+
     return (
         <div className="_13izhfo2">
             <div className="_13izhfo3 css-1qo9j44" style={{ "--wts-form-field-template-columns": "auto", "--wts-form-field-addon-columns-start": "1", "--wts-field-box-container-display": "grid" }}>
@@ -176,7 +186,7 @@ export function OrderInputBox({ value, setValue, label, unit, placeholder, maxWi
                 </div>
             </div>
             <span className="_1cx72gj1">
-                <button type="button" tabIndex="-1" aria-disabled="false" className="tw3v-1wkoka52h tw3v-1wkoka5a tw3v-1wkoka5d tw3v-1wkoka515 tw3v-1wkoka5v tw3v-1wkoka5r tw3v-1wkoka5j tw3v-1wkoka526 _1cx72gj0" data-tds-wts-button>
+                <button type="button" onClick={handleDown} tabIndex="-1" aria-disabled="false" className="tw3v-1wkoka52h tw3v-1wkoka5a tw3v-1wkoka5d tw3v-1wkoka515 tw3v-1wkoka5v tw3v-1wkoka5r tw3v-1wkoka5j tw3v-1wkoka526 _1cx72gj0" data-tds-wts-button>
                     <span className="tw3v-1wkoka52g">
                         <span className="tw3v-17xiat90 tw3v-17xiat91" aria-hidden="true" role="presentation" style={{ height: "16px", width: "16px", minWidth: "16px", color: "var(--wts-adaptive-grey500)" }}>
                             <svg enableBackground="new 0 0 16 16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
@@ -187,7 +197,7 @@ export function OrderInputBox({ value, setValue, label, unit, placeholder, maxWi
                     </span>
                 </button>
                 <div className="_1cx72gj2"></div>
-                <button type="button" tabIndex="-1" aria-disabled="false" className="tw3v-1wkoka52h tw3v-1wkoka5a tw3v-1wkoka5d tw3v-1wkoka515 tw3v-1wkoka5v tw3v-1wkoka5r tw3v-1wkoka5j tw3v-1wkoka526 _1cx72gj0" data-tds-wts-button>
+                <button type="button" onClick={handleUp} tabIndex="-1" aria-disabled="false" className="tw3v-1wkoka52h tw3v-1wkoka5a tw3v-1wkoka5d tw3v-1wkoka515 tw3v-1wkoka5v tw3v-1wkoka5r tw3v-1wkoka5j tw3v-1wkoka526 _1cx72gj0" data-tds-wts-button>
                     <span className="tw3v-1wkoka52g">
                         <span className="tw3v-17xiat90 tw3v-17xiat91" aria-hidden="true" role="presentation" style={{ height: "16px", width: "16px", minWidth: "16px", color: "var(--wts-adaptive-grey500)" }}>
                             <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">

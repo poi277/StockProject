@@ -1,6 +1,6 @@
 'use client';
 import { AuthProvider } from "../context/AuthContext"
-import { WebSocketProvider } from "../util/websocket/context/WebSocketContext"
+import { OrderWebSocketProvider } from "../util/websocket/context/OrderWebSocketContext"
 import './globals.css'
 import '../tossCss/toss-layout.css'
 import { UserWebSocketProvider } from '../util/websocket/context/UserWebSocketContext';
@@ -22,7 +22,7 @@ export default function RootLayout({ children }) {
       data-tabster='{"root":{}}'
     >
       <AuthProvider>
-        <WebSocketProvider>
+        <OrderWebSocketProvider>
           <UserWebSocketProvider>
             <UserHaveAssetProvider>
               <div id="_next">
@@ -42,7 +42,7 @@ export default function RootLayout({ children }) {
               <SideBarEditForm />
             </UserHaveAssetProvider>
           </UserWebSocketProvider>
-        </WebSocketProvider>
+        </OrderWebSocketProvider>
       </AuthProvider>
     </body>
   </html >

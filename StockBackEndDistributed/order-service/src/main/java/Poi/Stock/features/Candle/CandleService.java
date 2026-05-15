@@ -143,9 +143,10 @@ public class CandleService {
 		}
 	}
 
-	public void updateCandle(String stockCode, Integer currentPrice, int filledQty, LocalDateTime lastExecutiontime) {
-		CandleDTO candleDTO = candleSchedulerService.saveCurrentCandle(stockCode, currentPrice, filledQty,
-				lastExecutiontime);
+	public void saveCandleOrder(String stockCode, Integer currentPrice, int buyQty, int sellQty, long tradeAmount,
+			LocalDateTime lastExecutiontime) {
+		CandleDTO candleDTO = candleSchedulerService.saveCurrentCandle(stockCode, currentPrice, buyQty, sellQty,
+				tradeAmount, lastExecutiontime);
 		webSocketService.sendCurrentCandle(candleDTO, stockCode);
 	}
 

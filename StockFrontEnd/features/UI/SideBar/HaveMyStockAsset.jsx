@@ -1,3 +1,4 @@
+import { getDiffColor } from "../../../util/function/getDiffColor";
 import useHaveMyStockAsset from "./useHaveMyStockAssect"
 
 export default function HaveMyStockAsset() {
@@ -11,9 +12,7 @@ export default function HaveMyStockAsset() {
     )
 }
 
-function HaveMyStockMoney({ totalInvestment,totalDiff,totalRate }) {
-    const isPositive = totalDiff >= 0;
-    const diffColor = isPositive ? "var(--wts-adaptive-red500)" : "var(--wts-adaptive-blue500)";
+function HaveMyStockMoney({ totalInvestment, totalDiff, totalRate }) {
 
     return (
         <section>
@@ -45,7 +44,7 @@ function HaveMyStockMoney({ totalInvestment,totalDiff,totalRate }) {
                         <span className="tw6g-1r5dc8g0 _1p5yqoh0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-bold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "24px" }}>
                             {totalInvestment.toLocaleString()}원
                         </span>
-                        <span className="tw6g-1r5dc8g0 _1p5yqoh0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": diffColor, "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
+                        <span className="tw6g-1r5dc8g0 _1p5yqoh0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": getDiffColor(totalDiff), "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
                             {(totalDiff > 0 ? "+" : "") + totalDiff.toLocaleString() + "원"}
                             {" ("}
                             {(totalDiff > 0 ? "+" : "") + totalRate}
@@ -103,11 +102,6 @@ function HaveMyStockList({ stocks = [] }) {
     return (
         <ul data-tabster='{"mover":{"cyclic":false,"direction":1,"memorizeCurrent":true}}' style={{ position: "absolute", top: "0px", left: "0px", width: "100%", transform: "translateY(0px)" }}>
             {stocks?.map((stock, index) => {
-                const isPositive = stock.diff >= 0;
-                const changeColor = isPositive
-                    ? "var(--wts-adaptive-red500)"
-                    : "var(--wts-adaptive-blue500)";
-
                 return (
                     <div key={stock.stockCode} data-index={index}>
                         <a
@@ -156,7 +150,7 @@ function HaveMyStockList({ stocks = [] }) {
                                                 <span className="tw6g-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-bold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>
                                                     {stock.evaluatedAmount.toLocaleString() + "원"}
                                                 </span>
-                                                <span className="tw6g-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": changeColor, "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>
+                                                <span className="tw6g-1r5dc8g0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-medium)", "--tds-wts-foreground-color": getDiffColor(stock.diff), "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "12px" }}>
                                                     {(stock.diff > 0 ? "+" : "") + stock.diff.toLocaleString() + "원 (" + stock.rate + "%)"}
                                                 </span>
                                             </div>

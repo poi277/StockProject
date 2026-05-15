@@ -4,7 +4,6 @@ export default function HeaderProfile({ onClose })
 {
 
     const {user,handleLogout} = useHeader();
-
     return(
         <>
             <div data-radix-popper-content-wrapper style={{ position: "fixed", left: "0px", top: "0px", transform: "translate(1180px, 42px)", minWidth: "max-content", "--radix-popper-transform-origin": "100% 0px", zIndex: "auto", "--radix-popper-available-width": "1870px", "--radix-popper-available-height": "891px", "--radix-popper-anchor-width": "32px", "--radix-popper-anchor-height": "32px" }}>
@@ -20,7 +19,7 @@ export default function HeaderProfile({ onClose })
                             </div>
                             <div className="tw3s-1wmz9lv0">
                                 <div className="tw3s-1wmz9lv1">
-                                    <span className="tw3s-1r5dc8g0 tw3s-1pv95pb0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-bold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "17px" }}>허준찬</span>
+                                    <span className="tw3s-1r5dc8g0 tw3s-1pv95pb0" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-bold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "17px" }}>{user}</span>
                                 </div>
                             </div>
                         </header>

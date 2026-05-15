@@ -30,42 +30,67 @@ public class CandleSchedulerService {
 	private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
 	// Lua Script (원자성 + TTL)
 	private static final String UPDATE_CANDLE_SCRIPT = """
-			local key = KEYS[1]
-			local price = tonumber(ARGV[1])
-			local qty = tonumber(ARGV[2])
-			local exists = redis.call('EXISTS', key)
+			local candleKey = KEYS[1]
+			local tradeKey  = KEYS[2]
+			local price       = tonumber(ARGV[1])
+			local qty         = tonumber(ARGV[2])
+			local buyQty      = tonumber(ARGV[3])
+			local sellQty     = tonumber(ARGV[4])
+			local tradeAmount = tonumber(ARGV[5])
+
+			-- 캔들 (기존 로직 그대로)
+			local exists = redis.call('EXISTS', candleKey)
 			if exists == 0 then
-			  redis.call('HSET', key, 'open', price, 'high', price, 'low', price, 'close', price, 'volume', qty)
-			  redis.call('EXPIRE', key, 120)
+			    redis.call('HSET', candleKey, 'open', price, 'high', price, 'low', price, 'close', price, 'volume', qty)
+			    redis.call('EXPIRE', candleKey, 120)
 			else
-			  local high = tonumber(redis.call('HGET', key, 'high'))
-			  local low = tonumber(redis.call('HGET', key, 'low'))
-			  local volume = tonumber(redis.call('HGET', key, 'volume'))
-			  if price > high then redis.call('HSET', key, 'high', price) end
-			  if price < low then redis.call('HSET', key, 'low', price) end
-			  redis.call('HSET', key, 'close', price)
-			  redis.call('HSET', key, 'volume', volume + qty)
+			    local high = tonumber(redis.call('HGET', candleKey, 'high'))
+			    local low  = tonumber(redis.call('HGET', candleKey, 'low'))
+			    local volume = tonumber(redis.call('HGET', candleKey, 'volume'))
+			    if price > high then redis.call('HSET', candleKey, 'high', price) end
+			    if price < low  then redis.call('HSET', candleKey, 'low', price)  end
+			    redis.call('HSET', candleKey, 'close', price)
+			    redis.call('HSET', candleKey, 'volume', volume + qty)
 			end
+
+			-- 30분 통계 (추가)
+			if redis.call('EXISTS', tradeKey) == 0 then
+			    redis.call('EXPIRE', tradeKey, 1860)
+			end
+			redis.call('HINCRBY',      tradeKey, 'buyQty',      buyQty)
+			redis.call('HINCRBY',      tradeKey, 'sellQty',     sellQty)
+			redis.call('HINCRBYFLOAT', tradeKey, 'tradeAmount', tradeAmount)
+
 			return {
-			  redis.call('HGET', key, 'open'),
-			  redis.call('HGET', key, 'high'),
-			  redis.call('HGET', key, 'low'),
-			  redis.call('HGET', key, 'close'),
-			  redis.call('HGET', key, 'volume')
+			    redis.call('HGET', candleKey, 'open'),
+			    redis.call('HGET', candleKey, 'high'),
+			    redis.call('HGET', candleKey, 'low'),
+			    redis.call('HGET', candleKey, 'close'),
+			    redis.call('HGET', candleKey, 'volume')
 			}
 			""";
 
 	// 체결 시 호출
 	// 분리시 카프카로 호출
-	public CandleDTO saveCurrentCandle(String stockCode, int price, int quantity, LocalDateTime executionTime) {
+	public CandleDTO saveCurrentCandle(String stockCode, int price, int buyQty, int sellQty, long tradeAmount,
+			LocalDateTime executionTime) {
 		LocalDateTime minuteTime = executionTime.withSecond(0).withNano(0);
-		String key = "candle:1m:" + stockCode + ":" + minuteTime.format(FMT);
-		List<String> result = redisTemplate.execute(new DefaultRedisScript<>(UPDATE_CANDLE_SCRIPT, List.class),
-				List.of(key), String.valueOf(price), String.valueOf(quantity));
+		LocalDateTime slot = executionTime.withMinute((executionTime.getMinute() / 30) * 30).withSecond(0).withNano(0);
+
+		String candleKey = "candle:1m:" + stockCode + ":" + minuteTime.format(FMT);
+		String tradeKey = "trade:30m:" + stockCode + ":" + slot.format(FMT);
+
+		int totalQty = buyQty + sellQty;
+
+		List<String> result = redisTemplate.execute(
+				new DefaultRedisScript<>(UPDATE_CANDLE_SCRIPT, List.class), List.of(candleKey, tradeKey),
+				String.valueOf(price), String.valueOf(totalQty), String.valueOf(buyQty), String.valueOf(sellQty),
+				String.valueOf(tradeAmount)
+		);
+
 		if (result == null || result.size() < 5)
 			return null;
-		return new CandleDTO(minuteTime.toString(), Integer.parseInt(result.get(0)),
-				Integer.parseInt(result.get(1)),
+		return new CandleDTO(minuteTime.toString(), Integer.parseInt(result.get(0)), Integer.parseInt(result.get(1)),
 				Integer.parseInt(result.get(2)), Integer.parseInt(result.get(3)), Long.parseLong(result.get(4)));
 	}
 

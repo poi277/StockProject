@@ -1,14 +1,15 @@
 package Poi.Stock.features.Stock;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import Poi.Stock.DTO.stock.StockListResponseDto;
 import Poi.Stock.DTO.user.getAssetDTO;
+import Poi.Stock.Scheduler.StockTradeStatsScheduler;
 import Poi.Stock.repository.StockRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,12 +22,14 @@ public class StockService {
     private final StockRepository stockRepository;
     private final StockCache stockCache;
     private final WebClient.Builder webClientBuilder;
+	private final StockTradeStatsScheduler stockTradeStatsScheduler;
 
     @Value("${user.service.url}")
     private String userServiceUrl;
-
-    public List<Stock> getAllStocks() {
-        return new ArrayList<>(stockCache.values());
+	public List<StockListResponseDto> getAllStocks() {
+		return stockCache.values().stream()
+				.map(stock -> new StockListResponseDto(stock, stockTradeStatsScheduler.getStats(stock.getStockCode())))
+				.toList();
     }
 
     public Stock getStock(String stockCode) {

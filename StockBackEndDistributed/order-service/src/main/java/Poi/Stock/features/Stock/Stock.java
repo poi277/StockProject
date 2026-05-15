@@ -33,6 +33,7 @@ public class Stock {
 	private Long totalvolume; // 거래량
 	private Long value; // 거래대금
 	// 계산 필드들 (선택사항)
+	// 거래량
 	private Integer changeAmount;
 	private Double changeRate;
 

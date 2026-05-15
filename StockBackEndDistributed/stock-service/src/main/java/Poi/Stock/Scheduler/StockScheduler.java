@@ -1,9 +1,11 @@
-package Poi.Stock.features.Stock;
+package Poi.Stock.Scheduler;
 
 import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import Poi.Stock.features.Stock.Stock;
+import Poi.Stock.features.Stock.StockCache;
 import Poi.Stock.repository.StockRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;

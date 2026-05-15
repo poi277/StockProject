@@ -9,7 +9,7 @@ import { useAuth } from '../../../context/AuthContext';
 
 const WebSocketContext = createContext(null);
 
-export function WebSocketProvider({ children }) {
+export function OrderWebSocketProvider({ children }) {
   const [connected, setConnected] = useState(false);
   const clientRef = useRef(null);
   const { user, loading } = useAuth();
@@ -63,7 +63,7 @@ export function WebSocketProvider({ children }) {
   );
 }
 
-export function useWebSocket() {
+export function useOrderWebSocket() {
   const context = useContext(WebSocketContext);
   if (!context) {
     throw new Error('useWebSocket은 WebSocketProvider 내부에서만 사용 가능합니다');
