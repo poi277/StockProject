@@ -6,18 +6,11 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-import Poi.Stock.features.Candle.CandleMinute;
+import Poi.Stock.features.Stock.CandleMinute;
 
 public interface CandleMinuteRepository extends JpaRepository<CandleMinute, Long> {
-
-	List<CandleMinute> findByStockCodeAndTimeAfterOrderByTimeAsc(String stockCode, LocalDateTime from);
-
-	List<CandleMinute> findByStockCodeAndTimeBetweenOrderByTimeAsc(String stockCode, LocalDateTime start,
-			LocalDateTime end);
+	List<CandleMinute> findByStockCodeAndTimeAfter(String stockCode, LocalDateTime time);
 
 	@Query("SELECT DISTINCT c.stockCode FROM CandleMinute c")
 	List<String> findDistinctStockCodes();
-
-	List<CandleMinute> findByStockCodeAndTimeAfter(String stockCode, LocalDateTime time);
-
 }

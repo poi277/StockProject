@@ -17,10 +17,22 @@ export const formatValue = (value) => {
     if (value >= 10000) return (value / 10000).toFixed(0) + '만원'
     return value.toLocaleString() + '원'
 }
+
 export const getChangeColor = (rate) => {
     if (rate > 0) return 'var(--wts-adaptive-red500)'
     if (rate < 0) return 'var(--wts-adaptive-blue500)'
     return 'var(--wts-adaptive-grey600)'
+}
+
+export function getTradeRatio(tradeStatus) {
+    const buy = tradeStatus?.buyQuantity ?? 0;
+    const sell = tradeStatus?.sellQuantity ?? 0;
+    const total = buy + sell;
+    if (total === 0) return { buyRatio: 50, sellRatio: 50 };
+    return {
+        buyRatio: Math.round((buy / total) * 100),
+        sellRatio: Math.round((sell / total) * 100),
+    };
 }
 
 

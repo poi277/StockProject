@@ -16,9 +16,10 @@ export function UserHaveAssetProvider({ children }) {
     const { orders, setOrders,notifications  } = useOrderSocket(client, connected);
     const { haveStocks, setHaveStocks, asset, setAsset, availableAsset, setAvailableAsset, initialStocks } = useUserHaveAssetSocket(userClient, userConnected);
     
-    const { stocks } = useStocksSocket(client, connected,initialStocks);
+    const { stocklist } = useStocksSocket(client, connected,initialStocks);
 
-    const stocksArray = Object.values(stocks ?? {}).map(stock => {
+
+    const stocksArray = (Array.isArray(stocklist) ? stocklist : []).map(stock => {
         const matched = haveStocks?.find(h => h.stockCode === stock.stockCode);
         const quantity = matched?.quantity ?? 0;
         const avgPrice = matched?.averagePrice ?? 0;
@@ -26,6 +27,7 @@ export function UserHaveAssetProvider({ children }) {
         const rate = avgPrice > 0 ? ((diff / (avgPrice * quantity)) * 100).toFixed(2) : 0;
         return { ...stock, quantity, avgPrice, evaluatedAmount: stock.closePrice * quantity, diff, rate };
     });
+    // stocksArray 선언 이후로 옮기기
     const totalDiff = stocksArray.reduce((sum, stock) => sum + stock.diff, 0);
     const totalInvested = haveStocks?.reduce((sum, s) => sum + (s.averagePrice * s.quantity), 0) ?? 0;
     const totalRate = totalInvested > 0 ? ((totalDiff / totalInvested) * 100).toFixed(2) : 0;

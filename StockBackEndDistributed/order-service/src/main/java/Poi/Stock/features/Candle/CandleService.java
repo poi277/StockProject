@@ -45,7 +45,9 @@ public class CandleService {
 			List<CandleDTO> result;
 			if (minute == 1) {
 				result = new ArrayList<>(candles.stream().map(c -> new CandleDTO(c.getTime().toString(), c.getOpen(),
-						c.getHigh(), c.getLow(), c.getClose(), c.getVolume())).toList());
+						c.getHigh(), c.getLow(), c.getClose(),
+						(c.getBuyQty() != null ? c.getBuyQty() : 0) + (c.getSellQty() != null ? c.getSellQty() : 0)))
+						.toList());
 			} else {
 				result = new ArrayList<>(candles.stream()
 						.collect(Collectors.groupingBy(c -> c.getTime()
@@ -57,7 +59,8 @@ public class CandleService {
 									group.stream().mapToInt(CandleMinute::getHigh).max().orElse(0),
 									group.stream().mapToInt(CandleMinute::getLow).min().orElse(0),
 									group.get(group.size() - 1).getClose(),
-									group.stream().mapToLong(CandleMinute::getVolume).sum());
+									group.stream().mapToLong(c -> (c.getBuyQty() != null ? c.getBuyQty() : 0)
+											+ (c.getSellQty() != null ? c.getSellQty() : 0)).sum());
 						}).toList());
 			}
 
@@ -103,18 +106,20 @@ public class CandleService {
 			return null;
 
 		// 분봉 기준 OHLCV
+		// 분봉 기준 OHLCV
 		int open = !todayMinutes.isEmpty() ? todayMinutes.get(0).getOpen() : redisCandle.getOpen();
 		int high = todayMinutes.stream().mapToInt(CandleMinute::getHigh).max().orElse(0);
 		int low = todayMinutes.stream().mapToInt(CandleMinute::getLow).min().orElse(Integer.MAX_VALUE);
 		int close = !todayMinutes.isEmpty() ? todayMinutes.get(todayMinutes.size() - 1).getClose() : 0;
-		long volume = todayMinutes.stream().mapToLong(CandleMinute::getVolume).sum();
+		long volume = todayMinutes.stream().mapToLong(
+				c -> (c.getBuyQty() != null ? c.getBuyQty() : 0) + (c.getSellQty() != null ? c.getSellQty() : 0)).sum();
 
 		// Redis 현재 봉 합산
 		if (redisCandle != null) {
 			high = Math.max(high, redisCandle.getHigh());
 			low = Math.min(low, redisCandle.getLow());
 			close = redisCandle.getClose();
-			volume += redisCandle.getVolume();
+			volume += redisCandle.getTotalVolume();
 		}
 
 		if (low == Integer.MAX_VALUE)

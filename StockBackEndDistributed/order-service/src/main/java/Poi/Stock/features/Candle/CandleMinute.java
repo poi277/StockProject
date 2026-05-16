@@ -23,25 +23,34 @@ public class CandleMinute {
 	private Long id;
 	private String stockCode;
 	private LocalDateTime time;
-	// 4종은 다 있어야함
-	// 시작
 	private Integer open;
 	private Integer high;
 	private Integer low;
-	// 끝
 	private Integer close;
-	// 거래량
-	private Long volume;
 
-	public static CandleMinute setCandleRedis(String stockCode, LocalDateTime candleTime, Map<Object, Object> current) {
+	// 추가
+	private Long buyQty;
+	private Long sellQty;
+	private Double tradeAmount;
+
+	public static CandleMinute setCandleRedis(String stockCode, LocalDateTime candleTime, Map<Object, Object> candle) {
 		try {
-			return new CandleMinute(null, stockCode, candleTime, Integer.parseInt(String.valueOf(current.get("open"))),
-					Integer.parseInt(String.valueOf(current.get("high"))),
-					Integer.parseInt(String.valueOf(current.get("low"))),
-					Integer.parseInt(String.valueOf(current.get("close"))),
-					Long.parseLong(String.valueOf(current.get("volume"))));
+			return new CandleMinute(null, stockCode, candleTime, Integer.parseInt(String.valueOf(candle.get("open"))),
+					Integer.parseInt(String.valueOf(candle.get("high"))),
+					Integer.parseInt(String.valueOf(candle.get("low"))),
+					Integer.parseInt(String.valueOf(candle.get("close"))),
+					parseLong(candle.get("buyQty")),
+					parseLong(candle.get("sellQty")), parseDouble(candle.get("tradeAmount")));
 		} catch (Exception e) {
 			throw new RuntimeException("Redis 캔들 변환 실패", e);
 		}
+	}
+
+	private static long parseLong(Object val) {
+		return val == null ? 0L : Long.parseLong(val.toString());
+	}
+
+	private static double parseDouble(Object val) {
+		return val == null ? 0.0 : Double.parseDouble(val.toString());
 	}
 }

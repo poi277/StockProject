@@ -16,7 +16,6 @@ export function useStocksSocket(client, connected, initialStocks = []) {
     if (!client || !connected || stocksArray.length === 0) return;
 
     const validStocks = stocksArray.filter(s => s && typeof s === "object" && s.stockCode);
-    console.log("validStocks:", validStocks);
 
     const subscriptions = validStocks.map(({ stockCode }) =>
       client.subscribe(`/topic/stock/${stockCode}`, message => {

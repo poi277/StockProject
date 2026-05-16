@@ -29,8 +29,7 @@ export function useUserHaveAssetSocket(userClient, userConnected) {
         const stockCodes = haveStocks.map(s => s.stockCode); 
         const res = await getStocksByCodesApi(stockCodes);
         const stockArray = Array.isArray(res.data) ? res.data : [];
-        const initial = Object.fromEntries(stockArray.map(s => [s.stockCode, s]));
-        setInitialStocks(initial);
+        setInitialStocks(stockArray);
       } catch (err) {
         console.error('종목 정보 조회 실패:', err.message);
       }
@@ -42,7 +41,6 @@ export function useUserHaveAssetSocket(userClient, userConnected) {
     if (!userClient || !userConnected || !user) return;
 
     getHaveAsset();
-
     const subStock = userClient.subscribe('/user/queue/havestock', message => {
       const data = JSON.parse(message.body);
       console.log("havestock 웹소켓 수신", data)

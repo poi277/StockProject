@@ -89,7 +89,7 @@ public class WebSocketService {
 		payload.put("low", candleDTO.getLow());
 		payload.put("high", candleDTO.getHigh());
 		payload.put("close", candleDTO.getClose());
-		payload.put("volume", candleDTO.getVolume());
+		payload.put("volume", candleDTO.getTotalVolume());
 		payload.put("time", candleDTO.getTime());
 		System.out.println(payload);
 		messagingTemplate.convertAndSend("/topic/candle/" + stockCode, payload);

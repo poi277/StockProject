@@ -1,7 +1,7 @@
 'use client'
 
 import './StockList.css'
-import { formatPrice, formatChangeRate, formatValue, getChangeColor, useStockList } from './useStockList'
+import { formatPrice, formatChangeRate, formatValue, getChangeColor, useStockList, getTradeRatio } from './useStockList'
 export default function TossStockList() {
 
     return (
@@ -77,6 +77,9 @@ const HIDDEN_TD_STYLE = {
 }
 
 function LiveChartList({ stocklist }) {
+
+
+
     return (
         <>
             <div className="_1vjo0mn1" data-section-name="실시간차트">
@@ -165,7 +168,7 @@ function LiveChartList({ stocklist }) {
                                                     <a data-tossinvest-log="Link" data-contents-value={stocklist.stockName} data-content-tag="product_name" data-parent-name="AnimatedRankingListRow" className="tw6g-mq48z22 tw6g-kvawo27 tw6g-mq48z2a" href={href}>
                                                         <div className="tw6g-mq48z2h">
                                                             <span className="tw6g-1r5dc8g0" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-grey800)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '15px' }}>
-                                                                {formatValue(stocklist.stock.value)}
+                                                                {formatValue(stocklist.tradeStatus.tradeAmount)}
                                                             </span>
                                                         </div>
                                                     </a>
@@ -173,16 +176,7 @@ function LiveChartList({ stocklist }) {
                                                 <td className="tw6g-mq48z20 _5x01f5">
                                                     <a data-tossinvest-log="Link" data-contents-value={stocklist.stockName} data-content-tag="product_name" data-parent-name="AnimatedRankingListRow" className="tw6g-mq48z22 tw6g-kvawo27 tw6g-mq48z2a" href={href}>
                                                         <div className="tw6g-mq48z2h">
-                                                            <div className="_6ivj9p0">
-                                                                <div className="_6ivj9p1">
-                                                                    <div className="_6ivj9p2" style={{ backgroundColor: 'var(--wts-adaptive-blue100)', width: '45px' }} />
-                                                                    <div className="_6ivj9p2" style={{ backgroundColor: 'var(--wts-adaptive-red600)', width: '55px' }} />
-                                                                </div>
-                                                                <div className="_6ivj9p1">
-                                                                    <span className="tw6g-1r5dc8g0" style={{ textAlign: 'start', '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-blue600)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '12px' }}>45</span>
-                                                                    <span className="tw6g-1r5dc8g0" style={{ textAlign: 'end', '--tds-wts-font-weight': 'var(--tw-font-weight-regular)', '--tds-wts-foreground-color': 'var(--wts-adaptive-red600)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '12px' }}>55</span>
-                                                                </div>
-                                                            </div>
+                                                            <TradeRatioBar tradeStatus={stocklist.tradeStatus}/>
                                                         </div>
                                                     </a>
                                                 </td>
@@ -203,6 +197,26 @@ function LiveChartList({ stocklist }) {
             </div>
         </>
     )
+}
+
+function TradeRatioBar({ tradeStatus }) {
+    const { buyRatio, sellRatio } = getTradeRatio(tradeStatus);
+    return (
+        <div className="_6ivj9p0">
+            <div className="_6ivj9p1">
+                <div className="_6ivj9p2" style={{ backgroundColor: 'var(--wts-adaptive-blue100)', width: `${sellRatio}px` }} />
+                <div className="_6ivj9p2" style={{ backgroundColor: 'var(--wts-adaptive-red600)', width: `${buyRatio}px` }} />
+            </div>
+            <div className="_6ivj9p1">
+                <span className="tw6g-1r5dc8g0" style={{ textAlign: 'start', '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-blue600)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '12px' }}>
+                    {sellRatio}
+                </span>
+                <span className="tw6g-1r5dc8g0" style={{ textAlign: 'end', '--tds-wts-font-weight': 'var(--tw-font-weight-regular)', '--tds-wts-foreground-color': 'var(--wts-adaptive-red600)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '12px' }}>
+                    {buyRatio}
+                </span>
+            </div>
+        </div>
+    );
 }
 
 function LiveChartListSide() {
