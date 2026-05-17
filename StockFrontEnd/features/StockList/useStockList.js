@@ -28,11 +28,14 @@ export function getTradeRatio(tradeStatus) {
     const buy = tradeStatus?.buyQuantity ?? 0;
     const sell = tradeStatus?.sellQuantity ?? 0;
     const total = buy + sell;
-    if (total === 0) return { buyRatio: 50, sellRatio: 50 };
-    return {
-        buyRatio: Math.round((buy / total) * 100),
-        sellRatio: Math.round((sell / total) * 100),
-    };
+    if (total === 0) return { buyRatio: 50, sellRatio: 50, buyColor: 'var(--wts-adaptive-red600)', sellColor: 'var(--wts-adaptive-blue600)' };
+    
+    const buyRatio = Math.round((buy / total) * 100);
+    const sellRatio = Math.round((sell / total) * 100);
+    const buyColor = buyRatio >= sellRatio ? 'var(--wts-adaptive-red600)' : 'var(--wts-adaptive-red100)';
+    const sellColor = sellRatio >= buyRatio ? 'var(--wts-adaptive-blue600)' : 'var(--wts-adaptive-blue100)';
+    
+    return { buyRatio, sellRatio, buyColor, sellColor };
 }
 
 
