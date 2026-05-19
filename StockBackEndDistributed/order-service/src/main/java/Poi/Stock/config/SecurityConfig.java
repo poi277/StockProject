@@ -38,7 +38,7 @@ public class SecurityConfig {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				// ── 기존 permitAll 경로 그대로 유지 ──
 				.authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-						.requestMatchers("/", "/hello", "/user/register", "/stock/**", "/ws/**", "/auth/**",
+						.requestMatchers("/", "/hello", "/user/register", "/stock/**", "/ws-order/**", "/auth/**",
 								"/candle/**",
 								"/order/orderbook/*", "/api/kis/stock/**")
 						.permitAll().anyRequest().authenticated())

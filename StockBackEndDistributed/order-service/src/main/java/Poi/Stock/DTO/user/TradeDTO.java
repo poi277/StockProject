@@ -13,6 +13,7 @@ import lombok.Setter;
 public class TradeDTO {
 	private String userId;
 	private Long orderId;
+	private String StockName;
 	@NotBlank(message = "종목 코드는 필수입니다")
 	private String stockCode;
 

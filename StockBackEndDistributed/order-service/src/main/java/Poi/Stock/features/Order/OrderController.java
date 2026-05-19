@@ -41,6 +41,7 @@ public class OrderController {
         String userId = authentication.getName();
         String accessToken = resolveToken(request);
         // user-service로 검증
+		System.out.println("들어옴");
         orderService.validateOrder(userId, tradeDTO, accessToken);
 		// 주문 시작
         orderService.placeOrder(userId, tradeDTO);

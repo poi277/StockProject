@@ -2,9 +2,7 @@ package Poi.Stock.features.Order;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.TreeMap;
 
 import org.springframework.stereotype.Service;
@@ -15,8 +13,6 @@ import Poi.Stock.features.Bot.Bot;
 import Poi.Stock.features.Bot.BotCache;
 import Poi.Stock.features.Candle.CandleService;
 import Poi.Stock.features.CompletedOrder.CompletedOrder;
-import Poi.Stock.features.Stock.Stock;
-import Poi.Stock.features.Stock.StockCache;
 import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.features.kafka.SettlementProducer;
 import Poi.Stock.object.MatchingResult;
@@ -25,7 +21,6 @@ import Poi.Stock.repository.CompletedOrderRepository;
 import Poi.Stock.repository.OrderRepository;
 import Poi.Stock.repository.TradeHistoryRepository;
 import Poi.Stock.shared.event.SettlementEvent;
-import Poi.Stock.shared.event.SettlementEvent.AssetChange;
 import Poi.Stock.shared.event.SettlementEvent.haveStockChange;
 import Poi.Stock.util.EnumUtil.OrderStatus;
 import Poi.Stock.util.EnumUtil.tradeType;
@@ -39,7 +34,6 @@ public class OrderTradeService {
 
 	private final OrderRepository orderRepository;
 	private final OrderBookCache orderBookCache;
-	private final StockCache stockCache;
 	private final WebSocketService webSocketService;
 	private final CompletedOrderRepository completedOrderRepository;
 	private final TradeHistoryRepository tradeHistoryRepository;
@@ -60,52 +54,35 @@ public class OrderTradeService {
 		order.setStatus(OrderStatus.PENDING);
 		order.setCreatedAt(LocalDateTime.now());
 		order.setPriority(System.nanoTime());
-		order.setStockName(stockCache.get(tradeDTO.getStockCode()).getStockName());
+		order.setStockName(tradeDTO.getStockName());
 		return order;
 	}
 
 	public void settlement(MatchingResult result) {
 		if (!result.getExecutions().isEmpty()) {
-			SettlementEvent event = buildSettlementEvent(result.getExecutions());
+
+			SettlementEvent event = buildSettlementEvent(result.getExecutions(), result.getStockCode());
+			// userservice에 자산 업데이트
 			settlementProducer.sendSettlement(event);
+			// stockservice에 거래량 및 현재가 업데이트
+			settlementProducer.sendTradeExecutionStockService(result.getExecutions());
 		}
 	}
-	private SettlementEvent buildSettlementEvent(List<TradeExecution> executions) {
-		String stockCode = executions.get(0).getStockCode();
-		Map<String, Integer> assetDelta = new HashMap<>();
+
+	private SettlementEvent buildSettlementEvent(List<TradeExecution> executions, String stockCode) {
 		List<haveStockChange> stockChanges = new ArrayList<>();
-
 		for (TradeExecution ex : executions) {
-			boolean buyerIsBot = isBot(ex.getBuyerId());
-			boolean sellerIsBot = isBot(ex.getSellerId());
-			int total = ex.getPrice() * ex.getQuantity();
-
-			// ✅ 여기 추가
-			log.info("buyerId={}, sellerId={}, price={}, qty={}, total={}, buyerIsBot={}, sellerIsBot={}",
-					ex.getBuyerId(), ex.getSellerId(), ex.getPrice(), ex.getQuantity(), total, buyerIsBot, sellerIsBot);
-
-			if (!buyerIsBot) {
-				stockChanges.add(new haveStockChange(ex.getBuyerId(), stockCode, ex.getQuantity(), ex.getPrice()));
-				assetDelta.merge(ex.getBuyerId(), -total, Integer::sum);
-			}
-			if (!sellerIsBot) {
-				stockChanges.add(new haveStockChange(ex.getSellerId(), stockCode, -ex.getQuantity(), ex.getPrice()));
-				assetDelta.merge(ex.getSellerId(), total, Integer::sum);
-			}
+			if (!isBot(ex.getBuyerId()))
+			    stockChanges.add(new haveStockChange(ex.getBuyerId(), ex.getQuantity(), ex.getPrice()));
+			if (!isBot(ex.getSellerId()))
+			    stockChanges.add(new haveStockChange(ex.getSellerId(), -ex.getQuantity(), ex.getPrice()));
 		}
-
-		// ✅ 여기도 추가
-		log.info("assetDelta={}, stockChanges={}", assetDelta, stockChanges);
-
-		List<AssetChange> assetChanges = assetDelta.entrySet().stream()
-				.map(e -> new AssetChange(e.getKey(), e.getValue())).toList();
-		return new SettlementEvent(stockCode, assetChanges, stockChanges);
+		return new SettlementEvent(stockCode, stockChanges);
 	}
 
-	public MatchingResult matchLoop(Order order, OrderBook book, Stock stock) {
-		MatchingResult result = new MatchingResult();
+	public MatchingResult matchLoop(Order order, OrderBook book) {
+		MatchingResult result = new MatchingResult(order.getStockCode());
 		// 거래량은 아직 정산이 안되기 떄문에 여기서 임의로 증가시켜줘야함
-		Long fillTotalvolume = stock.getTotalvolume();
 		TreeMap<Integer, PriceLevel> oppositeBook = order.getTradeType() == tradeType.BUY ? book.getSellBook()
 				: book.getBuyBook();
 		while (!order.isCompleted() && !oppositeBook.isEmpty()) {
@@ -116,7 +93,6 @@ public class OrderTradeService {
 			PriceLevel level = oppositeBook.get(firstPrice);
 			Order restingOrder = level.peek();
 			int fillQty = Math.min(order.getRemainingQuantity(), restingOrder.getRemainingQuantity());
-			fillTotalvolume += fillQty;
 			order.decreaseRemainingQuantity(fillQty);
 			restingOrder.decreaseRemainingQuantity(fillQty);
 			level.reduceQuantity(fillQty);
@@ -125,8 +101,7 @@ public class OrderTradeService {
 			String buyerId = order.getTradeType() == tradeType.BUY ? order.getUserId() : restingOrder.getUserId();
 			String sellerId = order.getTradeType() == tradeType.BUY ? restingOrder.getUserId() : order.getUserId();
 			result.getExecutions().add(new TradeExecution(order.getTradeType(), buyerId, sellerId, fillQty, fillPrice,
-					order.getStockCode(), stock.calcChangeRate(fillPrice), fillTotalvolume,
-					LocalDateTime.now()));
+					order.getStockCode(), LocalDateTime.now()));
 			if (restingOrder.isCompleted()) {
 				level.removeTopOrder();
 				result.getCompletedResting().add(restingOrder);
@@ -189,42 +164,18 @@ public class OrderTradeService {
 		return book.getSellBook().isEmpty() ? 0 : book.getSellBook().firstKey();
 	}
 
-	public void sendWebSocket(MatchingResult matchingResult, OrderBook book, Stock stock) {
+	public void sendWebSocket(MatchingResult matchingResult, OrderBook book) {
 		for (int price : matchingResult.getMatchedPrices()) {
 			PriceLevel sellLevel = book.getSellBook().get(price);
 			PriceLevel buyLevel = book.getBuyBook().get(price);
 			int sellQty = sellLevel == null ? 0 : sellLevel.getTotalQuantity();
 			int buyQty = buyLevel == null ? 0 : buyLevel.getTotalQuantity();
-			webSocketService.sendHoga(stock.getStockCode(), tradeType.SELL, price, sellQty);
-			webSocketService.sendHoga(stock.getStockCode(), tradeType.BUY, price, buyQty);
+			webSocketService.sendHoga(matchingResult.getStockCode(), tradeType.SELL, price, sellQty);
+			webSocketService.sendHoga(matchingResult.getStockCode(), tradeType.BUY, price, buyQty);
 		}
-		for (TradeExecution execution : matchingResult.getExecutions()) {
-			webSocketService.sendExecution(stock.getStockCode(), execution);
-		}
-		LocalDateTime tradeTime = matchingResult.getLastExecutionTime();
-		webSocketService.SendCurrentPrice(stock, tradeTime);
-		webSocketService.sendOrderUpdate(stock, matchingResult);
+		webSocketService.sendOrderUpdate(matchingResult);
 	}
 
-	public void updateStockCache(String stockCode, MatchingResult result) {
-		Integer currentPrice = result.getLastExecutionPrice();
-		if (currentPrice == null || currentPrice <= 0)
-			return;
-		Stock stock = stockCache.get(stockCode);
-		if (stock == null)
-			return;
-		stock.setClosePrice(currentPrice);
-		if (stock.getHighPrice() == null || currentPrice > stock.getHighPrice())
-			stock.setHighPrice(currentPrice);
-		if (stock.getLowPrice() == null || currentPrice < stock.getLowPrice())
-			stock.setLowPrice(currentPrice);
-		if (stock.getOpenPrice() != null) {
-			stock.setChangeAmount(currentPrice - stock.getOpenPrice());
-			stock.setChangeRate(stock.calcChangeRate(currentPrice));
-		}
-		stock.setTotalvolume(stock.getTotalvolume() + result.getTotalFilledQty());
-		System.out.println(stock.getTotalvolume());
-	}
 
 	public void updateCurrentCandle(String stockCode, MatchingResult result) {
 		Integer currentPrice = result.getLastExecutionPrice();

@@ -79,4 +79,5 @@ public class StockService {
 	public List<Stock> findByCodes(List<String> codes) {
 		return stockRepository.findByStockCodeIn(codes);
 	}
+
 }

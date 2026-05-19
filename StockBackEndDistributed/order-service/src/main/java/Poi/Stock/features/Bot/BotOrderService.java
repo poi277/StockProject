@@ -20,7 +20,6 @@ public class BotOrderService {
 
 	private final OrderTradeService orderTradeService;
 	private final OrderBookCache orderBookCache;
-	private final StockCache stockCache;
 	private final WebSocketService webSocketService;
 	private final StockLock stockLock;
 	private final OrderService orderService;

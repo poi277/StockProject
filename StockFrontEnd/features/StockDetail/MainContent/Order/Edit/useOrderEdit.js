@@ -43,6 +43,7 @@ export default function useOrderEdit(selectedPrice, stockCode, tradeTypeTab) {
             const res = await editOrderApi(
                 editTarget.orderId,
                 editTarget.tradeType,
+                editTarget.stockName,
                 stockCode,
                 editQuantity,
                 numericPrice,

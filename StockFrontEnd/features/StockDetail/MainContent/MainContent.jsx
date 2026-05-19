@@ -70,7 +70,7 @@ export default function StockContent({stock}) {
                    <div className="_1upatvo0">
                   <div className="tw3v-1ftc7zl0">
                     <MainContentForm/>
-                    <OrderForm selectedPrice={selectedPrice} setSelectedPrice={setSelectedPrice} stockCode={stock.stockCode} />
+                    <OrderForm selectedPrice={selectedPrice} setSelectedPrice={setSelectedPrice} stockCode={stock.stockCode}stockName={stock.stockName} />
                   </div>
                   </div>
                 </div>

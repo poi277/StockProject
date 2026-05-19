@@ -27,7 +27,6 @@ public class TradeHistory {
 		TradeHistory h = new TradeHistory();
 		h.buyerId = ex.getBuyerId();
 		h.sellerId = ex.getSellerId();
-		h.stockCode = ex.getStockCode();
 		h.quantity = ex.getQuantity();
 		h.price = ex.getPrice();
 		h.tradedAt = LocalDateTime.now();

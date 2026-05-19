@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { orderApi } from "../../../../../lib/order";
  
-export default function useOrderSell(selectedPrice, stockCode,tradeTypeTab,priceType) {
+export default function useOrderSell(selectedPrice, stockCode,stockName,tradeTypeTab,priceType) {
 
     const [sellQuantity,setSellQuantity] = useState("")
     const [sellPrice,setSellPrice] = useState("")
@@ -15,7 +15,7 @@ export default function useOrderSell(selectedPrice, stockCode,tradeTypeTab,price
     async function sellExcuteOrder({ tradeTypeTab }) {
             try {
                 const numericPrice = priceType === 'market' ? null : Number(sellPrice.replace(/,/g, ''));
-                const res = await orderApi(tradeTypeTab, stockCode, sellQuantity, numericPrice);
+                const res = await orderApi(tradeTypeTab, stockCode,stockName, sellQuantity, numericPrice);
                 if (!res.success) {
                     throw new Error(res.message || "주문 실패");
                 }

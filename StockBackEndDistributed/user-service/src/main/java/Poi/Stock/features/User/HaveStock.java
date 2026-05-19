@@ -29,4 +29,14 @@ public class HaveStock {
 	private Integer availableQuantity;
 	// 평균 매수가
 	private double averagePrice;
+
+	public void updateAveragePrice(int qty, int price) {
+		if (this.quantity == 0) {
+			this.averagePrice = price;
+		} else {
+			double total = this.averagePrice * this.quantity + (double) price * qty;
+			this.averagePrice = total / (this.quantity + qty);
+		}
+		this.quantity += qty;
+	}
 }

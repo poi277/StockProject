@@ -16,6 +16,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 public class MatchingResult {
+	private String stockCode;
 	private Set<Integer> matchedPrices;
 	private List<TradeExecution> executions;
 	private List<Order> completedResting;
@@ -23,11 +24,12 @@ public class MatchingResult {
 	private Order incomingOrder;
 
 	// 초기화 생성자
-	public MatchingResult() {
+	public MatchingResult(String stockCode) {
 		this.matchedPrices = new HashSet<>();
 		this.executions = new ArrayList<>();
 		this.completedResting = new ArrayList<>();
 		this.partialResting = new ArrayList<>();
+		this.stockCode = stockCode;
 	}
 
 	public Integer getLastExecutionPrice() {
@@ -44,12 +46,6 @@ public class MatchingResult {
 		if (executions.isEmpty())
 			return null;
 		return executions.get(executions.size() - 1).getTime();
-	}
-
-	public Double getLastChangeRate() {
-		if (executions.isEmpty())
-			return null;
-		return executions.get(executions.size() - 1).getChangeRate();
 	}
 
 	public int getBuyFilledQty() {

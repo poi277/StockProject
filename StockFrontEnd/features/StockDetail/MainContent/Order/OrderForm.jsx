@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import './OrderForm.css'
-import useOrder, { DUMMY_PENDING_ORDERS } from './useOrder';
-import { OrderLoc } from './Commonutil/OrderCommon';
 import OrderBuyForm from './Buy/OrderBuyForm';
 import OrderSellForm from './Sell/OrderSellForm';
 import OrderPendingForm from './Edit/OrderPendingForm';
@@ -9,11 +7,11 @@ import useOrderBuy from './Buy/useOrderBuy';
 import useOrderSell from './Sell/useOrderSell';
 import useOrderEdit from './Edit/useOrderEdit';
 
-export default function OrderForm({ selectedPrice, stockCode }) {
+export default function OrderForm({ selectedPrice, stockCode,stockName }) {
     const [tradeTypeTab, setTradeTypeTab] = useState("BUY")
     const [priceType, setPriceType] = useState("limit")
-    const { sellExcuteOrder, sellPrice, setSellPrice, sellQuantity, setSellQuantity } = useOrderSell(selectedPrice, stockCode, tradeTypeTab, priceType);
-    const { buyExecuteOrder, buyPrice, setBuyPrice, buyQuantity, setBuyQuantity } = useOrderBuy(selectedPrice, stockCode, tradeTypeTab, priceType);
+    const { sellExcuteOrder, sellPrice, setSellPrice, sellQuantity, setSellQuantity } = useOrderSell(selectedPrice, stockCode,stockName, tradeTypeTab, priceType);
+    const { buyExecuteOrder, buyPrice, setBuyPrice, buyQuantity, setBuyQuantity } = useOrderBuy(selectedPrice, stockCode,stockName, tradeTypeTab, priceType);
     const { editExecuteOrder,
         edit, setEdit,
         editTarget, setEditTarget,
@@ -21,7 +19,7 @@ export default function OrderForm({ selectedPrice, stockCode }) {
         editQuantity, setEditQuantity,
         editPriceType, setEditPriceType,
         handleEditOpen,
-        handleEditClose, stockOrders } = useOrderEdit(selectedPrice, stockCode, tradeTypeTab);
+        handleEditClose, stockOrders } = useOrderEdit(selectedPrice, stockCode,stockName, tradeTypeTab);
 
     return (
         <div className="sa1m6r0">

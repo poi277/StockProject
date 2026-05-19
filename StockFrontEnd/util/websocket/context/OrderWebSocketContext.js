@@ -18,7 +18,7 @@ export function OrderWebSocketProvider({ children }) {
     if (loading) return; // ✅ 세션 확인 전 대기
 
     const client = new Client({
-      webSocketFactory: () => new SockJS(`${WEBSOCKET_API_URL}/ws`),
+      webSocketFactory: () => new SockJS(`${WEBSOCKET_API_URL}/ws-order`),
 
       connectHeaders: user ? { userId: String(user) } : {},
 
@@ -27,7 +27,7 @@ export function OrderWebSocketProvider({ children }) {
       heartbeatOutgoing: 10000,
 
       onConnect: () => {
-        console.log('✅ WebSocket 연결 성공!', 'userId:', user?.userId);
+        console.log('✅ OrderWebSocket 연결 성공!', 'userId:', user?.userId);
         setConnected(true);
       },
       onDisconnect: () => {

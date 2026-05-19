@@ -40,6 +40,7 @@ export default function useSideBarEditOrder() {
         const response = await editOrderApi(
             editTarget.orderId,
             editTarget.tradeType,
+            editTarget.stockName,
             editTarget.stockCode,
             editTarget.quantity,
             Number(price)

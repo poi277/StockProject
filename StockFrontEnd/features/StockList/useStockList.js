@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useStocksSocket } from "../../util/websocket/useStocksSocket";
 import { stockListApi } from "../../lib/stock";
 import { useRouter } from "next/navigation";
-import { useOrderWebSocket } from "../../util/websocket/context/OrderWebSocketContext";
+import { useStockWebSocket } from "../../util/websocket/context/StockWebSocketContext";
 
 export const formatPrice = (price) => price.toLocaleString() + '원'
 export const formatChangeRate = (rate) => {
@@ -41,7 +41,7 @@ export function getTradeRatio(tradeStatus) {
 
 export function useStockList() {
     const router = useRouter();
-    const { connected, client } = useOrderWebSocket();
+    const { connected, client } = useStockWebSocket();
     const [initialStocks, setInitialStocks] = useState([]);
 
     useEffect(() => {

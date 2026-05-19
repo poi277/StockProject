@@ -16,26 +16,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SettlementEvent {
+	private String stockCode;
+	private List<haveStockChange> stockChanges;
 
-    private String stockCode;
-    private List<AssetChange> assetChanges;
-    private List<haveStockChange> stockChanges;
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class AssetChange {
-        private String userId;
-		private int tradeMoney; // 양수: 증가, 음수: 감소
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
+	@Data
+	@NoArgsConstructor
+	@AllArgsConstructor
 	public static class haveStockChange {
-        private String userId;
-        private String stockCode;
-		private int tradeQuantity; // 양수: 매수, 음수: 매도
-		private int tradePrice; // 체결가 (평균가 계산용)
-    }
+		private String userId;
+		private int tradeQuantity;
+		private int tradePrice;
+	}
 }

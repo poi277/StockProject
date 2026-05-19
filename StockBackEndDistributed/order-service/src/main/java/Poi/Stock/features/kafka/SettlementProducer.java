@@ -1,8 +1,11 @@
 package Poi.Stock.features.kafka;
 
+import java.util.List;
+
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+import Poi.Stock.object.TradeExecution;
 import Poi.Stock.shared.event.SettlementEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +19,9 @@ public class SettlementProducer {
 
 	public void sendSettlement(SettlementEvent event) {
 		kafkaTemplate.send("settlement-topic", event.getStockCode(), event);
-		log.info("정산 이벤트 발행: stockCode={}, 자산변경={}건, 주식변경={}건", event.getStockCode(), event.getAssetChanges().size(),
-				event.getStockChanges().size());
+	}
+
+	public void sendTradeExecutionStockService(List<TradeExecution> executions) {
+		kafkaTemplate.send("trade-execution-topic", executions.get(0).getStockCode(), executions);
 	}
 }

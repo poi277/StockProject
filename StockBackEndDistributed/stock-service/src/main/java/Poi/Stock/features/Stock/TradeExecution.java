@@ -1,4 +1,4 @@
-package Poi.Stock.object;
+package Poi.Stock.features.Stock;
 
 import java.time.LocalDateTime;
 

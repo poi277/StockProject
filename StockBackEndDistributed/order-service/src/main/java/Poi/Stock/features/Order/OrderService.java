@@ -98,16 +98,21 @@ public class OrderService {
 
     @Transactional
     public void processOrder(TradeDTO tradeDTO) {
+		// stockcache는 가동할때만 가볍게 가져옴(이름과 코드)
         Order order = orderTradeService.setOrder(tradeDTO);
         OrderBook book = orderBookCache.get(order.getStockCode());
-		Stock stock = stockCache.get(order.getStockCode());
-		MatchingResult result = orderTradeService.matchLoop(order, book, stock);
+		MatchingResult result = orderTradeService.matchLoop(order, book);
         orderTradeService.saveTradeHistories(result.getExecutions());
         orderTradeService.saveOrders(result, order);
 		orderTradeService.settlement(result);
-		orderTradeService.updateStockCache(order.getStockCode(), result);
 		orderTradeService.updateCurrentCandle(order.getStockCode(), result);
-		orderTradeService.sendWebSocket(result, book, stock);
+		orderTradeService.sendWebSocket(result, book);
+    }
+
+	public String validateOrder(String stockCode)
+    {
+		Stock stock = stockCache.get(stockCode);
+		return stock.getStockName();
     }
 
     public void placeOrder(String userId, TradeDTO tradeDTO) {
@@ -184,15 +189,13 @@ public class OrderService {
 	        order.setRemainingQuantity(tradeDTO.getQuantity() - filledQty);
 	    }
 
-	    Stock stock = stockCache.get(order.getStockCode());
-	    MatchingResult result = orderTradeService.matchLoop(order, book, stock);
+		MatchingResult result = orderTradeService.matchLoop(order, book);
 		// 수정된 값이 아닌 수정전 값을 갱신하기 위해 넣어야함
 		result.getMatchedPrices().add(oldPrice);
 	    orderTradeService.saveTradeHistories(result.getExecutions());
 	    orderTradeService.saveEditOrders(result, order);
 	    orderTradeService.settlement(result);
-	    orderTradeService.updateStockCache(order.getStockCode(), result);
 	    orderTradeService.updateCurrentCandle(order.getStockCode(), result);
-	    orderTradeService.sendWebSocket(result, book, stock);
+		orderTradeService.sendWebSocket(result, book);
 	}
 }
