@@ -2,18 +2,18 @@ package Poi.Stock.features.kafka;
 
 import java.util.List;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import Poi.Stock.features.Stock.Stock;
 import Poi.Stock.features.Stock.StockCache;
-import Poi.Stock.features.Stock.TradeExecution;
 import Poi.Stock.features.webSocket.WebSocketService;
+import Poi.Stock.object.TradeExecution;
+import Poi.Stock.object.TradeExecutionList;
 import Poi.Stock.repository.StockRepository;
 import lombok.RequiredArgsConstructor;
 @Component
@@ -25,18 +25,17 @@ public class TradeExecutionConsumer {
 	private final StockRepository stockRepository;
 	private final ObjectMapper objectMapper; // 추가
 
-	@KafkaListener(topics = "trade-execution-topic", groupId = "stock-service-group", containerFactory = "stringKafkaListenerContainerFactory")
+	@KafkaListener(topics = "trade-execution-topic", groupId = "stock-service-group")
 	@Transactional
-	public void consumeTradeExecution(ConsumerRecord<String, String> record) throws JsonProcessingException {
-		List<TradeExecution> executions = objectMapper.readValue(record.value(),
-				objectMapper.getTypeFactory().constructCollectionType(List.class, TradeExecution.class));
+	public void consumeTradeExecution(@Payload TradeExecution message) {
+		List<TradeExecutionList> executions = message.getTradeExecutionList();
 
 		String stockCode = executions.get(0).getStockCode();
 		Stock stock = stockCache.get(stockCode);
 		if (stock == null)
 			return;
 
-		for (TradeExecution execution : executions) {
+		for (TradeExecutionList execution : executions) {
 			stock.setClosePrice(execution.getPrice());
 			if (stock.getHighPrice() == null || execution.getPrice() > stock.getHighPrice())
 				stock.setHighPrice(execution.getPrice());

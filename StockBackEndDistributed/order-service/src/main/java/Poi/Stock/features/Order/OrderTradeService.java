@@ -16,7 +16,7 @@ import Poi.Stock.features.CompletedOrder.CompletedOrder;
 import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.features.kafka.SettlementProducer;
 import Poi.Stock.object.MatchingResult;
-import Poi.Stock.object.TradeExecution;
+import Poi.Stock.object.TradeExecutionList;
 import Poi.Stock.repository.CompletedOrderRepository;
 import Poi.Stock.repository.OrderRepository;
 import Poi.Stock.repository.TradeHistoryRepository;
@@ -69,9 +69,9 @@ public class OrderTradeService {
 		}
 	}
 
-	private SettlementEvent buildSettlementEvent(List<TradeExecution> executions, String stockCode) {
+	private SettlementEvent buildSettlementEvent(List<TradeExecutionList> executions, String stockCode) {
 		List<haveStockChange> stockChanges = new ArrayList<>();
-		for (TradeExecution ex : executions) {
+		for (TradeExecutionList ex : executions) {
 			if (!isBot(ex.getBuyerId()))
 			    stockChanges.add(new haveStockChange(ex.getBuyerId(), ex.getQuantity(), ex.getPrice()));
 			if (!isBot(ex.getSellerId()))
@@ -100,7 +100,8 @@ public class OrderTradeService {
 			result.getMatchedPrices().add(fillPrice);
 			String buyerId = order.getTradeType() == tradeType.BUY ? order.getUserId() : restingOrder.getUserId();
 			String sellerId = order.getTradeType() == tradeType.BUY ? restingOrder.getUserId() : order.getUserId();
-			result.getExecutions().add(new TradeExecution(order.getTradeType(), buyerId, sellerId, fillQty, fillPrice,
+			result.getExecutions()
+					.add(new TradeExecutionList(order.getTradeType(), buyerId, sellerId, fillQty, fillPrice,
 					order.getStockCode(), LocalDateTime.now()));
 			if (restingOrder.isCompleted()) {
 				level.removeTopOrder();
@@ -121,7 +122,7 @@ public class OrderTradeService {
 		return result;
 	}
 
-	public void saveTradeHistories(List<TradeExecution> executions) {
+	public void saveTradeHistories(List<TradeExecutionList> executions) {
 		if (executions.isEmpty()) return;
 		List<TradeHistory> histories = executions.stream()
 				.filter(ex -> !(isBot(ex.getBuyerId()) && isBot(ex.getSellerId()))).map(TradeHistory::from).toList();

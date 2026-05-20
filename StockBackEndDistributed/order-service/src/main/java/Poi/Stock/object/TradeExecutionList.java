@@ -1,4 +1,4 @@
-package Poi.Stock.features.Stock;
+package Poi.Stock.object;
 
 import java.time.LocalDateTime;
 
@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class TradeExecution {
+public class TradeExecutionList {
 	private tradeType tradeType;
 	private String buyerId;
 	private String sellerId;

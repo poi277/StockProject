@@ -6,6 +6,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
 import Poi.Stock.object.TradeExecution;
+import Poi.Stock.object.TradeExecutionList;
 import Poi.Stock.shared.event.SettlementEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +22,7 @@ public class SettlementProducer {
 		kafkaTemplate.send("settlement-topic", event.getStockCode(), event);
 	}
 
-	public void sendTradeExecutionStockService(List<TradeExecution> executions) {
-		kafkaTemplate.send("trade-execution-topic", executions.get(0).getStockCode(), executions);
+	public void sendTradeExecutionStockService(List<TradeExecutionList> executions) {
+		kafkaTemplate.send("trade-execution-topic", executions.get(0).getStockCode(), new TradeExecution(executions));
 	}
 }

@@ -3,14 +3,12 @@ package Poi.Stock.object;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
-@Data
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 public class TradeExecution {
-	private List<TradeExecutionList> executions;
+	List<TradeExecutionList> tradeExecutionList;
 }

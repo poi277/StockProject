@@ -7,7 +7,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 import Poi.Stock.features.Stock.Stock;
-import Poi.Stock.features.Stock.TradeExecution;
+import Poi.Stock.object.TradeExecutionList;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,7 +31,7 @@ public class WebSocketService {
 		messagingTemplate.convertAndSend("/topic/stock/" + stock.getStockCode(), payload);
 	}
 
-	public void sendExecution(TradeExecution execution, Stock stock) {
+	public void sendExecution(TradeExecutionList execution, Stock stock) {
 		Map<String, Object> payload = new HashMap<>();
 		payload.put("tradeType", execution.getTradeType());
 		payload.put("price", execution.getPrice());
