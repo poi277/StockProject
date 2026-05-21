@@ -8,20 +8,20 @@ import java.util.TreeMap;
 import org.springframework.stereotype.Service;
 
 import Poi.Stock.DTO.user.TradeDTO;
-import Poi.Stock.TreadeHistory.TradeHistory;
 import Poi.Stock.features.Bot.Bot;
 import Poi.Stock.features.Bot.BotCache;
 import Poi.Stock.features.Candle.CandleService;
 import Poi.Stock.features.CompletedOrder.CompletedOrder;
+import Poi.Stock.features.TradeHistory.TradeHistory;
 import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.features.kafka.SettlementProducer;
 import Poi.Stock.object.MatchingResult;
-import Poi.Stock.object.TradeExecutionList;
+import Poi.Stock.object.SettlementEvent;
+import Poi.Stock.object.SettlementEvent.haveStockChange;
+import Poi.Stock.object.TradeExecution;
 import Poi.Stock.repository.CompletedOrderRepository;
 import Poi.Stock.repository.OrderRepository;
 import Poi.Stock.repository.TradeHistoryRepository;
-import Poi.Stock.shared.event.SettlementEvent;
-import Poi.Stock.shared.event.SettlementEvent.haveStockChange;
 import Poi.Stock.util.EnumUtil.OrderStatus;
 import Poi.Stock.util.EnumUtil.tradeType;
 import lombok.RequiredArgsConstructor;
@@ -69,9 +69,9 @@ public class OrderTradeService {
 		}
 	}
 
-	private SettlementEvent buildSettlementEvent(List<TradeExecutionList> executions, String stockCode) {
+	private SettlementEvent buildSettlementEvent(List<TradeExecution> executions, String stockCode) {
 		List<haveStockChange> stockChanges = new ArrayList<>();
-		for (TradeExecutionList ex : executions) {
+		for (TradeExecution ex : executions) {
 			if (!isBot(ex.getBuyerId()))
 			    stockChanges.add(new haveStockChange(ex.getBuyerId(), ex.getQuantity(), ex.getPrice()));
 			if (!isBot(ex.getSellerId()))
@@ -101,7 +101,8 @@ public class OrderTradeService {
 			String buyerId = order.getTradeType() == tradeType.BUY ? order.getUserId() : restingOrder.getUserId();
 			String sellerId = order.getTradeType() == tradeType.BUY ? restingOrder.getUserId() : order.getUserId();
 			result.getExecutions()
-					.add(new TradeExecutionList(order.getTradeType(), buyerId, sellerId, fillQty, fillPrice,
+					.add(new TradeExecution(order.getTradeType(), order.getStatus(), buyerId, sellerId, fillQty,
+							fillPrice,
 					order.getStockCode(), LocalDateTime.now()));
 			if (restingOrder.isCompleted()) {
 				level.removeTopOrder();
@@ -122,7 +123,7 @@ public class OrderTradeService {
 		return result;
 	}
 
-	public void saveTradeHistories(List<TradeExecutionList> executions) {
+	public void saveTradeHistories(List<TradeExecution> executions) {
 		if (executions.isEmpty()) return;
 		List<TradeHistory> histories = executions.stream()
 				.filter(ex -> !(isBot(ex.getBuyerId()) && isBot(ex.getSellerId()))).map(TradeHistory::from).toList();
@@ -131,8 +132,8 @@ public class OrderTradeService {
 		}
 	}
 
-	public void saveOrders(MatchingResult result, Order incomingOrder) {
-		boolean incomingIsBot = isBot(incomingOrder.getUserId());
+	public void saveOrders(MatchingResult result) {
+		boolean incomingIsBot = isBot(result.getIncomingOrder().getUserId());
 		if (!result.getCompletedResting().isEmpty()) {
 			List<Order> completedToSave = result.getCompletedResting().stream()
 					.filter(o -> !isBot(o.getUserId()) || !incomingIsBot).toList();
@@ -145,13 +146,13 @@ public class OrderTradeService {
 		if (!result.getPartialResting().isEmpty()) {
 			orderRepository.saveAll(result.getPartialResting());
 		}
-		if (incomingOrder.isCompleted()) {
+		if (result.getIncomingOrder().isCompleted()) {
 			if (!incomingIsBot || !result.getCompletedResting().stream().allMatch(o -> isBot(o.getUserId()))) {
-				completedOrderRepository.save(CompletedOrder.setCompletedOrder(incomingOrder));
+				completedOrderRepository.save(CompletedOrder.setCompletedOrder(result.getIncomingOrder()));
 			}
-			orderRepository.delete(incomingOrder);
+			orderRepository.delete(result.getIncomingOrder());
 		} else {
-			orderRepository.save(incomingOrder);
+			orderRepository.save(result.getIncomingOrder());
 		}
 	}
 
@@ -178,12 +179,12 @@ public class OrderTradeService {
 	}
 
 
-	public void updateCurrentCandle(String stockCode, MatchingResult result) {
+	public void updateCurrentCandle(MatchingResult result) {
 		Integer currentPrice = result.getLastExecutionPrice();
 		LocalDateTime lastExecutiontime = result.getLastExecutionTime();
 
 		if (currentPrice != null && currentPrice > 0 && lastExecutiontime != null) {
-			candleService.saveCandleOrder(stockCode, currentPrice, result.getBuyFilledQty(),
+			candleService.saveCandleOrder(result.getStockCode(), currentPrice, result.getBuyFilledQty(),
 					result.getSellFilledQty(), result.getTotalTradeAmount(), lastExecutiontime);
 		}
 	}

@@ -39,6 +39,7 @@ public class KafkaConsumer {
 			stockLock.unlock(tradeDTO.getStockCode());
 		}
 	}
+
 	@KafkaListener(topics = "order-topic.DLT", groupId = "stock-dlt-group")
 	public void consumeDLT(@Payload TradeDTO tradeDTO) {
 		log.error("DLT 메시지 수신 - userId: {}, stockCode: {}", tradeDTO.getUserId(), tradeDTO.getStockCode());
@@ -60,7 +61,9 @@ public class KafkaConsumer {
 	}
 	private void sleep(int attempt) {
 		try {
-			Thread.sleep(1000L * attempt);
+			long waitMs = 1000L * (long) Math.pow(2, attempt - 1);
+			log.info("재시도 대기 {}ms", waitMs);
+			Thread.sleep(waitMs);
 		} catch (InterruptedException ie) {
 			Thread.currentThread().interrupt();
 		}

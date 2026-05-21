@@ -18,7 +18,7 @@ import lombok.Setter;
 public class MatchingResult {
 	private String stockCode;
 	private Set<Integer> matchedPrices;
-	private List<TradeExecutionList> executions;
+	private List<TradeExecution> executions;
 	private List<Order> completedResting;
 	private List<Order> partialResting;
 	private Order incomingOrder;
@@ -39,7 +39,7 @@ public class MatchingResult {
 	}
 
 	public int getTotalFilledQty() {
-		return executions.stream().mapToInt(TradeExecutionList::getQuantity).sum();
+		return executions.stream().mapToInt(TradeExecution::getQuantity).sum();
 	}
 
 	public LocalDateTime getLastExecutionTime() {
@@ -49,12 +49,12 @@ public class MatchingResult {
 	}
 
 	public int getBuyFilledQty() {
-		return executions.stream().filter(e -> e.getTradeType() == tradeType.BUY).mapToInt(TradeExecutionList::getQuantity)
+		return executions.stream().filter(e -> e.getTradeType() == tradeType.BUY).mapToInt(TradeExecution::getQuantity)
 				.sum();
 	}
 
 	public int getSellFilledQty() {
-		return executions.stream().filter(e -> e.getTradeType() == tradeType.SELL).mapToInt(TradeExecutionList::getQuantity)
+		return executions.stream().filter(e -> e.getTradeType() == tradeType.SELL).mapToInt(TradeExecution::getQuantity)
 				.sum();
 	}
 

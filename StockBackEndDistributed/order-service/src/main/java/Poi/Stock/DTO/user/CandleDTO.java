@@ -11,5 +11,6 @@ public class CandleDTO {
 	private int high;
 	private int low;
 	private int close;
-	private long totalVolume;
+	private Long sellQty;
+	private Long buyQty;
 }

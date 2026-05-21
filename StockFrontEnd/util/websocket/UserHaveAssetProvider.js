@@ -15,7 +15,9 @@ export function UserHaveAssetProvider({ children }) {
     const { userClient, userConnected } = useUserWebSocket();
     const { orders, setOrders,notifications  } = useOrderSocket(client, connected);
     const { haveStocks, setHaveStocks, asset, setAsset, availableAsset, setAvailableAsset, initialStocks } = useUserHaveAssetSocket(userClient, userConnected);
-    
+    //havestock->가지고있는 주식 수 만 알려줌
+    //stocklist는 가지고있는 주식의 가격(info)를 알려줌
+    //가지고 있는 주식 구독
     const { stocklist } = useStocksSocket(client, connected,initialStocks);
 
 

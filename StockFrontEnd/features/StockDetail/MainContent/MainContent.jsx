@@ -41,7 +41,7 @@ export default function StockContent({stock}) {
                   <input type="hidden" value='{"typeId":"chart","title":"차트","hide":"false"}' />
                 <div className="_1upatvo0">
                   <div className="tw3v-1ftc7zl0">
-                     <MainContentForm/>
+                     <MainContentForm content='차트'/>
                      <ChartForm  stockCode = {stock.stockCode}/>
                     </div>
                   </div>
@@ -55,7 +55,7 @@ export default function StockContent({stock}) {
                   <input type="hidden" value='{"typeId":"quote","title":"호가","minWidth":325,"minHeight":300,"hide":"false"}' />
                   <div className="_1upatvo0">
                   <div className="tw3v-1ftc7zl0">
-                     <MainContentForm/>
+                     <MainContentForm content='호가'/>
                       <HogaChart stock={stock} onPriceSelect={setSelectedPrice} />
                      </div>
                   </div>
@@ -69,7 +69,7 @@ export default function StockContent({stock}) {
                   <input type="hidden" value='{"typeId":"orderForm","title":"일반주문","minWidth":300,"minHeight":300,"hide":"false"}' />
                    <div className="_1upatvo0">
                   <div className="tw3v-1ftc7zl0">
-                    <MainContentForm/>
+                    <MainContentForm content='일반주문'/>
                     <OrderForm selectedPrice={selectedPrice} setSelectedPrice={setSelectedPrice} stockCode={stock.stockCode}stockName={stock.stockName} />
                   </div>
                   </div>
@@ -82,7 +82,7 @@ export default function StockContent({stock}) {
                 }}>
                   <input type="hidden" value='{"typeId":"myStockInformation","title":"보유 주식","hide":"false"}' />
                   <div className="tw3v-1ftc7zl0">
-                    <MainContentForm/>
+                    <MainContentForm content='보유 주식'/>
                     <HaveStock stockCode = {stock.stockCode}/>
                   </div>
                 </div>
@@ -91,7 +91,7 @@ export default function StockContent({stock}) {
                 <div className="_14b51l92" style={{ position: 'absolute', top: `${splitH_mid + G}px`, left: `${splitV1 + G}px`,  width: `${w2}px`, height: `${totalH - splitH_mid - G}px` }}>
                   <input type="hidden" value='{"typeId":"realtimeTicks","title":"시세","hide":"false"}' />
                     <div className="tw3v-1ftc7zl0">
-                        <MainContentForm/>
+                        <MainContentForm content='시세'/>
                         <RealTimeTicks  stockCode = {stock.stockCode}/>
                     </div>
                 </div>
@@ -103,7 +103,7 @@ export default function StockContent({stock}) {
                 }}>
                   <input type="hidden" value='{"typeId":"community","title":"커뮤니티","minWidth":300,"minHeight":300,"hide":"false"}' />
                   <div className="tw3v-1ftc7zl0">
-                    <MainContentForm/>
+                    <MainContentForm content='커뮤니티'/>
                   </div>
                 </div>
 
@@ -176,69 +176,66 @@ export default function StockContent({stock}) {
   );
 }
 
-function MainContentForm() {
-  return (
-    <div className="tw3v-1ftc7zl1">
-      <div className="tw3v-1ftc7zl2">
-        <div style={{ cursor: "move", touchAction: "none", userSelect: "none" }} >
-          <div className="tw3v-1ftc7zl4" aria-label="패널 이동">
-            <span className="rc5u-d3e6jc0 rc5u-d3e6jc2 rc5u-d3e6jc1" aria-hidden="false" role="presentation" style={{ "--standard-icon-size": "14px" }} >
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="line-icon">
-                <g fill="#ADB7C1" fillRule="evenodd">
-                  <path d="M 9.125 17.125 a 1.8 1.8 0 1 1 0 3.6 a 1.8 1.8 0 0 1 0 -3.6 M 10.925 12.125 c 0 1 -0.8 1.8 -1.8 1.8 s -1.8 -0.8 -1.8 -1.8 s 0.8 -1.8 1.8 -1.8 s 1.8 0.8 1.8 1.8 M 10.925 5.325 c 0 1 -0.8 1.8 -1.8 1.8 s -1.8 -0.8 -1.8 -1.8 s 0.8 -1.8 1.8 -1.8 s 1.8 0.8 1.8 1.8 M 15.125 17.125 a 1.8 1.8 0 1 1 0 3.6 a 1.8 1.8 0 0 1 0 -3.6 M 16.925 12.125 c 0 1 -0.8 1.8 -1.8 1.8 s -1.8 -0.8 -1.8 -1.8 s 0.8 -1.8 1.8 -1.8 s 1.8 0.8 1.8 1.8 M 16.925 5.325 c 0 1 -0.8 1.8 -1.8 1.8 s -1.8 -0.8 -1.8 -1.8 s 0.8 -1.8 1.8 -1.8 s 1.8 0.8 1.8 1.8"/>
-                </g>
-              </svg>
-            </span>
-          </div>
-        </div>
-        <div className="tw3v-13vbc5y0"> 
-          <div className="tw3v-pmssay6" aria-hidden="true"> 
-            <div role="tab" tabIndex={0} aria-disabled="false" aria-roledescription="sortable" aria-describedby="" aria-selected="true" className="tw3v-pmssay2" data-tab-id="bba3fb5f-b825-45bc-b69a-b3711c5d7ee8" data-selected="true" data-closable="true">
-              <span className="tw3v-pmssay3">시세</span>
-              <button type="button" className="tw3v-pmssay4" aria-label="탭 닫기">
-                <span className="rc5u-d3e6jc0 rc5u-d3e6jc2 rc5u-d3e6jc1" aria-hidden="false" role="presentation" style={{ "--standard-icon-size": "14px" }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="line-icon">
-                    <path fill="#BOB8C1" fillRule="evenodd" d="M 13.815 12 l 5.651 -5.651 a 1.2 1.2 0 0 0 -1.697 -1.698 l -5.651 5.652 l -5.652 -5.652 a 1.201 1.201 0 0 0 -1.697 1.698 L 10.421 12 l -5.652 5.651 a 1.202 1.202 0 0 0 0.849 2.049 c 0.307 0 0.614 -0.117 0.848 -0.351 l 5.652 -5.652 l 5.651 5.652 a 1.198 1.198 0 0 0 1.697 0 a 1.2 1.2 0 0 0 0 -1.698 L 13.815 12z" />
-                  </svg>
-                </span>
-              </button>
+function MainContentForm({ content = "" }) {
+    return (
+        <div className="tw3v-1ftc7zl1">
+            <div className="tw3v-1ftc7zl2">
+                <div style={{ cursor: "move", touchAction: "none", userSelect: "none" }}>
+                    <div className="tw3v-1ftc7zl4">
+                        <span className="rc5u-d3e6jc0 rc5u-d3e6jc2 rc5u-d3e6jc1" style={{ "--standard-icon-size": "14px" }}>
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="line-icon">
+                                <g fill="#ADB7C1" fillRule="evenodd">
+                                    <path d="M 9.125 17.125 a 1.8 1.8 0 1 1 0 3.6 a 1.8 1.8 0 0 1 0 -3.6 M 10.925 12.125 c 0 1 -0.8 1.8 -1.8 1.8 s -1.8 -0.8 -1.8 -1.8 s 0.8 -1.8 1.8 -1.8 s 1.8 0.8 1.8 1.8 M 10.925 5.325 c 0 1 -0.8 1.8 -1.8 1.8 s -1.8 -0.8 -1.8 -1.8 s 0.8 -1.8 1.8 -1.8 s 1.8 0.8 1.8 1.8 M 15.125 17.125 a 1.8 1.8 0 1 1 0 3.6 a 1.8 1.8 0 0 1 0 -3.6 M 16.925 12.125 c 0 1 -0.8 1.8 -1.8 1.8 s -1.8 -0.8 -1.8 -1.8 s 0.8 -1.8 1.8 -1.8 s 1.8 0.8 1.8 1.8 M 16.925 5.325 c 0 1 -0.8 1.8 -1.8 1.8 s -1.8 -0.8 -1.8 -1.8 s 0.8 -1.8 1.8 -1.8 s 1.8 0.8 1.8 1.8" />
+                                </g>
+                            </svg>
+                        </span>
+                    </div>
+                </div>
+                <div className="tw3v-13vbc5y0">
+                    <div className="tw3v-pmssay6">
+                        <div className="tw3v-pmssay2" data-tab-id="bba3fb5f-b825-45bc-b69a-b3711c5d7ee8" data-selected="true" data-closable="true">
+                            <span className="tw3v-pmssay3">{content}</span>
+                            <button type="button" className="tw3v-pmssay4">
+                                <span className="rc5u-d3e6jc0 rc5u-d3e6jc2 rc5u-d3e6jc1" style={{ "--standard-icon-size": "14px" }}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="line-icon">
+                                        <path fill="#BOB8C1" fillRule="evenodd" d="M 13.815 12 l 5.651 -5.651 a 1.2 1.2 0 0 0 -1.697 -1.698 l -5.651 5.652 l -5.652 -5.652 a 1.201 1.201 0 0 0 -1.697 1.698 L 10.421 12 l -5.652 5.651 a 1.202 1.202 0 0 0 0.849 2.049 c 0.307 0 0.614 -0.117 0.848 -0.351 l 5.652 -5.652 l 5.651 5.652 a 1.198 1.198 0 0 0 1.697 0 a 1.2 1.2 0 0 0 0 -1.698 L 13.815 12z" />
+                                    </svg>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                    <div className="tw3v-pmssay0">
+                        <div className="tw3v-pmssay2" data-tab-id="bba3fb5f-b825-45bc-b69a-b3711c5d7ee8" data-selected="true" data-closable="true">
+                            <span className="tw3v-pmssay3">{content}</span>
+                            <button type="button" className="tw3v-pmssay4">
+                                <span className="rc5u-d3e6jc0 rc5u-d3e6jc2 rc5u-d3e6jc1" style={{ "--standard-icon-size": "14px" }}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="line-icon">
+                                        <path fill="#BOB8C1" fillRule="evenodd" d="M13.815 12 l 5.651 -5.651 a 1.2 1.2 0 0 0 -1.697 -1.698 l -5.651 5.652 l -5.652 -5.652 a 1.201 1.201 0 0 0 -1.697 1.698 L 10.421 12 l -5.652 5.651 a 1.202 1.202 0 0 0 0.849 2.049 c 0.307 0 0.614 -0.117 0.848 -0.351 l 5.652 -5.652 l 5.651 5.652 a 1.198 1.198 0 0 0 1.697 0 a 1.2 1.2 0 0 0 0 -1.698 L 13.815 12z" />
+                                    </svg>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                    <button className="tw3v-emtxt715 tw3v-emtxt7p tw3v-emtxt7t tw3v-emtxt710 tw3v-ta8c3h1">
+                        <span className="tw3v-17xiat90 tw3v-17xiat91" style={{ height: "14px", width: "14px", minWidth: "14px" }}>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="line-icon">
+                                <path fill="#BOB8C1" d="M 20.318 10.8 h -7 v -7 a 1.2 1.2 0 1 0 -2.4 0 v 7 h -7 a 1.2 1.2 0 1 0 0 2.4 h 7 v 7 a 1.2 1.2 0 1 0 2.4 0 v -7 h 7 a 1.2 1.2 0 1 0 0 -2.4" fillRule="evenodd" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div className="tw3v-1y1hl1j1">
+                        <button type="button" className="tw3v-1y1hl1j9">
+                            <span className="tw3v-1y1hl1ja">0개 더보기</span>
+                            <span className="rc5u-d3e6jc0 rc5u-d3e6jc2 rc5u-d3e6jc1" style={{ "--standard-icon-size": "14px" }}>
+                                <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="m3.691 5.746 4.309 4.355 4.309 -4.355" fill="none" stroke="#8f959e" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+                                </svg>
+                            </span>
+                        </button>
+                    </div>
+                </div>
             </div>
-          </div>
-          <div role="tablist" className="tw3v-pmssay0">
-            <div role="tab" tabIndex={0} aria-disabled="false" aria-roledescription="sortable" aria-describedby="DndDescribedBy-68" aria-selected="true" className="tw3v-pmssay2" data-tab-id="bba3fb5f-b825-45bc-b69a-b3711c5d7ee8" data-selected="true" data-closable="true">
-              <span className="tw3v-pmssay3">시세</span>
-              <button type="button" className="tw3v-pmssay4" aria-label="탭 닫기">
-                <span className="rc5u-d3e6jc0 rc5u-d3e6jc2 rc5u-d3e6jc1" aria-hidden="false" role="presentation" style={{ "--standard-icon-size": "14px" }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="line-icon">
-                    <path fill="#BOB8C1" fillRule="evenodd" d="M13.815 12 l 5.651 -5.651 a 1.2 1.2 0 0 0 -1.697 -1.698 l -5.651 5.652 l -5.652 -5.652 a 1.201 1.201 0 0 0 -1.697 1.698 L 10.421 12 l -5.652 5.651 a 1.202 1.202 0 0 0 0.849 2.049 c 0.307 0 0.614 -0.117 0.848 -0.351 l 5.652 -5.652 l 5.651 5.652 a 1.198 1.198 0 0 0 1.697 0 a 1.2 1.2 0 0 0 0 -1.698 L 13.815 12z" />
-                  </svg>
-                </span>
-              </button>
-            </div>
-          </div>
-          <div id="DndDescribedBy-68" style={{ display: "none" }}> </div>
-          <div id="DndLiveRegion-68" role="status" aria-live="assertive" aria-atomic="true" style={{ position: "fixed", top: 0, left: 0, width: "1px", height: "1px", margin: "-1px", border: 0, padding: "0px", overflow: "hidden", clip: "rect(0px, 0px, 0px, 0px)", clipPath: "inset(100%)", whiteSpace: "nowrap" }}>
-          </div>
-          <button className="tw3v-emtxt715 tw3v-emtxt7p tw3v-emtxt7t tw3v-emtxt710 tw3v-ta8c3h1" aria-disabled="false" aria-label="탭 추가" data-theme="grey" data-variant="clear" data-mode="dark" aria-haspopup="menu" aria-expanded="false" data-state="closed">
-            <span className="tw3v-17xiat90 tw3v-17xiat91" aria-hidden="false" role="presentation" style={{ height: "14px", width: "14px", minWidth: "14px" }}>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="line-icon">
-                <path fill="#BOB8C1" d="M 20.318 10.8 h -7 v -7 a 1.2 1.2 0 1 0 -2.4 0 v 7 h -7 a 1.2 1.2 0 1 0 0 2.4 h 7 v 7 a 1.2 1.2 0 1 0 2.4 0 v -7 h 7 a 1.2 1.2 0 1 0 0 -2.4" fillRule="evenodd" />
-              </svg>
-            </span>
-          </button>
-          <div className="tw3v-1y1hl1j1">
-            <button type="button" className="tw3v-1y1hl1j9" aria-haspopup="dialog" aria-expanded="false" aria-controls="radix-_r97d_" data-state="closed">
-              <span className="tw3v-1y1hl1ja">0개 더보기</span>
-              <span className="rc5u-d3e6jc0 rc5u-d3e6jc2 rc5u-d3e6jc1" aria-hidden="false" role="presentation" style={{ "--standard-icon-size": "14px" }}>
-                <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-                  <path d="m3.691 5.746 4.309 4.355 4.309 -4.355" fill="none" stroke="#8f959e" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
-                </svg>
-              </span>
-            </button>
-          </div>
+            <div className="tw3v-1ftc7zl3" />
         </div>
-      </div>
-      <div className="tw3v-1ftc7zl3"></div>
-    </div>
-  )
+    )
 }

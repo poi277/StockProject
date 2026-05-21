@@ -1,8 +1,8 @@
-package Poi.Stock.TreadeHistory;
+package Poi.Stock.features.TradeHistory;
 
 import java.time.LocalDateTime;
 
-import Poi.Stock.object.TradeExecutionList;
+import Poi.Stock.object.TradeExecution;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -23,7 +23,7 @@ public class TradeHistory {
 	private int price;
 	private LocalDateTime tradedAt;
 
-	public static TradeHistory from(TradeExecutionList ex) {
+	public static TradeHistory from(TradeExecution ex) {
 		TradeHistory h = new TradeHistory();
 		h.buyerId = ex.getBuyerId();
 		h.sellerId = ex.getSellerId();

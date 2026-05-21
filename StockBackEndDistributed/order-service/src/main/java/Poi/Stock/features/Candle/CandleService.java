@@ -44,9 +44,10 @@ public class CandleService {
 
 			List<CandleDTO> result;
 			if (minute == 1) {
-				result = new ArrayList<>(candles.stream().map(c -> new CandleDTO(c.getTime().toString(), c.getOpen(),
-						c.getHigh(), c.getLow(), c.getClose(),
-						(c.getBuyQty() != null ? c.getBuyQty() : 0) + (c.getSellQty() != null ? c.getSellQty() : 0)))
+				result = new ArrayList<>(candles.stream()
+						.map(c -> new CandleDTO(c.getTime().toString(), c.getOpen(), c.getHigh(), c.getLow(),
+								c.getClose(), c.getSellQty() != null ? c.getSellQty() : 0L,
+								c.getBuyQty() != null ? c.getBuyQty() : 0L))
 						.toList());
 			} else {
 				result = new ArrayList<>(candles.stream()
@@ -59,16 +60,14 @@ public class CandleService {
 									group.stream().mapToInt(CandleMinute::getHigh).max().orElse(0),
 									group.stream().mapToInt(CandleMinute::getLow).min().orElse(0),
 									group.get(group.size() - 1).getClose(),
-									group.stream().mapToLong(c -> (c.getBuyQty() != null ? c.getBuyQty() : 0)
-											+ (c.getSellQty() != null ? c.getSellQty() : 0)).sum());
+									group.stream().mapToLong(c -> c.getSellQty() != null ? c.getSellQty() : 0).sum(),
+									group.stream().mapToLong(c -> c.getBuyQty() != null ? c.getBuyQty() : 0).sum());
 						}).toList());
 			}
 
-			// 현재 진행중인 분봉 Redis에서 add
 			CandleDTO currentCandle = getCurrentCandleFromRedis(stockCode);
-			if (currentCandle != null) {
+			if (currentCandle != null)
 				result.add(currentCandle);
-			}
 			return result;
 		}
 
@@ -76,25 +75,21 @@ public class CandleService {
 			LocalDate startDate = toStartTime.toLocalDate();
 			LocalDate endDate = toEndTime.toLocalDate();
 
-			// 오늘 제외한 과거 일봉
 			List<CandleDTO> result = new ArrayList<>(stockRepository
 					.findByStockCodeAndDateBetweenOrderByDateAsc(stockCode, startDate, endDate.minusDays(1)).stream()
 					.map(s -> new CandleDTO(s.getDate().toString(), s.getOpenPrice(), s.getHighPrice(), s.getLowPrice(),
-							s.getClosePrice(), s.getTotalvolume()))
+							s.getClosePrice(), 0L, s.getTotalvolume() != null ? s.getTotalvolume() : 0L))
 					.toList());
 
-			// 오늘 일봉 = 오늘 분봉(DB) + Redis 현재 봉 합산
 			CandleDTO todayCandle = getTodayCandle(stockCode);
-			if (todayCandle != null) {
+			if (todayCandle != null)
 				result.add(todayCandle);
-			}
 			return result;
 		}
 
 		throw new IllegalArgumentException("지원하지 않는 타입: " + type);
 	}
 
-	// 오늘 분봉 합산 + Redis 현재 봉 합산
 	private CandleDTO getTodayCandle(String stockCode) {
 		LocalDate today = LocalDate.now();
 		List<CandleMinute> todayMinutes = candleMinuteRepository.findByStockCodeAndTimeBetweenOrderByTimeAsc(stockCode,
@@ -105,30 +100,27 @@ public class CandleService {
 		if (todayMinutes.isEmpty() && redisCandle == null)
 			return null;
 
-		// 분봉 기준 OHLCV
-		// 분봉 기준 OHLCV
 		int open = !todayMinutes.isEmpty() ? todayMinutes.get(0).getOpen() : redisCandle.getOpen();
 		int high = todayMinutes.stream().mapToInt(CandleMinute::getHigh).max().orElse(0);
 		int low = todayMinutes.stream().mapToInt(CandleMinute::getLow).min().orElse(Integer.MAX_VALUE);
 		int close = !todayMinutes.isEmpty() ? todayMinutes.get(todayMinutes.size() - 1).getClose() : 0;
-		long volume = todayMinutes.stream().mapToLong(
-				c -> (c.getBuyQty() != null ? c.getBuyQty() : 0) + (c.getSellQty() != null ? c.getSellQty() : 0)).sum();
+		long sellQty = todayMinutes.stream().mapToLong(c -> c.getSellQty() != null ? c.getSellQty() : 0).sum();
+		long buyQty = todayMinutes.stream().mapToLong(c -> c.getBuyQty() != null ? c.getBuyQty() : 0).sum();
 
-		// Redis 현재 봉 합산
 		if (redisCandle != null) {
 			high = Math.max(high, redisCandle.getHigh());
 			low = Math.min(low, redisCandle.getLow());
 			close = redisCandle.getClose();
-			volume += redisCandle.getTotalVolume();
+			sellQty += redisCandle.getSellQty();
+			buyQty += redisCandle.getBuyQty();
 		}
 
 		if (low == Integer.MAX_VALUE)
 			low = 0;
 
-		return new CandleDTO(today.toString(), open, high, low, close, volume);
+		return new CandleDTO(today.toString(), open, high, low, close, sellQty, buyQty);
 	}
 
-	// Redis에서 현재 진행중인 분봉 가져오기
 	private CandleDTO getCurrentCandleFromRedis(String stockCode) {
 		LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
 		String key = "candle:1m:" + stockCode + ":" + now.format(FMT);
@@ -137,11 +129,21 @@ public class CandleService {
 			return null;
 
 		try {
-			return new CandleDTO(now.toString(), Integer.parseInt(String.valueOf(current.get("open"))),
-					Integer.parseInt(String.valueOf(current.get("high"))),
-					Integer.parseInt(String.valueOf(current.get("low"))),
-					Integer.parseInt(String.valueOf(current.get("close"))),
-					Long.parseLong(String.valueOf(current.get("volume"))));
+			Object open = current.get("open");
+			Object high = current.get("high");
+			Object low = current.get("low");
+			Object close = current.get("close");
+			Object buyQty = current.get("buyQty");
+			Object sellQty = current.get("sellQty");
+
+			if (open == null || high == null || low == null || close == null)
+				return null;
+
+			return new CandleDTO(now.toString(), Integer.parseInt(String.valueOf(open)),
+					Integer.parseInt(String.valueOf(high)), Integer.parseInt(String.valueOf(low)),
+					Integer.parseInt(String.valueOf(close)),
+					sellQty != null ? Long.parseLong(String.valueOf(sellQty)) : 0L,
+					buyQty != null ? Long.parseLong(String.valueOf(buyQty)) : 0L);
 		} catch (Exception e) {
 			log.error("Redis 현재 봉 변환 실패 - {}", e.getMessage());
 			return null;

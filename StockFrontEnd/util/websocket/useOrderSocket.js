@@ -54,14 +54,29 @@ export function useOrderSocket(client, connected) {
             switch (data.status) {
                 case 'PENDING': {
                     const exists = prev.find(o => o.orderId == data.orderId);
-                    if (exists) return prev.map(o => o.orderId == data.orderId ? { ...o, ...data } : o);
+                    if (exists) {
+                        return prev.map(o =>
+                            o.orderId == data.orderId ? { ...o, ...data } : o
+                        );
+                    }
                     return [...prev, data];
                 }
-                case 'PARTIAL':
-                    return prev.map(o => o.orderId == data.orderId ? { ...o, ...data } : o);
+                case 'PARTIAL': {
+                    const exists = prev.find(o => o.orderId == data.orderId);
+
+                    if (exists) {
+                        return prev.map(o =>
+                            o.orderId == data.orderId ? { ...o, ...data } : o
+                        );
+                    }
+                    return [...prev, data];
+                }
                 case 'COMPLETED':
-                case 'CANCELLED':
+                case 'CANCELLED': {
+                    const exists = prev.find(o => o.orderId == data.orderId);
+                    if (!exists) return prev;
                     return prev.filter(o => o.orderId != data.orderId);
+                }
                 default:
                     return prev;
             }

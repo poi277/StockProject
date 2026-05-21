@@ -103,9 +103,9 @@ public class OrderService {
         OrderBook book = orderBookCache.get(order.getStockCode());
 		MatchingResult result = orderTradeService.matchLoop(order, book);
         orderTradeService.saveTradeHistories(result.getExecutions());
-        orderTradeService.saveOrders(result, order);
+		orderTradeService.saveOrders(result);
 		orderTradeService.settlement(result);
-		orderTradeService.updateCurrentCandle(order.getStockCode(), result);
+		orderTradeService.updateCurrentCandle(result);
 		orderTradeService.sendWebSocket(result, book);
     }
 
@@ -195,7 +195,7 @@ public class OrderService {
 	    orderTradeService.saveTradeHistories(result.getExecutions());
 	    orderTradeService.saveEditOrders(result, order);
 	    orderTradeService.settlement(result);
-	    orderTradeService.updateCurrentCandle(order.getStockCode(), result);
+		orderTradeService.updateCurrentCandle(result);
 		orderTradeService.sendWebSocket(result, book);
 	}
 }

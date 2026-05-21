@@ -72,7 +72,7 @@ public class CandleSchedulerService {
 		if (result == null || result.size() < 4)
 			return null;
 		return new CandleDTO(minuteTime.toString(), Integer.parseInt(result.get(0)), Integer.parseInt(result.get(1)),
-				Integer.parseInt(result.get(2)), Integer.parseInt(result.get(3)), buyQty + sellQty);
+				Integer.parseInt(result.get(2)), Integer.parseInt(result.get(3)), (long) sellQty, (long) buyQty);
 	}
 
 	public void save1MinCandle() {

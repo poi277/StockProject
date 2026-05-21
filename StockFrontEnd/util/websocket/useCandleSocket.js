@@ -15,7 +15,8 @@ export function useCandleSocket(client, connected, stockCode) {
                 low: data.low,
                 high: data.high,
                 close: data.close,
-                volume: data.volume,
+                buyQty: data.buyQty,
+                sellQty: data.sellQty,
                 time: data.time,
             });
         });

@@ -11,7 +11,6 @@ import Poi.Stock.features.Bot.Bot;
 import Poi.Stock.features.Bot.BotCache;
 import Poi.Stock.features.Order.Order;
 import Poi.Stock.features.Order.OrderBookCache;
-import Poi.Stock.features.Stock.StockCache;
 import Poi.Stock.object.MatchingResult;
 import Poi.Stock.repository.OrderRepository;
 import Poi.Stock.repository.StockRepository;
@@ -58,7 +57,8 @@ public class WebSocketService {
 		payload.put("low", candleDTO.getLow());
 		payload.put("high", candleDTO.getHigh());
 		payload.put("close", candleDTO.getClose());
-		payload.put("volume", candleDTO.getTotalVolume());
+		payload.put("buyQty", candleDTO.getBuyQty());
+		payload.put("sellQty", candleDTO.getBuyQty());
 		payload.put("time", candleDTO.getTime());
 		System.out.println(payload);
 		messagingTemplate.convertAndSend("/topic/candle/" + stockCode, payload);
@@ -67,18 +67,15 @@ public class WebSocketService {
 	public void sendOrderUpdate(MatchingResult result) {
 	    for (Order order : result.getCompletedResting()) {
 	        if (isBot(order.getUserId())) continue;
-			sendToUser(order.getUserId(), order, OrderStatus.COMPLETED);
+			sendToUser(order.getUserId(), order, order.getStatus());
 	    }
 	    for (Order order : result.getPartialResting()) {
 	        if (isBot(order.getUserId())) continue;
-	        sendToUser(order.getUserId(), order, OrderStatus.PARTIAL);
+			sendToUser(order.getUserId(), order, order.getStatus());
 	    }
 	    Order incoming = result.getIncomingOrder();
 	    if (incoming != null && !isBot(incoming.getUserId())) {
-	        OrderStatus status = incoming.isCompleted() ? OrderStatus.COMPLETED
-	                : result.getExecutions().isEmpty() ? OrderStatus.PENDING
-	                : OrderStatus.PARTIAL;
-	        sendToUser(incoming.getUserId(), incoming, status);
+			sendToUser(incoming.getUserId(), incoming, incoming.getStatus());
 	    }
 	}
 
@@ -92,6 +89,12 @@ public class WebSocketService {
 		payload.put("remainingQuantity", order.getRemainingQuantity());
 		payload.put("tradePrice", order.getTradePrice());
 		payload.put("status", orderStatus);
+
+		log.info(
+				"Order Update Send -> userId: {}, orderId: {}, stockCode: {}, status: {}, quantity: {}, remainingQuantity: {}, price: {}",
+				userId, order.getOrderId(), order.getStockCode(), orderStatus, order.getQuantity(),
+				order.getRemainingQuantity(), order.getTradePrice());
+
 		messagingTemplate.convertAndSendToUser(userId, "/queue/orders", payload);
 	}
 

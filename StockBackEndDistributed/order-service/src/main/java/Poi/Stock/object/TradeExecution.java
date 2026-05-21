@@ -1,16 +1,23 @@
 package Poi.Stock.object;
 
-import java.util.List;
+import java.time.LocalDateTime;
 
+import Poi.Stock.util.EnumUtil.OrderStatus;
+import Poi.Stock.util.EnumUtil.tradeType;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
-@Data
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 public class TradeExecution {
-	private List<TradeExecutionList> executions;
+	private tradeType tradeType;
+	private OrderStatus orderStatus;
+	private String buyerId;
+	private String sellerId;
+	private int quantity; // 체결량
+	private int price; // 체결가
+	private String stockCode;
+	private LocalDateTime time; // 시간
 }
