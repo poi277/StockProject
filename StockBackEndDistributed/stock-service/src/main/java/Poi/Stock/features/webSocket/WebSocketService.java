@@ -18,15 +18,17 @@ public class WebSocketService {
 	private final SimpMessagingTemplate messagingTemplate;
 
 	public void SendCurrentPrice(Stock stock) {
-
 		Integer currentPrice = stock.getClosePrice();
 		if (currentPrice == null || currentPrice <= 0)
 			return;
 		Map<String, Object> payload = new HashMap<>();
 		payload.put("stockCode", stock.getStockCode());
-		payload.put("currentPrice", stock.getClosePrice());
 		payload.put("changeRate", stock.getChangeRate());
 		payload.put("changeAmount", stock.getChangeAmount());
+		payload.put("closePrice", stock.getClosePrice());
+		payload.put("openPrice", stock.getOpenPrice());
+		payload.put("highPrice", stock.getHighPrice());
+		payload.put("lowPrice", stock.getLowPrice());
 		System.out.println(payload);
 		messagingTemplate.convertAndSend("/topic/stock/" + stock.getStockCode(), payload);
 	}

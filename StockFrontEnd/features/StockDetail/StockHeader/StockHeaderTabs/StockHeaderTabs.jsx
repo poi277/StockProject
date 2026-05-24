@@ -6,11 +6,11 @@ const SCROLL_BUTTONS = [
   { label: '오른쪽으로 스크롤', tag: '오른쪽으로_스크롤', path: "M5.75 13.4c-.23 0-.46-.09-.64-.26a.9.9 0 010-1.27L8.98 8 5.11 4.14a.9.9 0 010-1.27.9.9 0 011.27 0l4.5 4.5a.9.9 0 010 1.27l-4.5 4.5c-.17.17-.4.26-.63.26", containerClass: '_8u2t3p5 _8u2t3p2 _8u2t3p3' },
 ];
 
-export default function StockHeaderTabs() {
+export default function StockHeaderTabs({stock}) {
   return (
     <>
       <div className={SCROLL_BUTTONS[0].containerClass}><ScrollButton {...SCROLL_BUTTONS[0]} /></div>
-      <div className="_8u2t3p1" data-scroll-root="true"><StockHeaderGrid /></div>
+      <div className="_8u2t3p1" data-scroll-root="true"><StockHeaderGrid stock ={stock} /></div>
       <div className={SCROLL_BUTTONS[1].containerClass}><ScrollButton {...SCROLL_BUTTONS[1]} /></div>
     </>
   );

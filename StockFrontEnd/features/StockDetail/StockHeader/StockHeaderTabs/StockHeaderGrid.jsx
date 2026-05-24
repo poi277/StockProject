@@ -1,6 +1,10 @@
 import React from 'react';
+import useStockHeaderGrid from './useStockHeaderGrid';
 
-export default function StockHeaderGrid() {
+export default function StockHeaderGrid({stock}) {
+
+  const { low, high, leftPercent, rightPercent } = useStockHeaderGrid(stock);
+
   return (
     <div className="w65d0">
       <div className="w65d6">
@@ -8,15 +12,15 @@ export default function StockHeaderGrid() {
           <span key={label} className="tw3v-1r5dc8g0" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-greyOpacity500)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '12px' }}>{label}</span>
         ))}
 
-        {['199,800원', '52,000원'].map((val) => (
+        {[`${low.toLocaleString()}원`, '52,000원'].map((val) => (
           <span key={val} className="tw3v-1r5dc8g0 w65d7" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-greyOpacity700)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '12px' }}><span>{val}</span></span>
         ))}
 
-        {[{ left: '67.6871', right: '32.3129' }, { left: '89.3768', right: '10.6232' }].map((bar, i) => (
+        {[{ left: leftPercent, right: rightPercent }, { left: '89.3768', right: '20.6232' }].map((bar, i) => (
           <div key={i} className="w65d3"><div className="w65d4" style={{ flex: `${bar.left} 1 0%` }}></div><div className="w65d5"></div><div className="w65d4" style={{ flex: `${bar.right} 1 0%` }}></div></div>
         ))}
 
-        {['214,500원', '228,500원'].map((val) => (
+        {[`${high.toLocaleString()}원`, '228,500원'].map((val) => (
           <span key={val} className="tw3v-1r5dc8g0 w65d7" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-greyOpacity700)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '12px' }}><span>{val}</span></span>
         ))}
       </div>

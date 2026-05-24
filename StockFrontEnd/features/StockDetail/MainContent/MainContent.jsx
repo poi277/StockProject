@@ -12,7 +12,7 @@ import HaveStock from './HaveStockDetail/HaveStock';
 export default function StockContent({stock}) {
   const {
     containerRef,
-    selectedPrice, setSelectedPrice,
+    selectedPrice, setSelectedPrice,handlePriceSelect,
     onMouseDown,
     splitV1, splitV2, splitH_left, splitH_mid, splitH_right, totalH,
     G, w1, w2, w3,
@@ -56,7 +56,7 @@ export default function StockContent({stock}) {
                   <div className="_1upatvo0">
                   <div className="tw3v-1ftc7zl0">
                      <MainContentForm content='호가'/>
-                      <HogaChart stock={stock} onPriceSelect={setSelectedPrice} />
+                      <HogaChart stock={stock} onPriceSelect={handlePriceSelect} />
                      </div>
                   </div>
                 </div>

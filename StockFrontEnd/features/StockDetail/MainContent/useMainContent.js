@@ -12,7 +12,7 @@ const INIT = {
 
 export default function useMainContent() {
   const containerRef = useRef(null);
-  const [selectedPrice, setSelectedPrice] = useState('');
+  const [selectedPrice, setSelectedPrice] = useState({ value: null });
 
   const [layout, setLayout] = useState({
     splitV1: INIT.splitV1,
@@ -24,6 +24,10 @@ export default function useMainContent() {
   });
 
   const dragging = useRef(null);
+
+  const handlePriceSelect = (price) => {
+    setSelectedPrice({ value: price });
+};
 
   const onMouseDown = useCallback((e, type) => {
     e.preventDefault();
@@ -78,7 +82,7 @@ export default function useMainContent() {
 
   return {
     containerRef,
-    selectedPrice, setSelectedPrice,
+    selectedPrice, setSelectedPrice,handlePriceSelect,
     onMouseDown,
     splitV1, splitV2, splitH_left, splitH_mid, splitH_right, totalH,
     G, w1, w2, w3,

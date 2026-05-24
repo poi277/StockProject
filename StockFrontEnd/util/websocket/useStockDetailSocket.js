@@ -5,17 +5,23 @@ export function useStockDetailSocket(client, connected, initStock) {
   const [stock, setStock] = useState(initStock);
 
   useEffect(() => {
+    console.log('client:', client, 'connected:', connected, 'initStock:', initStock);
     if (!client || !connected) return;
     if (!initStock) return;
 
-    console.log('주식 구독 시작:', initStock.stockCode);
+    console.log('주식 한개 구독 시작:', initStock.stockCode);
 
     const subscription = client.subscribe(`/topic/stock/${initStock.stockCode}`, message => {
-      console.log('RAW 메시지:', message.body);
+      console.log("주식 한개 메세지 도착")
       const data = JSON.parse(message.body);
       setStock(prev => ({
         ...prev,
-        closePrice: data.currentPrice,
+        changeRate:data.changeRate,
+        changeAmount:data.changeAmount,
+        openPrice:data.openPrice,
+        closePrice: data.closePrice,
+        highPrice:data.highPrice,
+        lowPrice:data.lowPrice,
       }));
     });
 
@@ -23,7 +29,7 @@ export function useStockDetailSocket(client, connected, initStock) {
       subscription.unsubscribe();
     };
 
-  }, [client, connected, initStock]);
+  }, [client, connected, initStock?.stockCode]);
 
   return { stock };
 }

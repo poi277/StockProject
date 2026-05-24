@@ -6,7 +6,8 @@ import './StockPriceHeader.css'
 import { useStockHeader } from "./useStockHeader";
 
 export default function StockPriceHeader({ initStock }) {
-  const { connected, stock, selectedPrice, setSelectedPrice } = useStockHeader(initStock);
+  const {stock } = useStockHeader(initStock);
+
   return (
     <div className="ia3qp41" style={{ display: 'flex', flexDirection: 'row', gap: '0px', justifyContent: 'normal', alignItems: 'center' }}>
       <div className="ia3qp42">

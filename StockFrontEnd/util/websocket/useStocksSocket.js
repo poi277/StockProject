@@ -23,7 +23,7 @@ export function useStocksSocket(client, connected, initialStocks = []) {
         setStocklist(prev =>
           prev.map(stock =>
             stock.stockCode === data.stockCode
-              ? { ...stock, closePrice: data.currentPrice, changeRate: data.changeRate, value: data.value }
+              ? { ...stock, closePrice: data.closePrice, changeRate: data.changeRate, value: data.value }
               : stock
           )
         );
