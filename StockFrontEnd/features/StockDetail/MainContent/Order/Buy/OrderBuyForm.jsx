@@ -1,7 +1,7 @@
 import { OrderLoc, OrderResult, PriceForm, QuantityForm, SubmitButton } from "../Commonutil/OrderCommon";
 import useOrderBuy from "./useOrderBuy";
 
-export default function OrderBuyForm({executeOrder,tradeTypeTab,priceType,setPriceType,buyQuantity,setBuyQuantity,buyPrice,setBuyPrice}) {
+export default function OrderBuyForm({executeOrder,tradeTypeTab,priceType,setPriceType,buyQuantity,setBuyQuantity,buyPrice,setBuyPrice,}) {
 
     return (
         <div id="trade-order-section">

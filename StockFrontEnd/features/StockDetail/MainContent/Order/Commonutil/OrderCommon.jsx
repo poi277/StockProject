@@ -1,4 +1,5 @@
 import { Fragment } from 'react';
+import { getStockPriceUnit } from './stockPriceUnit';
 
 export function QuantityForm({ quantity, setQuantity, isPending }) {
     return (
@@ -23,6 +24,7 @@ export function PriceForm({ priceLabel, priceType, price, setPrice, setPriceType
         { value: 'limit', radioValue: '00', label: '지정가' },
         { value: 'market', radioValue: '03', label: '시장가' },
     ];
+    const currentIndex = PRICE_TYPES.findIndex(({ value }) => value === priceType)
     return (
         <div>
             <input type="hidden" value="268000" name="UpperLimit" />
@@ -36,11 +38,18 @@ export function PriceForm({ priceLabel, priceType, price, setPrice, setPriceType
                     </span>
                     <fieldset className="xl0v5q5">
                         <legend className="_9vo4o90">매매 가격</legend>
-                        <div role="radiogroup" aria-required="true" dir="ltr" className="tw3v-1sni4y90 tw3v-1sni4y92 tw3v-1sni4y95" tabIndex="0" style={{ outline: "none" }} data-scrollable="false">
-                            <div className="tw3v-1sni4y97 tw3v-1sni4y99" style={{ boxShadow: "rgba(0, 0, 0, 0.15) 0px 1px 3px 0px", width: "50%", transform: priceType ? "translateX(0%)" : "translateX(100%)", position: "absolute", top: "2px", left: "0px", height: "calc(100% - 4px)", transition: "transform 0.2s ease-in-out", zIndex: 0 }}></div>
+                        <div role="radiogroup" aria-required="true" dir="ltr" className="tw5c-1sni4y90 tw5c-1sni4y92 tw5c-1sni4y95" tabIndex="0" style={{ outline: "none" }} data-scrollable="false">
+                           <div
+                                className="tw3v-1sni4y97 tw3v-1sni4y99"
+                                style={{
+                                    boxShadow: "rgba(0, 0, 0, 0.15) 0px 1px 3px 0px",
+                                    width: "50%",
+                                    transform: currentIndex === 0 ? "none" : `translateX(${currentIndex * 100}%)`,
+                                }}
+                            />
                             {PRICE_TYPES.map(({ value, radioValue, label }) => (
                                 <Fragment key={value}>
-                                    <button onClick={() => setPriceType(value)} style={{ flex: 1, zIndex: 1, position: "relative", background: "transparent" }} type="button" role="radio" aria-checked={priceType === value} data-state={priceType === value ? "checked" : "unchecked"} value={radioValue} className="tw3v-1cq3gqg0 tw3v-1cq3gqg2" data-seg-state={priceType === value ? "checked" : "unchecked"} tabIndex="-1" data-radix-collection-item>
+                                    <button onClick={() => setPriceType(value)} type="button" role="radio" aria-checked={priceType === value} data-state={priceType === value ? "checked" : "unchecked"} value={radioValue} className="tw5c-1cq3gqg0 tw5c-1cq3gqg2" data-seg-state={priceType === value ? "checked" : "unchecked"} tabIndex="-1" data-radix-collection-item>
                                         <div className="tw3v-1cq3gqg3 tw3v-1cq3gqg5">
                                             <div className="tw3v-1cq3gqg8">
                                                 <span className="tw3v-1r5dc8g0 tw3v-1cq3gqg9 tw3v-1cq3gqgb" aria-hidden="true" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": priceType === value ? "var(--wts-adaptive-greyOpacity800)" : "var(--wts-adaptive-greyOpacity600)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>{label}</span>
@@ -162,16 +171,17 @@ export function SubmitButton({ tradeTypeTab,tradeType }) {
     );
 }
 
-export function OrderInputBox({ value, setValue, label, unit, placeholder, maxWidth, contentTag, parentName }) {
+export function OrderInputBox({ value, setValue, label, unit, placeholder, maxWidth }) {
     const handleDown = () => {
-        const num = Number(String(value).replace(/,/g, ''));
-        if (!isNaN(num) && num > 1) setValue((num - 1).toLocaleString('ko-KR'));
+    const num = Number(String(value).replace(/,/g, ''));
+        if (!isNaN(num) && num > 1) setValue((num - getStockPriceUnit(num)).toLocaleString('ko-KR'));
     };
 
     const handleUp = () => {
-        const num = Number(String(value).replace(/,/g, ''));
-        if (!isNaN(num)) setValue((num + 1).toLocaleString('ko-KR'));
+    const num = Number(String(value).replace(/,/g, ''));
+        if (!isNaN(num)) setValue((num + getStockPriceUnit(num)).toLocaleString('ko-KR'));
     };
+
     const handleChange = (e) => {
         const raw = e.target.value.replace(/,/g, '');
         if (raw === '') return setValue('');

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { orderApi } from "../../../../../lib/order";
  
-export default function useOrderSell(selectedPrice, stockCode,stockName,tradeTypeTab,priceType) {
+export default function useOrderSell(selectedPrice, stockCode,stockName,tradeTypeTab,priceType,closePrice) {
 
     const [sellQuantity,setSellQuantity] = useState("")
     const [sellPrice,setSellPrice] = useState("")
@@ -11,6 +11,12 @@ export default function useOrderSell(selectedPrice, stockCode,stockName,tradeTyp
         setSellPrice(selectedPrice.value.toLocaleString('ko-KR'));
     }
     }, [selectedPrice]);
+
+    useEffect(() => {
+        if (closePrice) {
+            setSellPrice(closePrice.toLocaleString('ko-KR'));
+        }
+    }, [closePrice]);
 
     async function sellExcuteOrder({ tradeTypeTab }) {
             try {

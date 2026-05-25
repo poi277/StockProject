@@ -8881,6 +8881,51 @@ tr.manual-zebra-pattern .tw3v-mq48z20 {
     background-color: var(--wts-adaptive-greyOpacity100)
 }
 
+.tw5c-1sni4y90[data-scrollable=false] {
+    justify-content: space-evenly;
+}
+
+.tw5c-1sni4y90 {
+    position: relative;
+    background-color: var(--wts-adaptive-greyOpacity100);
+    display: flex;
+    max-width: 100%;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    padding: 4px;
+    overflow-x: scroll;
+    white-space: nowrap;
+}
+.tw5c-1sni4y92 {
+    height: 32px;
+    padding: 2px;
+    border-radius: 8px;
+}
+.tw5c-1sni4y95 {
+    width: auto;
+}
+
+
+
+.tw5c-1cq3gqg0 {
+    flex-grow: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    padding: 0;
+    border: none;
+    background-color: initial;
+    appearance: none;
+    -webkit-appearance: none;
+}
+.tw5c-1cq3gqg2 {
+    flex: 1 0;
+}
+
 .tw3v-1lnvt97p,
 .tw3v-1lnvt97q {
     background-color: rgba(217, 217, 255, .11)
