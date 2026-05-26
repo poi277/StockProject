@@ -18,6 +18,7 @@ import Poi.Stock.DTO.user.HogaDTO;
 import Poi.Stock.DTO.user.TradeDTO;
 import Poi.Stock.DTO.user.myAllOrderDTO;
 import Poi.Stock.DTO.user.myStockOrderDTO;
+import Poi.Stock.features.Bot.BotService;
 import Poi.Stock.features.Candle.CandleService;
 import Poi.Stock.features.Stock.Stock;
 import Poi.Stock.features.Stock.StockCache;
@@ -44,6 +45,7 @@ public class OrderService {
     private final RestTemplate restTemplate;
 	private final CandleService candleService;
 	private final StockCache stockCache;
+	private final BotService botService;
 
     @Value("${user.service.url}")
     private String userServiceUrl;
@@ -107,6 +109,7 @@ public class OrderService {
 		orderTradeService.settlement(result);
 		orderTradeService.updateCurrentCandle(result);
 		orderTradeService.sendWebSocket(result, book);
+		botService.setBotStockCache(result);
     }
 
 	public String validateOrder(String stockCode)

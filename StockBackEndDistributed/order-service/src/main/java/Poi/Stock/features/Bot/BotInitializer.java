@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
+import Poi.Stock.features.Stock.Stock;
 import Poi.Stock.features.Stock.StockCache;
 import Poi.Stock.util.EnumUtil.BotType;
 import jakarta.annotation.PostConstruct;
@@ -13,13 +14,14 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-@DependsOn("webSocketService")
+@DependsOn({ "stockInit" })
 @RequiredArgsConstructor
 public class BotInitializer {
 
 	private final BotRepository botRepository;
 	private final BotHaveStockRepository botHaveStockRepository;
 	private final BotCache botCache;
+	private final BotStockCache botStockCache;
 	private final BotHaveStockCache botHaveStockCache;
 	private final StockCache stockCache;
 
@@ -30,12 +32,18 @@ public class BotInitializer {
 	public void init() {
 		initBots();
 		initBotHaveStocks();
+		initBotCache();
 	}
-
 	private void initBots() {
 		createBot("BOT_MARKET_MAKER", BotType.MARKET_MAKER);
 		createBot("BOT_RANDOM", BotType.RANDOM);
 		createBot("BOT_TREND", BotType.TREND);
+	}
+
+	private void createBot(String botId, BotType botType) {
+		Bot bot = getOrCreateBot(botId, botType);
+		botCache.register(bot);
+		log.info("봇 초기화 완료: {} / 자산: {}", botId, bot.getAsset());
 	}
 
 	private void initBotHaveStocks() {
@@ -44,12 +52,6 @@ public class BotInitializer {
 			botHaveStockCache.register(botId, stocks);
 			log.info("봇 HaveStock 초기화 완료: {} / 종목 수: {}", botId, stocks.size());
 		});
-	}
-
-	private void createBot(String botId, BotType botType) {
-		Bot bot = getOrCreateBot(botId, botType);
-		botCache.register(bot);
-		log.info("봇 초기화 완료: {} / 자산: {}", botId, bot.getAsset());
 	}
 
 	private Bot getOrCreateBot(String botId, BotType botType) {
@@ -77,5 +79,17 @@ public class BotInitializer {
 		}).toList();
 
 		return botHaveStockRepository.saveAll(stocks);
+	}
+
+	private void initBotCache() {
+
+		stockCache.getCache().forEach((stockCode, stock) -> {
+
+			Stock copiedStock = stock.botCacheCopy();
+
+			botStockCache.put(stockCode, copiedStock);
+		});
+
+		log.info("BotStockCache 초기화 완료: {}", stockCache.getCache().size());
 	}
 }

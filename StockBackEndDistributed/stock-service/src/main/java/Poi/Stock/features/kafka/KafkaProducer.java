@@ -13,7 +13,7 @@ public class KafkaProducer {
 
 	private final KafkaTemplate<String, TradeExecutionList> kafkaTemplate;
 
-	public void sendToExecutionDLT(TradeExecutionList tradeExecutionList) {
-		kafkaTemplate.send("trade-execution-topic-DLT", tradeExecutionList);
+	public void sendToExecutionDLT(TradeExecutionList tradeExecutionSummary) {
+		kafkaTemplate.send("trade-execution-topic-DLT", tradeExecutionSummary);
 	}
 }

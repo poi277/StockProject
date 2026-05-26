@@ -64,4 +64,15 @@ public class Stock {
 	public long fillTotalvolume(int fillVolume) {
 		return totalvolume + fillVolume;
 	}
+	
+	public Stock botCacheCopy() {
+		Stock stock = new Stock();
+
+		stock.setStockCode(this.stockCode);
+		stock.setOpenPrice(this.openPrice);
+		stock.setClosePrice(this.closePrice);
+		stock.setHighPrice(this.highPrice);
+		stock.setLowPrice(this.lowPrice);
+		return stock;
+	}
 }

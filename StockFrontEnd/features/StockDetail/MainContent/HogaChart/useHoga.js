@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getOrderbookApi } from "../../../../lib/trade";
 import { useOrderWebSocket } from "../../../../util/websocket/context/OrderWebSocketContext";
 import { useHogaSocket } from "../../../../util/websocket/useHogaSocket";
@@ -22,6 +22,13 @@ export default function useHoga(stockCode) {
   const { executions } = useExecutionSocket(client, connected, stockCode);
   const [sellOrders, setSellOrders] = useState([]);
   const [buyOrders, setBuyOrders] = useState([]);
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+      if (!scrollRef.current) return;
+      const el = scrollRef.current;
+      el.scrollTop = (el.scrollHeight - el.clientHeight) / 2;
+  }, []);
 
   // 1. 초기 데이터 REST fetch
   useEffect(() => {
@@ -38,6 +45,8 @@ export default function useHoga(stockCode) {
     );
     });
   }, [stockCode]);
+
+
 
   // 2. 웹소켓 업데이트 — 콜백으로 상태 업데이트
   useHogaSocket(client, connected, stockCode, {
@@ -58,6 +67,7 @@ export default function useHoga(stockCode) {
     });
     },
   });
+  
 
   // 3. 파생값 계산
   const maxQuantity = useMemo(() => {
@@ -72,6 +82,6 @@ export default function useHoga(stockCode) {
   const lastExecutionPrice = useMemo(() => 
     executions[0]?.price ?? null
     , [executions]);
-
-  return { sellOrders, buyOrders, maxQuantity, getBarWidth, totalSellQuantity, totalBuyQuantity,executions,lastExecutionPrice,getHogaPriceColor,getHogaChangeRateStr };
+  
+  return { scrollRef,sellOrders, buyOrders, maxQuantity, getBarWidth, totalSellQuantity, totalBuyQuantity,executions,lastExecutionPrice,getHogaPriceColor,getHogaChangeRateStr};
 }

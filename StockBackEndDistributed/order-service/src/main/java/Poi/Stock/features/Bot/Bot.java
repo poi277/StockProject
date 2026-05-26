@@ -17,4 +17,7 @@ public class Bot {
 	private BotType botType;
 	private long asset;
 
+	public boolean isBot() {
+		return botType != null;
+	}
 }

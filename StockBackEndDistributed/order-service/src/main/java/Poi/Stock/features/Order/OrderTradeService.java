@@ -60,7 +60,6 @@ public class OrderTradeService {
 
 	public void settlement(MatchingResult result) {
 		if (!result.getExecutions().isEmpty()) {
-
 			SettlementEvent event = buildSettlementEvent(result.getExecutions(), result.getStockCode());
 			// userservice에 자산 업데이트
 			settlementProducer.sendSettlement(event);

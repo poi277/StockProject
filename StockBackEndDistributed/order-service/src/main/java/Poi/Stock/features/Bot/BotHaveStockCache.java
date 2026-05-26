@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class BotHaveStockCache {
 
-	// botId → (stockCode → BotHaveStock)
+	// botId , <stockCode , BotHaveStock>
 	private final Map<String, Map<String, BotHaveStock>> botHaveStock = new HashMap<>();
 
 	public void register(String botId, List<BotHaveStock> stocks) {

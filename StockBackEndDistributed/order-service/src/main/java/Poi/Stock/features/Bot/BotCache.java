@@ -22,8 +22,8 @@ public class BotCache {
 		return bots;
 	}
 
-	public boolean isBot(String userId) {
-		Bot bot = bots.get(userId);
+	public boolean isBot(String botId) {
+		Bot bot = bots.get(botId);
 		return bot != null && bot.getBotType() != null;
 	}
 }

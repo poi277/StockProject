@@ -45,4 +45,19 @@ public class WebSocketService {
 		messagingTemplate.convertAndSend("/topic/execution/" + execution.getStockCode(), payload);
 	}
 
+	public void sendExecution(TradeExecution execution, Integer openPrice, Long totalVolume) {
+		double changeRate = 0.0;
+		if (openPrice != null && openPrice != 0) {
+			changeRate = (double) (execution.getPrice() - openPrice) / openPrice * 100;
+		}
+		Map<String, Object> payload = new HashMap<>();
+		payload.put("tradeType", execution.getTradeType());
+		payload.put("price", execution.getPrice());
+		payload.put("quantity", execution.getQuantity());
+		payload.put("changeRate", changeRate);
+		payload.put("totalVolume", totalVolume);
+		payload.put("time", execution.getTime().toString());
+		log.info("체결 전송 - stockCode: {}, payload: {}", execution.getStockCode(), payload);
+		messagingTemplate.convertAndSend("/topic/execution/" + execution.getStockCode(), payload);
+	}
 }

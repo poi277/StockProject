@@ -44,13 +44,6 @@ public class WebSocketService {
 
 		messagingTemplate.convertAndSend("/topic/hoga/" + stockCode, payload);
 	}
-
-
-	public void sendError(String userId, String message) {
-		System.out.println(message);
-		messagingTemplate.convertAndSend("/topic/error/" + userId, message);
-	}
-
 	public void sendCurrentCandle(CandleDTO candleDTO, String stockCode) {
 		Map<String, Object> payload = new HashMap<>();
 		payload.put("open", candleDTO.getOpen());
@@ -98,8 +91,15 @@ public class WebSocketService {
 		messagingTemplate.convertAndSendToUser(userId, "/queue/orders", payload);
 	}
 
+	public void sendError(String userId, String message) {
+		System.out.println(message);
+		messagingTemplate.convertAndSend("/topic/error/" + userId, message);
+	}
+
+
 	private boolean isBot(String userId) {
 		Bot bot = botCache.get(userId);
 		return bot != null && bot.getBotType() != null;
 	}
+
 }

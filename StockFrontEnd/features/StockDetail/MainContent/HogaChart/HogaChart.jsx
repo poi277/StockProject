@@ -8,7 +8,7 @@ const TEXT_STYLE = (weight, color, size = "12px") => ({ "--tds-wts-font-weight":
 
 
 export default function HogaChart({ stock, onPriceSelect }) {
-  const { sellOrders, buyOrders, maxQuantity, getBarWidth, totalSellQuantity, totalBuyQuantity, executions, closePrice, lastExecutionPrice } = useHoga(stock.stockCode ,stock.closePrice );
+  const { sellOrders, buyOrders, maxQuantity, getBarWidth, totalSellQuantity, totalBuyQuantity, executions, closePrice, lastExecutionPrice,scrollRef } = useHoga(stock.stockCode ,stock.closePrice );
 
   return (
     <div className="sa1m6r0" style={{ paddingLeft: "0px", paddingRight: "0px" }}>
@@ -18,7 +18,7 @@ export default function HogaChart({ stock, onPriceSelect }) {
             <div className="_1niv0g1">
               <div style={{ position: "absolute", top: "calc(32px)", left: "50%" }}></div>
               <div className="_1ofr7z31"></div>
-              <div className="_1oug70o0">
+              <div className="_1oug70o0" ref={scrollRef}>
                 <div className="_1oug70o1">
                   <div className="_1oug70o3 _1oug70o2">
                     <div className="_1oug70ow _1oug70ov"></div>
@@ -32,7 +32,7 @@ export default function HogaChart({ stock, onPriceSelect }) {
                   <div className="_1oug70o8">
                     <OrderBook type="sell" orders={sellOrders} getBarWidth={getBarWidth} openPrice={stock.openPrice} lastExecutionPrice={lastExecutionPrice} onPriceSelect={onPriceSelect} />
                     <div className="_1oug70o11"></div>
-                    <OrderBook type="buy" orders={buyOrders} getBarWidth={getBarWidth} openPrice={stock.openPrice} lastExecutionPrice={lastExecutionPrice} onPriceSelect={onPriceSelect} />
+                    <OrderBook type="buy"  orders={buyOrders} getBarWidth={getBarWidth} openPrice={stock.openPrice} lastExecutionPrice={lastExecutionPrice} onPriceSelect={onPriceSelect} />
                   </div>
                 </div>
               </div>
@@ -45,15 +45,17 @@ export default function HogaChart({ stock, onPriceSelect }) {
   );
 }
 
-function OrderBook({ type, orders, getBarWidth, openPrice, lastExecutionPrice, onPriceSelect }) {
+function OrderBook({ type, orders,getBarWidth, openPrice, lastExecutionPrice, onPriceSelect }) {
   const [keyDownPrice, setKeyDownPrice] = useState(null);
   const isSell = type === 'sell';
+  
 
   useEffect(() => {
     const handleMouseUp = () => setKeyDownPrice(null);
     window.addEventListener('mouseup', handleMouseUp);
     return () => window.removeEventListener('mouseup', handleMouseUp);
   }, []);
+  
 
   return (
     <ul className={isSell ? "_1oug70of" : "_1oug70og"}>
@@ -85,8 +87,8 @@ function OrderBook({ type, orders, getBarWidth, openPrice, lastExecutionPrice, o
         );
 
         return (
-          <li key={i} className={isSell ? "hmbv031 hmbv030" : "_1kcm3421 _1kcm3420"} role="button" tabIndex="0"
-            onMouseDown={() => setKeyDownPrice(order.price)}
+          <li key={i} data-price={order.price}  className={isSell ? "hmbv031 hmbv030" : "_1kcm3421 _1kcm3420"} role="button" tabIndex="0"
+            onMouseDown={() => setKeyDownPrice(order.price)} 
             onMouseUp={() => { setKeyDownPrice(null); onPriceSelect?.(order.price); }}>
             {isSell ? <>{quantityDiv}{priceButton}<div></div></> : <><div></div>{priceButton}{quantityDiv}</>}
           </li>

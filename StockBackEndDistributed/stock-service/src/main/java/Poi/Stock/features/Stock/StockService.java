@@ -67,25 +67,43 @@ public class StockService {
 	}
 
 	public void applyTradeExecutions(List<TradeExecution> executions) {
+		if (executions == null || executions.isEmpty()) {
+			return;
+		}
 		String stockCode = executions.get(0).getStockCode();
 		Stock stock = stockCache.get(stockCode);
-		if (stock == null)
+		if (stock == null) {
 			return;
-
+		}
+		TradeExecution lastExecution = executions.get(executions.size() - 1);
+		int lastPrice = lastExecution.getPrice();
+		Integer maxPrice = executions.stream().mapToInt(TradeExecution::getPrice).max().orElse(lastPrice);
+		Integer minPrice = executions.stream().mapToInt(TradeExecution::getPrice).min().orElse(lastPrice);
+		int totalQuantity = executions.stream().mapToInt(TradeExecution::getQuantity).sum();
+		// 현재가
+		stock.setClosePrice(lastPrice);
+		// 고가
+		if (stock.getHighPrice() == null || maxPrice > stock.getHighPrice()) {
+			stock.setHighPrice(maxPrice);
+		}
+		// 저가
+		if (stock.getLowPrice() == null || minPrice < stock.getLowPrice()) {
+			stock.setLowPrice(minPrice);
+		}
+		// 등락
+		if (stock.getOpenPrice() != null) {
+			stock.setChangeAmount(lastPrice - stock.getOpenPrice());
+			stock.setChangeRate(stock.calcChangeRate(lastPrice));
+		}
+		// 체결 websocket용 누적 거래량
+		long currentVolume = stock.getTotalvolume();
 		for (TradeExecution execution : executions) {
-			stock.setClosePrice(execution.getPrice());
-			if (stock.getHighPrice() == null || execution.getPrice() > stock.getHighPrice())
-				stock.setHighPrice(execution.getPrice());
-			if (stock.getLowPrice() == null || execution.getPrice() < stock.getLowPrice())
-				stock.setLowPrice(execution.getPrice());
-			if (stock.getOpenPrice() != null) {
-				stock.setChangeAmount(execution.getPrice() - stock.getOpenPrice());
-				stock.setChangeRate(stock.calcChangeRate(execution.getPrice()));
-			}
-			stock.setTotalvolume(stock.getTotalvolume() + execution.getQuantity());
-			webSocketService.sendExecution(execution, stock);
+			currentVolume += execution.getQuantity();
+			webSocketService.sendExecution(execution, stock.getOpenPrice(), currentVolume);
 		}
 
+		// 최종 거래량 반영
+		stock.setTotalvolume(currentVolume);
 		stockCache.put(stockCode, stock);
 		stockRepository.save(stock);
 		webSocketService.SendCurrentPrice(stock);

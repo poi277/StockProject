@@ -61,4 +61,16 @@ public class MatchingResult {
 	public long getTotalTradeAmount() {
 		return executions.stream().mapToLong(e -> (long) e.getPrice() * e.getQuantity()).sum();
 	}
+
+	public Integer getMaxExecutionPrice() {
+		if (executions.isEmpty())
+			return null;
+		return executions.stream().mapToInt(TradeExecution::getPrice).max().orElse(0);
+	}
+
+	public Integer getMinExecutionPrice() {
+		if (executions.isEmpty())
+			return null;
+		return executions.stream().mapToInt(TradeExecution::getPrice).min().orElse(0);
+	}
 }
