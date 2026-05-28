@@ -11,8 +11,15 @@ public class EnumUtil {
 		CANCELLED // 취소됨
 	}
 
+	public enum MarketState {
+		BULL, // 상승장 - 매수 우세, 가격 지속 상승
+		BEAR, // 하락장 - 매도 우세, 가격 지속 하락
+	}
+
 	public enum BotType {
-		MARKET_MAKER, RANDOM, TREND
+		INSTITUTION, // 기관
+		FOREIGN, // 외국인
+		INDIVIDUAL, // 개인
 	}
 
 	public enum FailStatus {

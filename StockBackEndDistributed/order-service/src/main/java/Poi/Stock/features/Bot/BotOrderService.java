@@ -7,7 +7,6 @@ import Poi.Stock.features.Lock.StockLock;
 import Poi.Stock.features.Order.OrderBookCache;
 import Poi.Stock.features.Order.OrderService;
 import Poi.Stock.features.Order.OrderTradeService;
-import Poi.Stock.features.Stock.StockCache;
 import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.util.EnumUtil.tradeType;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +23,7 @@ public class BotOrderService {
 	private final StockLock stockLock;
 	private final OrderService orderService;
 
-	public void placeOrder(String botId, String stockCode, tradeType type, int price, int quantity) {
+	public void placeOrder(String botId, String stockCode, String stockName, tradeType type, int price, int quantity) {
 		stockLock.lock(stockCode);
 		try {
 			TradeDTO tradeDTO = new TradeDTO();
@@ -33,6 +32,7 @@ public class BotOrderService {
 			tradeDTO.setTradeType(type);
 			tradeDTO.setTradePrice(price);
 			tradeDTO.setQuantity(quantity);
+			tradeDTO.setStockName(stockName);
 			orderService.processOrder(tradeDTO);
 		} catch (Exception e) {
 			log.error("봇 주문 처리 실패: {} / {}", botId, e.getMessage(), e);

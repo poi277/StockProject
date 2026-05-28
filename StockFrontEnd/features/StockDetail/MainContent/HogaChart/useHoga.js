@@ -3,6 +3,7 @@ import { getOrderbookApi } from "../../../../lib/trade";
 import { useOrderWebSocket } from "../../../../util/websocket/context/OrderWebSocketContext";
 import { useHogaSocket } from "../../../../util/websocket/useHogaSocket";
 import { useExecutionSocket } from "../../../../util/websocket/useExecutionSocket";
+import { useStockWebSocket } from "../../../../util/websocket/context/StockWebSocketContext";
 
 export function getHogaPriceColor(price, openPrice) {
   if (!openPrice || price === openPrice) return "var(--wts-adaptive-grey700)";
@@ -19,7 +20,8 @@ export function getHogaChangeRateStr(price, openPrice) {
 // useHoga.js — 상태 여기서만 관리
 export default function useHoga(stockCode) {
   const { client, connected } = useOrderWebSocket();
-  const { executions } = useExecutionSocket(client, connected, stockCode);
+  const { stockConnected, stockClient } = useStockWebSocket();
+  const { executions } = useExecutionSocket(stockClient, stockConnected, stockCode);
   const [sellOrders, setSellOrders] = useState([]);
   const [buyOrders, setBuyOrders] = useState([]);
   const scrollRef = useRef(null);

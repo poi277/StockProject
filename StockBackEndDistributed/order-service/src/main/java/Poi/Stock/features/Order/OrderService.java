@@ -100,7 +100,6 @@ public class OrderService {
 
     @Transactional
     public void processOrder(TradeDTO tradeDTO) {
-		// stockcache는 가동할때만 가볍게 가져옴(이름과 코드)
         Order order = orderTradeService.setOrder(tradeDTO);
         OrderBook book = orderBookCache.get(order.getStockCode());
 		MatchingResult result = orderTradeService.matchLoop(order, book);

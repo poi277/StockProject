@@ -1,7 +1,7 @@
 // useRealTimeTicks.js
 import { useState } from 'react'
-import { useOrderWebSocket } from '../../../../util/websocket/context/OrderWebSocketContext';
 import { useExecutionSocket } from '../../../../util/websocket/useExecutionSocket';
+import { useStockWebSocket } from '../../../../util/websocket/context/StockWebSocketContext';
 
 export function formatTime(timeStr) {
   if (!timeStr) return '-'
@@ -10,8 +10,8 @@ export function formatTime(timeStr) {
 }
 
 export default function useRealTimeTicks(stockCode) {
-  const { connected, client } = useOrderWebSocket();
-  const { executions } = useExecutionSocket(client, connected, stockCode);
+  const { stockConnected,stockClient  } = useStockWebSocket();
+  const { executions } = useExecutionSocket(stockClient, stockConnected, stockCode);
   const [tickType, setTickType] = useState('realtime')
   const isRealtime = tickType === 'realtime'
 

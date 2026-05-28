@@ -35,9 +35,9 @@ public class BotInitializer {
 		initBotCache();
 	}
 	private void initBots() {
-		createBot("BOT_MARKET_MAKER", BotType.MARKET_MAKER);
-		createBot("BOT_RANDOM", BotType.RANDOM);
-		createBot("BOT_TREND", BotType.TREND);
+		createBot("BOT_INSTITUTION", BotType.INSTITUTION);
+		createBot("BOT_FOREIGN", BotType.FOREIGN);
+		createBot("BOT_INDIVIDUAL", BotType.INDIVIDUAL);
 	}
 
 	private void createBot(String botId, BotType botType) {
