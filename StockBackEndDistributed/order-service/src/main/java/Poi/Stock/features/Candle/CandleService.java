@@ -13,8 +13,10 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import Poi.Stock.DTO.user.CandleDTO;
+import Poi.Stock.features.Candle.Entity.CandleMinute;
+import Poi.Stock.features.Candle.repository.CandleDayRepository;
+import Poi.Stock.features.Candle.repository.CandleMinuteRepository;
 import Poi.Stock.features.Websocket.WebSocketService;
-import Poi.Stock.repository.CandleMinuteRepository;
 import Poi.Stock.repository.StockRepository;
 import Poi.Stock.util.EnumUtil.CandleType;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ public class CandleService {
 	private final RedisTemplate<String, String> redisTemplate;
 	private final CandleSchedulerService candleSchedulerService;
 	private final WebSocketService webSocketService;
+	private final CandleDayRepository candleDayRepository;
 
 	private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
 
@@ -37,6 +40,7 @@ public class CandleService {
 				: LocalDateTime.now().minusDays(3);
 		LocalDateTime toEndTime = endTime != null ? LocalDateTime.parse(endTime) : LocalDateTime.now();
 
+		// ==================== [1] 분봉(1분봉, 5분봉 등) 조회 파트 ====================
 		if (type.isMinuteType()) {
 			int minute = type.getMinute();
 			List<CandleMinute> candles = candleMinuteRepository.findByStockCodeAndTimeBetweenOrderByTimeAsc(stockCode,
@@ -65,25 +69,30 @@ public class CandleService {
 						}).toList());
 			}
 
+			// Redis 또는 CandleCache 메모리에 쌓인 아직 마감 안 된 1분봉 실시간 틱 병합
 			CandleDTO currentCandle = getCurrentCandleFromRedis(stockCode);
-			if (currentCandle != null)
+			if (currentCandle != null) {
 				result.add(currentCandle);
+			}
 			return result;
 		}
-
 		if (type == CandleType.DAY) {
 			LocalDate startDate = toStartTime.toLocalDate();
 			LocalDate endDate = toEndTime.toLocalDate();
 
-			List<CandleDTO> result = new ArrayList<>(stockRepository
+			List<CandleDTO> result = new ArrayList<>(candleDayRepository
 					.findByStockCodeAndDateBetweenOrderByDateAsc(stockCode, startDate, endDate.minusDays(1)).stream()
-					.map(s -> new CandleDTO(s.getDate().toString(), s.getOpenPrice(), s.getHighPrice(), s.getLowPrice(),
-							s.getClosePrice(), 0L, s.getTotalvolume() != null ? s.getTotalvolume() : 0L))
+					.map(d -> new CandleDTO(d.getDate().toString(), d.getOpen(), d.getHigh(), d.getLow(), d.getClose(),
+							d.getSellQty() != null ? d.getSellQty() : 0L, d.getBuyQty() != null ? d.getBuyQty() : 0L)) // 매수/매도량
+																														// 데이터
+																														// 바인딩
+																														// 유지
 					.toList());
 
 			CandleDTO todayCandle = getTodayCandle(stockCode);
-			if (todayCandle != null)
+			if (todayCandle != null) {
 				result.add(todayCandle);
+			}
 			return result;
 		}
 

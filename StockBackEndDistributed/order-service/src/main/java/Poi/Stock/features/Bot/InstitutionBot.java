@@ -3,7 +3,7 @@ package Poi.Stock.features.Bot;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import Poi.Stock.features.Stock.Stock;
+import Poi.Stock.features.Stock.StockRealTimeSnapshot;
 import Poi.Stock.util.EnumUtil.MarketState;
 import Poi.Stock.util.EnumUtil.tradeType;
 
@@ -29,13 +29,13 @@ public class InstitutionBot extends AbstractBot {
 	}
 
 	@Override
-	protected void executeStrategy(boolean isBuy, Stock stock) {
+	protected void executeStrategy(boolean isBuy, StockRealTimeSnapshot stock) {
 		// 1. 현재 자산 및 상태 스냅샷 가져오기
 		BotHaveStock haveStock = botHaveStockCache.get(getBotId(), stock.getStockCode());
 		int currentQuantity = (haveStock != null) ? haveStock.getQuantity() : 0;
 		double averagePrice = (haveStock != null) ? haveStock.getAveragePrice() : 0.0;
 
-		int currentPrice = stock.getClosePrice();
+		int currentPrice = stock.getYesterdayClosePrice();
 		int tickSize = stock.getTickSize(currentPrice);
 		int intensity = marketStateHolder.getIntensity();
 

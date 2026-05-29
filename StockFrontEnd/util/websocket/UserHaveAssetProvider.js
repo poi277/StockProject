@@ -28,9 +28,9 @@ export function UserHaveAssetProvider({ children }) {
         const matched = haveStocks?.find(h => h.stockCode === stock.stockCode);
         const quantity = matched?.quantity ?? 0;
         const avgPrice = matched?.averagePrice ?? 0;
-        const diff = Math.floor((stock.closePrice - avgPrice) * quantity);
+        const diff = Math.floor((stock.currentPrice - avgPrice) * quantity);
         const rate = avgPrice > 0 ? ((diff / (avgPrice * quantity)) * 100).toFixed(2) : 0;
-        return { ...stock, quantity, avgPrice, evaluatedAmount: stock.closePrice * quantity, diff, rate };
+        return { ...stock, quantity, avgPrice, evaluatedAmount: stock.currentPrice * quantity, diff, rate };
     });
     // stocksArray 선언 이후로 옮기기
 

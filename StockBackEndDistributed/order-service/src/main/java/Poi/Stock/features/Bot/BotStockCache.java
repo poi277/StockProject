@@ -5,18 +5,18 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Component;
 
-import Poi.Stock.features.Stock.Stock;
+import Poi.Stock.features.Stock.StockRealTimeSnapshot;
 
 @Component
 public class BotStockCache {
 
-	private final Map<String, Stock> cache = new ConcurrentHashMap<>();
+	private final Map<String, StockRealTimeSnapshot> cache = new ConcurrentHashMap<>();
 
-	public void put(String stockCode, Stock stock) {
+	public void put(String stockCode, StockRealTimeSnapshot stock) {
 		cache.put(stockCode, stock);
 	}
 
-	public Stock get(String stockCode) {
+	public StockRealTimeSnapshot get(String stockCode) {
 		return cache.get(stockCode);
 	}
 }

@@ -19,7 +19,7 @@ export function useStockDetailSocket(client, connected, initStock) {
         changeRate:data.changeRate,
         changeAmount:data.changeAmount,
         openPrice:data.openPrice,
-        closePrice: data.closePrice,
+        currentPrice: data.currentPrice,
         highPrice:data.highPrice,
         lowPrice:data.lowPrice,
       }));

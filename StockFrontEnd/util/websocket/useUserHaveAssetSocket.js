@@ -29,6 +29,7 @@ export function useUserHaveAssetSocket(userClient, userConnected) {
         const stockCodes = haveStocks.map(s => s.stockCode); 
         const res = await getStocksByCodesApi(stockCodes);
         const stockArray = Array.isArray(res.data) ? res.data : [];
+        console.log(res)
         setInitialStocks(stockArray);
       } catch (err) {
         console.error('종목 정보 조회 실패:', err.message);

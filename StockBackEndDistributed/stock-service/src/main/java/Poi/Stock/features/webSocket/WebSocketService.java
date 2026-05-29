@@ -6,7 +6,7 @@ import java.util.Map;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
-import Poi.Stock.features.Stock.Stock;
+import Poi.Stock.features.Stock.StockRealTimeSnapshot;
 import Poi.Stock.object.TradeExecution;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,29 +17,26 @@ import lombok.extern.slf4j.Slf4j;
 public class WebSocketService {
 	private final SimpMessagingTemplate messagingTemplate;
 
-	public void SendCurrentPrice(Stock stock) {
-		Integer currentPrice = stock.getClosePrice();
-		if (currentPrice == null || currentPrice <= 0)
-			return;
+	public void sendCurrentPrice(StockRealTimeSnapshot snapshot) {
 		Map<String, Object> payload = new HashMap<>();
-		payload.put("stockCode", stock.getStockCode());
-		payload.put("changeRate", stock.getChangeRate());
-		payload.put("changeAmount", stock.getChangeAmount());
-		payload.put("closePrice", stock.getClosePrice());
-		payload.put("openPrice", stock.getOpenPrice());
-		payload.put("highPrice", stock.getHighPrice());
-		payload.put("lowPrice", stock.getLowPrice());
-		System.out.println(payload);
-		messagingTemplate.convertAndSend("/topic/stock/" + stock.getStockCode(), payload);
+		payload.put("stockCode", snapshot.getStockCode());
+		payload.put("currentPrice", snapshot.getCurrentPrice());
+		payload.put("highPrice", snapshot.getHighPrice());
+		payload.put("lowPrice", snapshot.getLowPrice());
+		payload.put("totalVolume", snapshot.getTotalVolume());
+		payload.put("changeAmount", snapshot.getChangeAmount());
+		payload.put("changeRate", snapshot.getChangeRate());
+		log.info("현재가 전송 - stockCode: {}, payload: {}", snapshot.getStockCode(), payload);
+		messagingTemplate.convertAndSend("/topic/stock/" + snapshot.getStockCode(), payload);
 	}
 
-	public void sendExecution(TradeExecution execution, Stock stock) {
+	public void sendExecution(TradeExecution execution, StockRealTimeSnapshot snapshot) {
 		Map<String, Object> payload = new HashMap<>();
 		payload.put("tradeType", execution.getTradeType());
 		payload.put("price", execution.getPrice());
 		payload.put("quantity", execution.getQuantity());
-		payload.put("changeRate", stock.getChangeRate());
-		payload.put("totalVolume", stock.getTotalvolume());
+		payload.put("changeRate", snapshot.getChangeRate());
+		payload.put("totalVolume", snapshot.getTotalVolume());
 		payload.put("time", execution.getTime().toString());
 		log.info("체결 전송 - stockCode: {}, payload: {}", execution.getStockCode(), payload);
 		messagingTemplate.convertAndSend("/topic/execution/" + execution.getStockCode(), payload);

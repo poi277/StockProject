@@ -5,8 +5,8 @@ import java.util.List;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
-import Poi.Stock.features.Stock.Stock;
 import Poi.Stock.features.Stock.StockCache;
+import Poi.Stock.features.Stock.StockRealTimeSnapshot;
 import Poi.Stock.util.EnumUtil.BotType;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -74,7 +74,7 @@ public class BotInitializer {
 			hs.setBot(bot);
 			hs.setStockCode(stockCode);
 			hs.setQuantity(INITIAL_QUANTITY);
-			hs.setAveragePrice(stockCache.get(stockCode).getClosePrice());
+			hs.setAveragePrice(stockCache.get(stockCode).getYesterdayClosePrice());
 			return hs;
 		}).toList();
 
@@ -85,7 +85,7 @@ public class BotInitializer {
 
 		stockCache.getCache().forEach((stockCode, stock) -> {
 
-			Stock copiedStock = stock.botCacheCopy();
+			StockRealTimeSnapshot copiedStock = stock.botCacheCopy();
 
 			botStockCache.put(stockCode, copiedStock);
 		});

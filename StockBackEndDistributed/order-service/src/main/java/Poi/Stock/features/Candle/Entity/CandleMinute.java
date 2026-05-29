@@ -1,4 +1,4 @@
-package Poi.Stock.features.Candle;
+package Poi.Stock.features.Candle.Entity;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -12,6 +12,7 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -28,19 +29,22 @@ public class CandleMinute {
 	private Integer low;
 	private Integer close;
 
-	// 추가
 	private Long buyQty;
 	private Long sellQty;
-	private Double tradeAmount;
+	private Long totalVolume; // buyQty + sellQty 집계 및 60분봉 변환을 위해 추가
+	private Long tradeAmount;
 
 	public static CandleMinute setCandleRedis(String stockCode, LocalDateTime candleTime, Map<Object, Object> candle) {
 		try {
+			long bQty = parseLong(candle.get("buyQty"));
+			long sQty = parseLong(candle.get("sellQty"));
+
 			return new CandleMinute(null, stockCode, candleTime, Integer.parseInt(String.valueOf(candle.get("open"))),
 					Integer.parseInt(String.valueOf(candle.get("high"))),
 					Integer.parseInt(String.valueOf(candle.get("low"))),
 					Integer.parseInt(String.valueOf(candle.get("close"))),
-					parseLong(candle.get("buyQty")),
-					parseLong(candle.get("sellQty")), parseDouble(candle.get("tradeAmount")));
+					bQty, sQty, bQty + sQty, // totalVolume 자동 계산
+					parseLong(candle.get("tradeAmount")));
 		} catch (Exception e) {
 			throw new RuntimeException("Redis 캔들 변환 실패", e);
 		}

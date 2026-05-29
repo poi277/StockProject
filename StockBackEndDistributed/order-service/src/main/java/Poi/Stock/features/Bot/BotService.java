@@ -2,7 +2,7 @@ package Poi.Stock.features.Bot;
 
 import org.springframework.stereotype.Service;
 
-import Poi.Stock.features.Stock.Stock;
+import Poi.Stock.features.Stock.StockRealTimeSnapshot;
 import Poi.Stock.object.MatchingResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,22 +62,37 @@ public class BotService {
 		if (result == null || result.getExecutions().isEmpty()) {
 			return;
 		}
-		Stock stock = botStockCache.get(result.getStockCode());
-		if (stock == null) {
+		StockRealTimeSnapshot snapshot = botStockCache.get(result.getStockCode());
+		if (snapshot == null) {
 			return;
 		}
+
 		Integer lastPrice = result.getLastExecutionPrice();
 		Integer maxPrice = result.getMaxExecutionPrice();
 		Integer minPrice = result.getMinExecutionPrice();
-		stock.setClosePrice(lastPrice);
 
-		// 고가
-		if (stock.getHighPrice() == null || maxPrice > stock.getHighPrice()) {
-			stock.setHighPrice(maxPrice);
+		snapshot.setCurrentPrice(lastPrice);
+
+		// 고가 업데이트
+		if (maxPrice > snapshot.getHighPrice()) {
+			snapshot.setHighPrice(maxPrice);
 		}
-		// 저가
-		if (stock.getLowPrice() == null || minPrice < stock.getLowPrice()) {
-			stock.setLowPrice(minPrice);
+
+		// 저가 업데이트
+		if (minPrice < snapshot.getLowPrice()) {
+			snapshot.setLowPrice(minPrice);
 		}
+
+		// 3. 등락폭(changeAmount)과 등락률(changeRate)도 실시간으로 봇이 인지할 수 있게 연산 추가
+		int yesterdayClose = snapshot.getYesterdayClosePrice();
+		int changeAmount = lastPrice - yesterdayClose;
+		double changeRate = yesterdayClose != 0 ? ((double) changeAmount / yesterdayClose) * 100.0 : 0.0;
+
+		snapshot.setChangeAmount(changeAmount);
+		snapshot.setChangeRate(changeRate);
+
+		// 4. 복사본을 만들어 멀티스레드 환경이나 안전한 봇 매매 판단을 위해 캐시에 갱신
+		// (만약 botStockCache 내부 맵이 객체 주소를 직접 공유해도 상관없는 가벼운 구조라면 copy 없이 그냥 둬도 무방합니다)
+		botStockCache.put(result.getStockCode(), snapshot);
 	}
 }

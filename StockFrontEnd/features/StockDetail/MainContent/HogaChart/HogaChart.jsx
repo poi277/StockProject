@@ -30,9 +30,9 @@ export default function HogaChart({ stock, onPriceSelect }) {
                     <div className="_1oug70od _1oug70oc _1oug70oh"><TradingStrengthKr executions={executions} /></div>
                   </div>
                   <div className="_1oug70o8">
-                    <OrderBook type="sell" orders={sellOrders} getBarWidth={getBarWidth} openPrice={stock.openPrice} lastExecutionPrice={lastExecutionPrice} onPriceSelect={onPriceSelect} />
+                    <OrderBook type="sell" orders={sellOrders} getBarWidth={getBarWidth} yesterdayClosePrice={stock.yesterdayClosePrice} lastExecutionPrice={lastExecutionPrice} onPriceSelect={onPriceSelect} />
                     <div className="_1oug70o11"></div>
-                    <OrderBook type="buy"  orders={buyOrders} getBarWidth={getBarWidth} openPrice={stock.openPrice} lastExecutionPrice={lastExecutionPrice} onPriceSelect={onPriceSelect} />
+                    <OrderBook type="buy"  orders={buyOrders} getBarWidth={getBarWidth} yesterdayClosePrice={stock.yesterdayClosePrice} lastExecutionPrice={lastExecutionPrice} onPriceSelect={onPriceSelect} />
                   </div>
                 </div>
               </div>
@@ -45,7 +45,7 @@ export default function HogaChart({ stock, onPriceSelect }) {
   );
 }
 
-function OrderBook({ type, orders,getBarWidth, openPrice, lastExecutionPrice, onPriceSelect }) {
+function OrderBook({ type, orders,getBarWidth, yesterdayClosePrice, lastExecutionPrice, onPriceSelect }) {
   const [keyDownPrice, setKeyDownPrice] = useState(null);
   const isSell = type === 'sell';
   
@@ -60,8 +60,8 @@ function OrderBook({ type, orders,getBarWidth, openPrice, lastExecutionPrice, on
   return (
     <ul className={isSell ? "_1oug70of" : "_1oug70og"}>
       {orders.map((order, i) => {
-        const priceColor = getHogaPriceColor(order.price, openPrice);
-        const changeRateStr = getHogaChangeRateStr(order.price, openPrice);
+        const priceColor = getHogaPriceColor(order.price, yesterdayClosePrice);
+        const changeRateStr = getHogaChangeRateStr(order.price, yesterdayClosePrice);
         const isActive = order.price === keyDownPrice;
 
         const quantityDiv = (

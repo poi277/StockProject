@@ -20,8 +20,8 @@ import Poi.Stock.DTO.user.myAllOrderDTO;
 import Poi.Stock.DTO.user.myStockOrderDTO;
 import Poi.Stock.features.Bot.BotService;
 import Poi.Stock.features.Candle.CandleService;
-import Poi.Stock.features.Stock.Stock;
 import Poi.Stock.features.Stock.StockCache;
+import Poi.Stock.features.Stock.StockRealTimeSnapshot;
 import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.features.kafka.KafkaProducer;
 import Poi.Stock.object.MatchingResult;
@@ -113,7 +113,7 @@ public class OrderService {
 
 	public String validateOrder(String stockCode)
     {
-		Stock stock = stockCache.get(stockCode);
+		StockRealTimeSnapshot stock = stockCache.get(stockCode);
 		return stock.getStockName();
     }
 

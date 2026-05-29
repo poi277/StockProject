@@ -32,21 +32,21 @@ public class StockController {
 
     @GetMapping("/{stockId}")
     public ResponseEntity<ApiResponse> getStock(@PathVariable("stockId") String stockId) {
-        Stock stock = stockService.getStock(stockId);
+		StockRealTimeSnapshot stock = stockService.getStock(stockId);
 		return ResponseEntity.ok(new ApiResponse(true, "주식 불러오기 완료", stock));
     }
 
 	// 이는 userserivce로 보냄
 	@GetMapping("/watch/{stockId}")
-	public ResponseEntity<Stock> getWatchStock(@PathVariable("stockId") String stockId) {
-		Stock stock = stockService.getStock(stockId);
+	public ResponseEntity<StockRealTimeSnapshot> getWatchStock(@PathVariable("stockId") String stockId) {
+		StockRealTimeSnapshot stock = stockService.getStock(stockId);
 		return ResponseEntity.ok(stock);
 	}
 
 	@PostMapping("/stocks/info")
 	public ResponseEntity<ApiResponse> getStocksByCode(@RequestBody Map<String, List<String>> body) {
 		List<String> codes = body.get("codes");
-		List<Stock> stocks = stockService.findByCodes(codes);
+		List<StockRealTimeSnapshot> stocks = stockService.findByCodes(codes);
 		return ResponseEntity.ok(new ApiResponse(true, "내가 가지고있는 주식 상세 리스트 반환 완료", stocks));
 	}
 

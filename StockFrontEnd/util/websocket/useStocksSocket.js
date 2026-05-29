@@ -1,37 +1,67 @@
-import { useEffect, useState } from 'react';
-export function useStocksSocket(client, connected, initialStocks = []) {
+import { useEffect, useMemo, useState } from 'react';
+
+export function useStocksSocket(stockClient, stockConnected, initialStocks = []) {
   const [stocklist, setStocklist] = useState([]);
-  // 배열로 정규화
-  const stocksArray = Array.isArray(initialStocks)
-    ? initialStocks
-    : Object.values(initialStocks ?? {});
+
+  const stocks = useMemo(() => {
+    return Array.isArray(initialStocks) ? initialStocks : [];
+  }, [initialStocks]);
+
+  const getStockCode = (stock) => {
+    return stock?.snapshot?.stockCode ?? stock?.stockCode;
+  };
 
   useEffect(() => {
-    if (stocksArray.length > 0) {
-      setStocklist(stocksArray);
-    }
-  }, [JSON.stringify(stocksArray)]);
+    setStocklist(stocks);
+  }, [stocks]);
 
   useEffect(() => {
-    if (!client || !connected || stocksArray.length === 0) return;
+    if (!stockClient || !stockConnected || stocks.length === 0) return;
 
-    const validStocks = stocksArray.filter(s => s && typeof s === "object" && s.stockCode);
+    const validStocks = stocks.filter(stock => getStockCode(stock));
 
-    const subscriptions = validStocks.map(({ stockCode }) =>
-      client.subscribe(`/topic/stock/${stockCode}`, message => {
+    const subscriptions = validStocks.map(stock => {
+      const stockCode = getStockCode(stock);
+      console.log(stockCode);
+
+      return stockClient.subscribe(`/topic/stock/${stockCode}`, message => {
+        console.log("데이터 도착");
+
         const data = JSON.parse(message.body);
+
         setStocklist(prev =>
-          prev.map(stock =>
-            stock.stockCode === data.stockCode
-              ? { ...stock, closePrice: data.closePrice, changeRate: data.changeRate, value: data.value }
-              : stock
-          )
+          prev.map(item => {
+            const itemStockCode = getStockCode(item);
+
+            if (itemStockCode !== data.stockCode) return item;
+
+            if (item.snapshot) {
+              return {
+                ...item,
+                snapshot: {
+                  ...item.snapshot,
+                  currentPrice: data.currentPrice,
+                  changeRate: data.changeRate,
+                  value: data.value,
+                },
+              };
+            }
+
+            return {
+              ...item,
+              currentPrice: data.currentPrice,
+              changeRate: data.changeRate,
+              value: data.value,
+            };
+          })
         );
-      })
-    );
+      });
+    });
 
-    return () => subscriptions.forEach(sub => sub.unsubscribe());
-  }, [client, connected, JSON.stringify(stocksArray)]);
+    return () => {
+      subscriptions.forEach(sub => sub.unsubscribe());
+    };
+  }, [stockClient, stockConnected, stocks]);
 
-  return {  stocklist };
+  return { stocklist };
 }

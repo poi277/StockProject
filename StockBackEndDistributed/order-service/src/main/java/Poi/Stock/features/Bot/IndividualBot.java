@@ -3,7 +3,7 @@ package Poi.Stock.features.Bot;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import Poi.Stock.features.Stock.Stock;
+import Poi.Stock.features.Stock.StockRealTimeSnapshot;
 import Poi.Stock.util.EnumUtil.tradeType;
 
 @Component
@@ -26,8 +26,8 @@ public class IndividualBot extends AbstractBot {
     }
 
     @Override
-	protected void executeStrategy(boolean isBuy, Stock stock) {
-        int currentPrice = stock.getClosePrice();
+	protected void executeStrategy(boolean isBuy, StockRealTimeSnapshot stock) {
+		int currentPrice = stock.getYesterdayClosePrice();
         int tickSize = stock.getTickSize(currentPrice);
 
 		int quantity = 1 + random.nextInt(10);

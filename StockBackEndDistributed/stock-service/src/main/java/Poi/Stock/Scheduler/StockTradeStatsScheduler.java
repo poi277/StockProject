@@ -8,9 +8,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import Poi.Stock.features.Stock.CandleMinute;
+import Poi.Stock.features.Candle.CandleMinute;
+import Poi.Stock.features.Candle.CandleMinuteRepository;
 import Poi.Stock.features.Stock.StockTradeStatus;
-import Poi.Stock.repository.CandleMinuteRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

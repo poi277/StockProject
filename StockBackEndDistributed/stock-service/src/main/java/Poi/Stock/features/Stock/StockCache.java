@@ -9,21 +9,21 @@ import org.springframework.stereotype.Component;
 @Component
 public class StockCache {
 
-	private final Map<String, Stock> stockCache = new ConcurrentHashMap<>();
+	private final Map<String, StockRealTimeSnapshot> stockCache = new ConcurrentHashMap<>();
 
-	public Map<String, Stock> getCache() {
+	public Map<String, StockRealTimeSnapshot> getCache() {
 		return stockCache;
 	}
 
-	public Stock get(String stockCode) {
+	public StockRealTimeSnapshot get(String stockCode) {
 		return stockCache.get(stockCode);
 	}
 
-	public void put(String stockCode, Stock stock) {
+	public void put(String stockCode, StockRealTimeSnapshot stock) {
 		stockCache.put(stockCode, stock);
 	}
 
-	public Collection<Stock> values() {
+	public Collection<StockRealTimeSnapshot> values() {
 		return stockCache.values();
 	}
 }

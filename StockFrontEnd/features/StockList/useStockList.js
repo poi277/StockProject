@@ -7,11 +7,15 @@ import { useRouter } from "next/navigation";
 import { useStockWebSocket } from "../../util/websocket/context/StockWebSocketContext";
 
 export const formatPrice = (price) => price.toLocaleString() + '원'
+
 export const formatChangeRate = (rate) => {
-    if (rate > 0) return `+${rate}%`
-    if (rate < 0) return `${rate}%`
-    return '0.00%'
+    const fixedRate = rate.toFixed(2);
+
+    if (rate > 0) return `+${fixedRate}%`;
+    if (rate < 0) return `${fixedRate}%`;
+    return '0.00%';
 }
+
 export const formatValue = (value) => {
     if (value >= 100000000) return (value / 100000000).toFixed(0) + '억원'
     if (value >= 10000) return (value / 10000).toFixed(0) + '만원'
@@ -41,14 +45,13 @@ export function getTradeRatio(tradeStatus) {
 
 export function useStockList() {
     const router = useRouter();
-    const { connected, client } = useStockWebSocket();
+    const { stockConnected, stockClient } = useStockWebSocket();
     const [initialStocks, setInitialStocks] = useState([]);
 
     useEffect(() => {
         const fetchStocks = async () => {
             try {
                 const stocklist = await stockListApi();
-                console.log("ddd" , stocklist.data)
                 const stockArray = Array.isArray(stocklist.data) ? stocklist.data : [];
                 setInitialStocks(stockArray);
             } catch (err) {
@@ -59,7 +62,7 @@ export function useStockList() {
         fetchStocks();
     }, []);
 
-    const { stocklist } = useStocksSocket(client, connected, initialStocks);
+    const { stocklist } = useStocksSocket(stockClient, stockConnected, initialStocks);
 
-    return { connected, stocklist, router };
+    return { stockConnected, stocklist, router };
 }

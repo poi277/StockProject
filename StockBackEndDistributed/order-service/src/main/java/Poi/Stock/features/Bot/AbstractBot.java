@@ -2,7 +2,7 @@ package Poi.Stock.features.Bot;
 
 import java.util.Random;
 
-import Poi.Stock.features.Stock.Stock;
+import Poi.Stock.features.Stock.StockRealTimeSnapshot;
 import Poi.Stock.util.EnumUtil.MarketState;
 import lombok.RequiredArgsConstructor;
 
@@ -20,7 +20,7 @@ public abstract class AbstractBot {
 	protected abstract String getBotId();
 
 	// 매매 전략을 자식들이 구현하도록 이름 통일 (isBuy 가이드라인과 주식 정보를 넘김)
-	protected abstract void executeStrategy(boolean isBuy, Stock stock);
+	protected abstract void executeStrategy(boolean isBuy, StockRealTimeSnapshot stock);
 
 	public void placeOrders() {
 		String botId = getBotId();
@@ -28,8 +28,8 @@ public abstract class AbstractBot {
 		if (bot == null)
 			return;
 
-		Stock stock = botStockCache.get("035420");
-		if (stock == null || stock.getClosePrice() <= 0)
+		StockRealTimeSnapshot stock = botStockCache.get("035420");
+		if (stock == null || stock.getYesterdayClosePrice() <= 0)
 			return;
 
 		MarketState state = marketStateHolder.getState();

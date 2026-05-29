@@ -5,14 +5,14 @@ import { useHogaSocket } from "../../../../util/websocket/useHogaSocket";
 import { useExecutionSocket } from "../../../../util/websocket/useExecutionSocket";
 import { useStockWebSocket } from "../../../../util/websocket/context/StockWebSocketContext";
 
-export function getHogaPriceColor(price, openPrice) {
-  if (!openPrice || price === openPrice) return "var(--wts-adaptive-grey700)";
-  return price > openPrice ? "var(--wts-adaptive-red500)" : "var(--wts-adaptive-blue500)";
+export function getHogaPriceColor(price, yesterdayClosePrice) {
+  if (!yesterdayClosePrice || price === yesterdayClosePrice) return "var(--wts-adaptive-grey700)";
+  return price > yesterdayClosePrice ? "var(--wts-adaptive-red500)" : "var(--wts-adaptive-blue500)";
 }
 
-export function getHogaChangeRateStr(price, openPrice) {
-  if (!openPrice) return "0.00%";
-  const rate = (price - openPrice) / openPrice * 100;
+export function getHogaChangeRateStr(price, yesterdayClosePrice) {
+  if (!yesterdayClosePrice) return "0.00%";
+  const rate = (price - yesterdayClosePrice) / yesterdayClosePrice * 100;
   return `${rate > 0 ? '+' : ''}${rate.toFixed(2)}%`;
 }
 
