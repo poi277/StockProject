@@ -58,6 +58,7 @@ public class CandleCache {
 		return fiveMinCandles.getOrDefault(stockCode, List.of());
 	}
 
+	// 5분봉은 변환된 CandleMinute 1개를 통째로 추가
 	public void addFiveMin(String stockCode, CandleMinute candle) {
 		fiveMinCandles.compute(stockCode, (code, list) -> {
 			List<CandleMinute> currentList = (list == null) ? new ArrayList<>() : list;
@@ -69,6 +70,7 @@ public class CandleCache {
 		});
 	}
 
+
 	// ==================== 💡 추가: 시간봉 Cache ====================
 	public void putHour(String stockCode, List<CandleHour> candles) {
 		hourCandles.put(stockCode, new ArrayList<>(candles));
@@ -76,18 +78,6 @@ public class CandleCache {
 
 	public List<CandleHour> getHour(String stockCode) {
 		return hourCandles.getOrDefault(stockCode, List.of());
-	}
-
-	// 스케줄러가 1시간마다 호출할 때 캐시도 실시간 업데이트
-	public void addHour(String stockCode, CandleHour candle) {
-		hourCandles.compute(stockCode, (code, list) -> {
-			List<CandleHour> currentList = (list == null) ? new ArrayList<>() : list;
-			currentList.add(candle);
-			if (currentList.size() > MAX_SIZE) {
-				currentList.remove(0);
-			}
-			return currentList;
-		});
 	}
 
 	// ==================== 💡 추가: 일봉 Cache ====================
@@ -110,4 +100,5 @@ public class CandleCache {
 			return currentList;
 		});
 	}
+
 }

@@ -19,6 +19,11 @@ public class CandleScheduler {
 		candleSaveService.save1MinCandle();
 	}
 
+	@Scheduled(fixedRate = 60000) // 1분마다
+	public void updateFiveMinCandle() {
+		candleSaveService.updateFiveMinCache();
+	}
+
 	// 2. 신규 추가: 매 시간 정각마다 실행 (60분봉 집계 및 저장)
 	// 크론식: 0초 0분 매시 매일 매월 매요일
 	@Scheduled(cron = "0 0 * * * *")

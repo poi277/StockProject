@@ -3,6 +3,7 @@ package Poi.Stock.features.Candle;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,7 +33,8 @@ public class CandleSchedulerService {
 	private final RedisTemplate<String, String> redisTemplate;
 	private final CandleMinuteRepository candleMinuteRepository;
 	private final CandleHourRepository candleHourRepository; 
-	private final CandleDayRepository candleDayRepository;     
+	private final CandleDayRepository candleDayRepository;
+	private final CandleCache candleCache;
 	private final StockRepository stockRepository;
 	private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
 
@@ -214,5 +216,40 @@ public class CandleSchedulerService {
 				log.error("일봉 마감 에러 - 종목: {} error: {}", stockCode, e.getMessage());
 			}
 		}
+	}
+
+	public void updateFiveMinCache() {
+		List<String> stockCodes = candleMinuteRepository.findDistinctStockCodes();
+		LocalDateTime now = LocalDateTime.now();
+
+		for (String stockCode : stockCodes) {
+			List<CandleMinute> rawFiveMin = candleMinuteRepository
+					.findByStockCodeAndTimeBetweenOrderByTimeAsc(stockCode, now.minusMinutes(100), now);
+			candleCache.putFiveMin(stockCode, convertToFiveMin(rawFiveMin));
+		}
+	}
+
+	public List<CandleMinute> convertToFiveMin(List<CandleMinute> minutes) {
+		if (minutes.isEmpty())
+			return List.of();
+
+		List<CandleMinute> result = new ArrayList<>();
+		for (int i = 0; i < minutes.size(); i += 5) {
+			List<CandleMinute> group = minutes.subList(i, Math.min(i + 5, minutes.size()));
+			if (group.isEmpty())
+				continue;
+
+			int open = group.get(0).getOpen();
+			int close = group.get(group.size() - 1).getClose();
+			int high = group.stream().mapToInt(CandleMinute::getHigh).max().orElse(open);
+			int low = group.stream().mapToInt(CandleMinute::getLow).min().orElse(open);
+			long buyQty = group.stream().mapToLong(c -> c.getBuyQty() != null ? c.getBuyQty() : 0).sum();
+			long sellQty = group.stream().mapToLong(c -> c.getSellQty() != null ? c.getSellQty() : 0).sum();
+			long tradeAmount = group.stream().mapToLong(c -> c.getTradeAmount() != null ? c.getTradeAmount() : 0).sum();
+
+			result.add(new CandleMinute(null, group.get(0).getStockCode(), group.get(0).getTime(), open, high, low,
+					close, buyQty, sellQty, buyQty + sellQty, tradeAmount));
+		}
+		return result;
 	}
 }

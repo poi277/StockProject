@@ -166,4 +166,5 @@ public class CandleService {
 		webSocketService.sendCurrentCandle(candleDTO, stockCode);
 	}
 
+
 }
