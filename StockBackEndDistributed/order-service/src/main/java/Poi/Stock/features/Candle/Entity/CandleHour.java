@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "candle_hour", indexes = { @Index(name = "idx_candle_hour_stock_time", columnList = "stockCode, time") })
-public class CandleHour {
+public class CandleHour implements Candle {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;

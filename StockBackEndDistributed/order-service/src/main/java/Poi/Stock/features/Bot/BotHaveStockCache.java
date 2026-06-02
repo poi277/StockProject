@@ -6,6 +6,9 @@ import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
+//이 캐시는 봇들이 가지고있는 주식 수량입니다.
+//이를 이용하여 봇들이 매수나 매도를 결정합니다.
+
 @Component
 public class BotHaveStockCache {
 

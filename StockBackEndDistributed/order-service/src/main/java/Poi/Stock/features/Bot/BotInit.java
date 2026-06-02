@@ -14,9 +14,9 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-@DependsOn({ "stockInit" })
+@DependsOn({ "candleInit" })
 @RequiredArgsConstructor
-public class BotInitializer {
+public class BotInit {
 
 	private final BotRepository botRepository;
 	private final BotHaveStockRepository botHaveStockRepository;

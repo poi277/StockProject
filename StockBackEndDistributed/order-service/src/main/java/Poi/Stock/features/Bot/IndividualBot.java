@@ -19,7 +19,7 @@ public class IndividualBot extends AbstractBot {
         return "BOT_INDIVIDUAL";
     }
 
-	@Scheduled(fixedDelay = 1000)
+	@Scheduled(fixedDelay = 10000)
     @Override
     public void placeOrders() {
         super.placeOrders();

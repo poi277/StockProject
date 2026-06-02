@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor; // 💡 추가
 
+//사용처: bot 및 ordervalidate(검증)
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor // 💡 기본 생성자를 허용하여 'new StockRealTimeSnapshot()'이 가능하게 합니다.

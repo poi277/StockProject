@@ -22,7 +22,7 @@ public class InstitutionBot extends AbstractBot {
 		return "BOT_INSTITUTION";
 	}
 
-	@Scheduled(fixedDelay = 50000)
+	@Scheduled(fixedDelay = 500000)
 	@Override
 	public void placeOrders() {
 		super.placeOrders();
