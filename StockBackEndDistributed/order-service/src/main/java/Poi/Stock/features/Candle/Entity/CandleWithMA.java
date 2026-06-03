@@ -9,9 +9,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CandleWithMA<T> {
+public class CandleWithMA<T extends Candle> {
 
-    private T candle;
+	private T candle;
 
-    private Map<Integer, Double> ma;
+	private Map<Integer, Double> ma;
 }

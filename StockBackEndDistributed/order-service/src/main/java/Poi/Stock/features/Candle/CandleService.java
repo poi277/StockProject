@@ -42,7 +42,7 @@ public class CandleService {
 		LocalDateTime to = parseEndTime(endTime);
 
 		if (type.isMinuteType()) {
-			return getMinuteCandles(stockCode, from, to, type.getMinute());
+			return getMinuteCandles(stockCode, from, to, type);
 		}
 
 		return switch (type) {
@@ -51,22 +51,18 @@ public class CandleService {
 		};
 	}
 
-	private List<CandleDTO> getMinuteCandles(String stockCode, LocalDateTime from, LocalDateTime to, int minute) {
-		// 🎯 캐시 조회 시 엔티티가 아닌 CandleWithMA 형태로 가져옴
-		List<CandleWithMA<CandleMinute>> wrappedCache = getCachedMinuteCandlesInRange(stockCode, minute, from, to);
-		List<CandleDTO> result;
+	private List<CandleDTO> getMinuteCandles(String stockCode, LocalDateTime from, LocalDateTime to, CandleType type) {
+		List<CandleWithMA<CandleMinute>> wrappedCache = getCachedMinuteCandlesInRange(stockCode, type, from, to);
+		List<CandleWithMA<CandleMinute>> finalMergedList;
 
 		if (wrappedCache.isEmpty()) {
-			// DB 조회 시에는 이평선이 없으므로 순수 엔티티 리스트를 획득
-			List<CandleMinute> dbCandles = findMinuteCandlesFromDb(stockCode, from, to, minute);
-			// 💡 DB에서 온 데이터들은 무거운 실시간 계산 대신 우선 빈 이평선 맵(또는 null)으로 감싸 DTO로 변환
-			result = new ArrayList<>(
-					dbCandles.stream().map(c -> CandleDTO.from(new CandleWithMA<>(c, Map.of()))).toList());
+			List<CandleMinute> dbCandles = findMinuteCandlesFromDb(stockCode, from, to, type.getMinute());
+			finalMergedList = dbCandles.stream().map(c -> new CandleWithMA<>(c, Map.of())).collect(Collectors.toList());
 		} else {
-			// 캐시 데이터가 유효하면 이평선 정보가 포함된 통째로 DTO 변환
-			result = new ArrayList<>(wrappedCache.stream().map(CandleDTO::from).toList());
+			finalMergedList = new ArrayList<>(wrappedCache);
 		}
 
+		List<CandleDTO> result = new ArrayList<>(finalMergedList.stream().map(CandleDTO::from).toList());
 		addCurrentCandleIfNewer(result, stockCode);
 		return result;
 	}
@@ -75,7 +71,6 @@ public class CandleService {
 		LocalDate fromDate = from.toLocalDate();
 		LocalDate toDate = to.toLocalDate();
 
-		// 🎯 캐시 모델 정상화
 		List<CandleWithMA<CandleDay>> wrappedCache = getCachedDayCandlesInRange(stockCode, fromDate, toDate);
 		List<CandleDTO> result;
 
@@ -89,42 +84,22 @@ public class CandleService {
 
 		CandleDTO todayCandle = getTodayCandle(stockCode);
 		addCandleIfNewer(result, todayCandle);
-
 		return result;
 	}
 
-	// 🎯 반환 타입을 List<CandleWithMA<CandleMinute>> 구조로 교정
-	private List<CandleWithMA<CandleMinute>> getCachedMinuteCandlesInRange(String stockCode, int minute,
-			LocalDateTime from,
-			LocalDateTime to) {
-		List<CandleWithMA<CandleMinute>> cache = getCachedMinuteCandles(stockCode, minute);
-
-		if (!isMinuteCacheCoveringRange(cache, from, to)) {
+	private List<CandleWithMA<CandleMinute>> getCachedMinuteCandlesInRange(String stockCode, CandleType type,
+			LocalDateTime from, LocalDateTime to) {
+		List<CandleWithMA<CandleMinute>> cache = candleCacheService.getCandles(type, stockCode);
+		if (!isMinuteCacheCoveringRange(cache, from, to))
 			return List.of();
-		}
-
 		return cache.stream().filter(c -> isBetween(c.getCandle().getTime(), from, to)).toList();
 	}
 
-	// 🎯 반환 타입 교정
-	private List<CandleWithMA<CandleMinute>> getCachedMinuteCandles(String stockCode, int minute) {
-		return switch (minute) {
-		case 1 -> candleCacheService.getOneMinCandles(stockCode);
-		case 5 -> candleCacheService.getFiveMinCandles(stockCode);
-		default -> List.of();
-		};
-	}
-
-	// 🎯 제네릭 <T> 제거하고 CandleMinute를 명시적으로 선언하도록 변경
 	private boolean isMinuteCacheCoveringRange(List<CandleWithMA<CandleMinute>> cache, LocalDateTime from, LocalDateTime to) {
-		if (cache == null || cache.isEmpty()) {
+		if (cache == null || cache.isEmpty())
 			return false;
-		}
-
-		// 💡 명확한 타입 덕분에 캐스팅(instanceof) 없이 바로 .getTime() 호출이 가능해집니다!
 		LocalDateTime cacheStart = cache.get(0).getCandle().getTime();
 		LocalDateTime cacheEnd = cache.get(cache.size() - 1).getCandle().getTime();
-
 		return !from.isBefore(cacheStart) && !to.isAfter(cacheEnd);
 	}
 
@@ -132,11 +107,8 @@ public class CandleService {
 			int minute) {
 		List<CandleMinute> oneMinCandles = candleMinuteRepository.findByStockCodeAndTimeBetweenOrderByTimeAsc(stockCode,
 				from, to);
-
-		if (minute == 1) {
+		if (minute == 1)
 			return oneMinCandles;
-		}
-
 		return groupMinuteCandles(oneMinCandles, minute);
 	}
 
@@ -147,17 +119,16 @@ public class CandleService {
 	}
 
 	private CandleMinute toGroupedCandleMinute(LocalDateTime time, List<CandleMinute> group) {
-		group.sort(Comparator.comparing(CandleMinute::getTime));
-
-		CandleMinute first = group.get(0);
-		CandleMinute last = group.get(group.size() - 1);
-
-		int high = group.stream().mapToInt(CandleMinute::getHigh).max().orElse(first.getHigh());
-		int low = group.stream().mapToInt(CandleMinute::getLow).min().orElse(first.getLow());
-		long sellQty = group.stream().mapToLong(c -> c.getSellQty() != null ? c.getSellQty() : 0L).sum();
-		long buyQty = group.stream().mapToLong(c -> c.getBuyQty() != null ? c.getBuyQty() : 0L).sum();
-		long tradeAmount = group.stream().mapToLong(c -> c.getTradeAmount() != null ? c.getTradeAmount() : 0L).sum();
-
+		List<CandleMinute> sortedGroup = new ArrayList<>(group);
+		sortedGroup.sort(Comparator.comparing(CandleMinute::getTime));
+		CandleMinute first = sortedGroup.get(0);
+		CandleMinute last = sortedGroup.get(sortedGroup.size() - 1);
+		int high = sortedGroup.stream().mapToInt(CandleMinute::getHigh).max().orElse(first.getHigh());
+		int low = sortedGroup.stream().mapToInt(CandleMinute::getLow).min().orElse(first.getLow());
+		long sellQty = sortedGroup.stream().mapToLong(c -> c.getSellQty() != null ? c.getSellQty() : 0L).sum();
+		long buyQty = sortedGroup.stream().mapToLong(c -> c.getBuyQty() != null ? c.getBuyQty() : 0L).sum();
+		long tradeAmount = sortedGroup.stream().mapToLong(c -> c.getTradeAmount() != null ? c.getTradeAmount() : 0L)
+				.sum();
 		return new CandleMinute(null, first.getStockCode(), time, first.getOpen(), high, low, last.getClose(), buyQty,
 				sellQty, buyQty + sellQty, tradeAmount);
 	}
@@ -166,29 +137,19 @@ public class CandleService {
 		return time.withMinute((time.getMinute() / minute) * minute).withSecond(0).withNano(0);
 	}
 
-
-
-	// 🎯 반환 타입 교정
 	private List<CandleWithMA<CandleDay>> getCachedDayCandlesInRange(String stockCode, LocalDate from, LocalDate to) {
-		List<CandleWithMA<CandleDay>> cache = candleCacheService.getDayCandles(stockCode);
-
-		if (!isDayCacheCoveringRange(cache, from, to)) {
+		List<CandleWithMA<CandleDay>> cache = candleCacheService.getCandles(CandleType.DAY, stockCode);
+		if (!isDayCacheCoveringRange(cache, from, to))
 			return List.of();
-		}
-
 		return cache.stream()
 				.filter(c -> !c.getCandle().getDate().isBefore(from) && !c.getCandle().getDate().isAfter(to)).toList();
 	}
 
-	// 🎯 타입 바인딩 교정
 	private boolean isDayCacheCoveringRange(List<CandleWithMA<CandleDay>> cache, LocalDate from, LocalDate to) {
-		if (cache == null || cache.isEmpty()) {
+		if (cache == null || cache.isEmpty())
 			return false;
-		}
-
 		LocalDate cacheStart = cache.get(0).getCandle().getDate();
 		LocalDate cacheEnd = cache.get(cache.size() - 1).getCandle().getDate();
-
 		return !from.isBefore(cacheStart) && !to.isAfter(cacheEnd);
 	}
 
@@ -196,57 +157,38 @@ public class CandleService {
 		return !time.isBefore(from) && !time.isAfter(to);
 	}
 
-	// 💡 기존의 구형 변환기는 하위 호환을 위해 유지하거나 걷어내도 무방합니다.
-//	private List<CandleDTO> toMinuteDTOList(List<CandleMinute> candles) {
-//		return new ArrayList<>(candles.stream().map(CandleDTO::from).toList());
-//	}
-//
-//	private List<CandleDTO> toDayDTOList(List<CandleDay> candles) {
-//		return new ArrayList<>(candles.stream().map(CandleDTO::from).toList());
-//	}
-
 	private void addCurrentCandleIfNewer(List<CandleDTO> result, String stockCode) {
 		CandleDTO currentCandle = getCurrentCandleFromRedis(stockCode);
 		addCandleIfNewer(result, currentCandle);
 	}
 
 	private void addCandleIfNewer(List<CandleDTO> result, CandleDTO candle) {
-		if (candle == null) {
+		if (candle == null)
 			return;
-		}
-
 		if (result.isEmpty()) {
 			result.add(candle);
 			return;
 		}
-
 		LocalDateTime lastTime = parseCandleTime(result.get(result.size() - 1).getTime());
 		LocalDateTime newTime = parseCandleTime(candle.getTime());
-
 		if (newTime.isAfter(lastTime)) {
 			result.add(candle);
 		}
 	}
 
 	private LocalDateTime parseCandleTime(String time) {
-		if (time.length() == 10) {
+		if (time.length() == 10)
 			return LocalDate.parse(time).atStartOfDay();
-		}
-
 		return LocalDateTime.parse(time);
 	}
 
 	private CandleDTO getTodayCandle(String stockCode) {
 		LocalDate today = LocalDate.now();
-
 		List<CandleMinute> todayMinutes = candleMinuteRepository.findByStockCodeAndTimeBetweenOrderByTimeAsc(stockCode,
 				today.atStartOfDay(), today.plusDays(1).atStartOfDay());
-
 		CandleDTO currentCandle = getCurrentCandleFromRedis(stockCode);
-
-		if (todayMinutes.isEmpty() && currentCandle == null) {
+		if (todayMinutes.isEmpty() && currentCandle == null)
 			return null;
-		}
 
 		int open = !todayMinutes.isEmpty() ? todayMinutes.get(0).getOpen() : currentCandle.getOpen();
 		int high = todayMinutes.stream().mapToInt(CandleMinute::getHigh).max().orElse(open);
@@ -262,28 +204,22 @@ public class CandleService {
 			sellQty += currentCandle.getSellQty();
 			buyQty += currentCandle.getBuyQty();
 		}
-
 		return CandleDTO.today(today, open, high, low, close, sellQty, buyQty);
 	}
 
 	private CandleDTO getCurrentCandleFromRedis(String stockCode) {
 		LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
 		String key = "candle:1m:" + stockCode + ":" + now.format(FMT);
-
 		Map<Object, Object> current = redisTemplate.opsForHash().entries(key);
-		if (current.isEmpty()) {
+		if (current.isEmpty())
 			return null;
-		}
-
 		try {
 			Object open = current.get("open");
 			Object high = current.get("high");
 			Object low = current.get("low");
 			Object close = current.get("close");
-
-			if (open == null || high == null || low == null || close == null) {
+			if (open == null || high == null || low == null || close == null)
 				return null;
-			}
 
 			return CandleDTO.current(now, Integer.parseInt(String.valueOf(open)),
 					Integer.parseInt(String.valueOf(high)), Integer.parseInt(String.valueOf(low)),
@@ -311,7 +247,6 @@ public class CandleService {
 			LocalDateTime lastExecutionTime) {
 		CandleDTO candleDTO = candleSchedulerService.saveCurrentCandle(stockCode, currentPrice, buyQty, sellQty,
 				tradeAmount, lastExecutionTime);
-
 		webSocketService.sendCurrentCandle(candleDTO, stockCode);
 	}
 }

@@ -38,4 +38,10 @@ public class CandleDay implements Candle {
 	// 계산 필드 (차트 팝업 툴팁에 필수적인 전일 대비 데이터들)
 	private Integer changeAmount; // 전일 종가 대비 등락 절대 금액
 	private Double changeRate; // 전일 종가 대비 등락률 (%)
+
+	@Override
+	public String getCandleTime() {
+		// 일봉은 날짜까지만 유일하면 되므로 yyyy-MM-dd 형식으로 반환
+		return this.date.toString();
+	}
 }

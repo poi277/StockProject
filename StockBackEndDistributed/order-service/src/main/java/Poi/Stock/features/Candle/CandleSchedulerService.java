@@ -24,7 +24,7 @@ import Poi.Stock.features.Candle.Entity.CandleWithMA;
 import Poi.Stock.features.Candle.repository.CandleDayRepository;
 import Poi.Stock.features.Candle.repository.CandleHourRepository;
 import Poi.Stock.features.Candle.repository.CandleMinuteRepository;
-import Poi.Stock.repository.StockRepository;
+import Poi.Stock.util.EnumUtil.CandleType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -40,7 +40,6 @@ public class CandleSchedulerService {
 	private final CandleHourRepository candleHourRepository;
 	private final CandleDayRepository candleDayRepository;
 	private final CandleCacheService candleCacheService;
-	private final StockRepository stockRepository;
 
 	private static final String UPDATE_CANDLE_SCRIPT = """
 			local candleKey   = KEYS[1]
@@ -59,7 +58,7 @@ public class CandleSchedulerService {
 			    local low  = tonumber(redis.call('HGET', candleKey, 'low'))
 			    if price > high then redis.call('HSET', candleKey, 'high', price) end
 			    if price < low  then redis.call('HSET', candleKey, 'low',  price) end
-			    redis.call('HSET',         candleKey, 'close',       price)
+			    redis.call('HSET',          candleKey, 'close',       price)
 			    redis.call('HINCRBY',      candleKey, 'buyQty',      buyQty)
 			    redis.call('HINCRBY',      candleKey, 'sellQty',     sellQty)
 			    redis.call('HINCRBY',      candleKey, 'tradeAmount', tradeAmount)
@@ -82,9 +81,8 @@ public class CandleSchedulerService {
 				List.of(candleKey), String.valueOf(price), String.valueOf(buyQty), String.valueOf(sellQty),
 				String.valueOf(tradeAmount));
 
-		if (result == null || result.size() < 4) {
+		if (result == null || result.size() < 4)
 			return null;
-		}
 
 		return CandleDTO.current(minuteTime, Integer.parseInt(result.get(0)), Integer.parseInt(result.get(1)),
 				Integer.parseInt(result.get(2)), Integer.parseInt(result.get(3)), (long) sellQty, (long) buyQty);
@@ -92,99 +90,90 @@ public class CandleSchedulerService {
 
 	public List<CandleMinute> save1MinCandle(List<String> assignedCodes) {
 		List<CandleMinute> savedCandles = new ArrayList<>();
-
 		Boolean lock = redisTemplate.opsForValue().setIfAbsent("lock:candle", "1", 10, TimeUnit.SECONDS);
-
-		if (!Boolean.TRUE.equals(lock)) {
+		if (!Boolean.TRUE.equals(lock))
 			return savedCandles;
-		}
 
 		try {
 			LocalDateTime now = LocalDateTime.now();
-
 			for (String stockCode : assignedCodes) {
-
 				Set<String> keys = redisTemplate.keys("candle:1m:" + stockCode + ":*");
-
-				if (keys == null || keys.isEmpty()) {
+				if (keys == null || keys.isEmpty())
 					continue;
-				}
-
 				for (String key : keys) {
 					try {
 						String timeStr = key.substring(key.lastIndexOf(":") + 1);
 						LocalDateTime candleTime = LocalDateTime.parse(timeStr, FMT);
-
-						if (!candleTime.isBefore(now.minusMinutes(1))) {
+						if (!candleTime.isBefore(now.minusMinutes(1)))
 							continue;
-						}
 
 						Map<Object, Object> candle = redisTemplate.opsForHash().entries(key);
-
-						if (candle.isEmpty()) {
+						if (candle.isEmpty())
 							continue;
-						}
 
 						CandleMinute candleMinute = CandleMinute.setCandleRedis(stockCode, candleTime, candle);
-
 						candleMinuteRepository.save(candleMinute);
 						savedCandles.add(candleMinute);
-
 						redisTemplate.delete(key);
-
-						log.info("1분봉 저장 완료 - {} {}", stockCode, candleTime);
-
 					} catch (Exception e) {
-						log.error("캔들 처리 실패 - key: {} error: {}", key, e.getMessage());
+						log.error("1분봉 파일 유도 에러 - key: {} error: {}", key, e.getMessage());
 					}
 				}
 			}
 		} finally {
 			redisTemplate.delete("lock:candle");
 		}
-
 		return savedCandles;
 	}
 
 	public void updateMinuteCaches(List<CandleMinute> savedCandles) {
-		if (savedCandles == null || savedCandles.isEmpty()) {
+		if (savedCandles == null || savedCandles.isEmpty())
 			return;
-		}
 
-		// 1. 종목코드로 그룹화 (기존 로직 유지)
 		Map<String, List<CandleMinute>> candlesByStockCode = savedCandles.stream()
 				.collect(Collectors.groupingBy(CandleMinute::getStockCode));
 
-		for (Map.Entry<String, List<CandleMinute>> entry : candlesByStockCode.entrySet()) {
-			String stockCode = entry.getKey();
-			List<CandleMinute> newCandles = entry.getValue();
-			candleCacheService.addOneMinCandles(stockCode, newCandles);
+		candlesByStockCode.forEach((stockCode, newCandles) -> {
+			// 1. 1분봉 캐시에 최신 데이터 적재
+			candleCacheService.addCandles(CandleType.ONE_MINUTE, stockCode, newCandles);
 
-			List<CandleWithMA<CandleMinute>> recentOneMinWrapped = candleCacheService.getOneMinCandles(stockCode);
-			log.info("1분봉 캐시 사이즈: {}", recentOneMinWrapped.size());
-			List<CandleMinute> pureMinuteCandles = recentOneMinWrapped.stream().map(CandleWithMA::getCandle)
-					.collect(Collectors.toList());
+			// 1분봉 캐시 리스트 가져오기 (이미 시간 오름차순 정렬 상태)
+			List<CandleWithMA<CandleMinute>> oneMinCache = candleCacheService.getCandles(CandleType.ONE_MINUTE,
+					stockCode);
+			if (oneMinCache.isEmpty())
+				return;
 
-			// 5. 정제된 순수 1분봉 데이터들을 가지고 5분봉 갱신
-			updateGroupedMinuteCache(stockCode, pureMinuteCandles, 5);
-		}
-	}
+			// 2. 상위 분봉 동적 순회 (3, 5, 10, 30, 60, 120, 240분봉 등)
+			for (CandleType targetType : CandleType.values()) {
+				if (!targetType.isMinuteType() || targetType == CandleType.ONE_MINUTE)
+					continue;
 
-	private void updateGroupedMinuteCache(String stockCode, List<CandleMinute> oneMinCandles, int minute) {
-		List<CandleMinute> groupedCandles = convertToMinute(oneMinCandles, minute);
+				int targetGap = targetType.getMinute();
+				int cacheSize = oneMinCache.size();
 
-		switch (minute) {
-		case 5 -> candleCacheService.putFiveMinCandles(stockCode, groupedCandles);
-		default -> throw new IllegalArgumentException("지원하지 않는 분봉 캐시: " + minute);
-		}
-		log.info("캔들 {}분 그룹  사이즈: {}", minute, groupedCandles.size());
+				int pieceCount = ((cacheSize - 1) % targetGap) + 1;
+				int fromIndex = Math.max(0, cacheSize - pieceCount);
+
+				// 뒤에서 pieceCount 개수만큼 리스트로 뚝 끊어오기
+				List<CandleMinute> livePieces = oneMinCache.subList(fromIndex, cacheSize).stream()
+						.map(CandleWithMA::getCandle).toList();
+
+				if (!livePieces.isEmpty()) {
+					// 이 블록의 대표 시각은 잘라온 조각들의 맨 첫 번째(가장 오래된) 조각의 시간으로 자동 치환
+					LocalDateTime blockStartTime = livePieces.get(0).getTime();
+
+					CandleMinute combinedCandle = toGroupedCandleMinute(blockStartTime, livePieces);
+
+					// upsert가 멱등하게 덮어쓰거나 새 칸을 열어줌
+					candleCacheService.upsertCandle(targetType, stockCode, combinedCandle);
+				}
+			}
+		});
 	}
 
 	public List<CandleMinute> convertToMinute(List<CandleMinute> minutes, int minute) {
-		if (minutes == null || minutes.isEmpty()) {
+		if (minutes == null || minutes.isEmpty())
 			return List.of();
-		}
-
 		return minutes.stream().collect(Collectors.groupingBy(c -> floorTime(c.getTime(), minute))).entrySet().stream()
 				.sorted(Map.Entry.comparingByKey())
 				.map(entry -> toGroupedCandleMinute(entry.getKey(), entry.getValue())).toList();
@@ -195,18 +184,20 @@ public class CandleSchedulerService {
 	}
 
 	private CandleMinute toGroupedCandleMinute(LocalDateTime time, List<CandleMinute> group) {
-		group.sort(Comparator.comparing(CandleMinute::getTime));
+		List<CandleMinute> sortedGroup = new ArrayList<>(group);
+		sortedGroup.sort(Comparator.comparing(CandleMinute::getTime));
 
-		CandleMinute first = group.get(0);
-		CandleMinute last = group.get(group.size() - 1);
+		CandleMinute first = sortedGroup.get(0);
+		CandleMinute last = sortedGroup.get(sortedGroup.size() - 1);
 
 		int open = first.getOpen();
 		int close = last.getClose();
-		int high = group.stream().mapToInt(CandleMinute::getHigh).max().orElse(open);
-		int low = group.stream().mapToInt(CandleMinute::getLow).min().orElse(open);
-		long buyQty = group.stream().mapToLong(c -> c.getBuyQty() != null ? c.getBuyQty() : 0L).sum();
-		long sellQty = group.stream().mapToLong(c -> c.getSellQty() != null ? c.getSellQty() : 0L).sum();
-		long tradeAmount = group.stream().mapToLong(c -> c.getTradeAmount() != null ? c.getTradeAmount() : 0L).sum();
+		int high = sortedGroup.stream().mapToInt(CandleMinute::getHigh).max().orElse(open);
+		int low = sortedGroup.stream().mapToInt(CandleMinute::getLow).min().orElse(open);
+		long buyQty = sortedGroup.stream().mapToLong(c -> c.getBuyQty() != null ? c.getBuyQty() : 0L).sum();
+		long sellQty = sortedGroup.stream().mapToLong(c -> c.getSellQty() != null ? c.getSellQty() : 0L).sum();
+		long tradeAmount = sortedGroup.stream().mapToLong(c -> c.getTradeAmount() != null ? c.getTradeAmount() : 0L)
+				.sum();
 
 		return new CandleMinute(null, first.getStockCode(), time, open, high, low, close, buyQty, sellQty,
 				buyQty + sellQty, tradeAmount);
@@ -219,13 +210,10 @@ public class CandleSchedulerService {
 			try {
 				List<CandleMinute> minutes = candleMinuteRepository
 						.findByStockCodeAndTimeBetweenOrderByTimeAsc(stockCode, startTime, now);
-				if (minutes.isEmpty()) {
+				if (minutes.isEmpty())
 					continue;
-				}
 				CandleHour candleHour = toCandleHour(stockCode, startTime, minutes);
-
 				candleHourRepository.save(candleHour);
-				log.info("60분봉 집계 완료 - {} 시간대: {}", stockCode, startTime);
 			} catch (Exception e) {
 				log.error("60분봉 집계 에러 - 종목: {} error: {}", stockCode, e.getMessage());
 			}
@@ -235,7 +223,6 @@ public class CandleSchedulerService {
 	private CandleHour toCandleHour(String stockCode, LocalDateTime time, List<CandleMinute> minutes) {
 		CandleMinute first = minutes.get(0);
 		CandleMinute last = minutes.get(minutes.size() - 1);
-
 		int open = first.getOpen();
 		int close = last.getClose();
 		int high = minutes.stream().mapToInt(CandleMinute::getHigh).max().orElse(open);
@@ -244,7 +231,6 @@ public class CandleSchedulerService {
 		long sellQty = minutes.stream().mapToLong(c -> c.getSellQty() != null ? c.getSellQty() : 0L).sum();
 		long tradeAmount = minutes.stream()
 				.mapToLong(c -> c.getTradeAmount() != null ? c.getTradeAmount().longValue() : 0L).sum();
-
 		return new CandleHour(null, stockCode, time, open, high, low, close, buyQty, sellQty, buyQty + sellQty,
 				tradeAmount);
 	}
@@ -257,18 +243,11 @@ public class CandleSchedulerService {
 			try {
 				List<CandleMinute> dayMinutes = candleMinuteRepository
 						.findByStockCodeAndTimeBetweenOrderByTimeAsc(stockCode, startOfDay, endOfDay);
-
-				if (dayMinutes.isEmpty()) {
+				if (dayMinutes.isEmpty())
 					continue;
-				}
-
 				CandleDay candleDay = toCandleDay(stockCode, today, dayMinutes);
-
 				candleDayRepository.save(candleDay);
-				candleCacheService.addDayCandle(stockCode, candleDay);
-
-				log.info("일봉 마감 완료 - 종목: {}, 날짜: {}, 등락률: {}%", stockCode, today,
-						String.format("%.2f", candleDay.getChangeRate()));
+				candleCacheService.upsertCandle(CandleType.DAY, stockCode, candleDay);
 			} catch (Exception e) {
 				log.error("일봉 마감 에러 - 종목: {} error: {}", stockCode, e.getMessage());
 			}
@@ -278,7 +257,6 @@ public class CandleSchedulerService {
 	private CandleDay toCandleDay(String stockCode, LocalDate date, List<CandleMinute> minutes) {
 		CandleMinute first = minutes.get(0);
 		CandleMinute last = minutes.get(minutes.size() - 1);
-
 		int open = first.getOpen();
 		int close = last.getClose();
 		int high = minutes.stream().mapToInt(CandleMinute::getHigh).max().orElse(open);
@@ -287,10 +265,8 @@ public class CandleSchedulerService {
 		long sellQty = minutes.stream().mapToLong(c -> c.getSellQty() != null ? c.getSellQty() : 0L).sum();
 		long tradeAmount = minutes.stream()
 				.mapToLong(c -> c.getTradeAmount() != null ? c.getTradeAmount().longValue() : 0L).sum();
-
 		int changeAmount;
 		double changeRate;
-
 		Optional<CandleDay> yesterdayCandle = candleDayRepository.findByStockCodeAndDate(stockCode, date.minusDays(1));
 		if (yesterdayCandle.isPresent()) {
 			int yesterdayClose = yesterdayCandle.get().getClose();
@@ -300,7 +276,6 @@ public class CandleSchedulerService {
 			changeAmount = close - open;
 			changeRate = open != 0 ? ((double) changeAmount / open) * 100.0 : 0.0;
 		}
-
 		return new CandleDay(null, stockCode, date, open, high, low, close, buyQty, sellQty, buyQty + sellQty,
 				tradeAmount, changeAmount, changeRate);
 	}

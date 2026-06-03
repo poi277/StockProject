@@ -10,126 +10,48 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 
 import Poi.Stock.features.Candle.Entity.Candle;
-import Poi.Stock.features.Candle.Entity.CandleDay;
-import Poi.Stock.features.Candle.Entity.CandleHour;
-import Poi.Stock.features.Candle.Entity.CandleMinute;
 import Poi.Stock.features.Candle.Entity.CandleWithMA;
+import Poi.Stock.util.EnumUtil.CandleType;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class CandleCacheService {
 
-	private static final int ONE_MIN_MAX_SIZE = 100;
-	private static final int FIVE_MIN_MAX_SIZE = 100;
-	private static final int HOUR_MAX_SIZE = 100;
-	private static final int DAY_MAX_SIZE = 100;
+	private static final int MAX_CACHE_SIZE = 100;
 
-	private static final List<Integer> MA_PERIODS = List.of(3, 5, 10, 20, 60, 120);
+	// 🎯 차트에 기본적으로 그려질 이동평균선 기간 설정 (5선, 20선, 60선, 120선)
+	private static final List<Integer> MA_PERIODS = List.of(5, 20, 60, 120);
 
 	private final CandleCache candleCache;
 
-	// ==================== 1분봉 ====================
-	public void putOneMinCandles(String stockCode, List<CandleMinute> candles) {
-		putCandles(candleCache.getOneMinCandles(), stockCode, candles, ONE_MIN_MAX_SIZE);
-	}
-
-	// 🎯 누락되었던 복수 추가(add) 메서드 추가
-	public void addOneMinCandles(String stockCode, List<CandleMinute> candles) {
-		addCandles(candleCache.getOneMinCandles(), stockCode, candles, ONE_MIN_MAX_SIZE);
-	}
-
-	public void addOneMinCandle(String stockCode, CandleMinute candle) {
-		addCandle(candleCache.getOneMinCandles(), stockCode, candle, ONE_MIN_MAX_SIZE);
-	}
-
-	public List<CandleWithMA<CandleMinute>> getOneMinCandles(String stockCode) {
-		return getCandles(candleCache.getOneMinCandles(), stockCode);
-	}
-
-	// ==================== 5분봉 ====================
-	public void putFiveMinCandles(String stockCode, List<CandleMinute> candles) {
-		putCandles(candleCache.getFiveMinCandles(), stockCode, candles, FIVE_MIN_MAX_SIZE);
-	}
-
-	public void addFiveMinCandles(String stockCode, List<CandleMinute> candles) {
-		addCandles(candleCache.getFiveMinCandles(), stockCode, candles, FIVE_MIN_MAX_SIZE);
-	}
-
-	public void addFiveMinCandle(String stockCode, CandleMinute candle) {
-		addCandle(candleCache.getFiveMinCandles(), stockCode, candle, FIVE_MIN_MAX_SIZE);
-	}
-
-	public List<CandleWithMA<CandleMinute>> getFiveMinCandles(String stockCode) {
-		return getCandles(candleCache.getFiveMinCandles(), stockCode);
-	}
-
-	// ==================== 시봉 ====================
-	public void putHourCandles(String stockCode, List<CandleHour> candles) {
-		putCandles(candleCache.getHourCandles(), stockCode, candles, HOUR_MAX_SIZE);
-	}
-
-	public void addHourCandles(String stockCode, List<CandleHour> candles) {
-		addCandles(candleCache.getHourCandles(), stockCode, candles, HOUR_MAX_SIZE);
-	}
-
-	public void addHourCandle(String stockCode, CandleHour candle) {
-		addCandle(candleCache.getHourCandles(), stockCode, candle, HOUR_MAX_SIZE);
-	}
-
-	public List<CandleWithMA<CandleHour>> getHourCandles(String stockCode) {
-		return getCandles(candleCache.getHourCandles(), stockCode);
-	}
-
-	// ==================== 일봉 ====================
-	public void putDayCandles(String stockCode, List<CandleDay> candles) {
-		putCandles(candleCache.getDayCandles(), stockCode, candles, DAY_MAX_SIZE);
-	}
-
-	public void addDayCandles(String stockCode, List<CandleDay> candles) {
-		addCandles(candleCache.getDayCandles(), stockCode, candles, DAY_MAX_SIZE);
-	}
-
-	public void addDayCandle(String stockCode, CandleDay candle) {
-		addCandle(candleCache.getDayCandles(), stockCode, candle, DAY_MAX_SIZE);
-	}
-
-	public List<CandleWithMA<CandleDay>> getDayCandles(String stockCode) {
-		return getCandles(candleCache.getDayCandles(), stockCode);
-	}
-
-	// ==================== 제네릭 코어 로직 ====================
-
-	private <T extends Candle> void putCandles(Map<String, Deque<CandleWithMA<T>>> cache, String stockCode,
-			List<T> candles, int maxSize) {
-		Deque<CandleWithMA<T>> deque = new ArrayDeque<>();
+	public void putCandles(CandleType type, String stockCode, List<? extends Candle> candles) {
+		Map<String, Deque<CandleWithMA<Candle>>> cacheMap = candleCache.getTypedStore(type);
+		Deque<CandleWithMA<Candle>> deque = new ArrayDeque<>();
 
 		if (candles != null) {
-			for (T candle : candles) {
-				CandleWithMA<T> wrapped = calculateLiveMA(deque, candle);
+			for (Candle candle : candles) {
+				CandleWithMA<Candle> wrapped = calculateLiveMA(deque, candle, type);
 				deque.addLast(wrapped);
-				if (deque.size() > maxSize) {
+				if (deque.size() > MAX_CACHE_SIZE) {
 					deque.removeFirst();
 				}
 			}
 		}
-		cache.put(stockCode, deque);
+		cacheMap.put(stockCode, deque);
 	}
 
-	// 🎯 복수 캔들 추가를 실시간 이평선 흐름에 맞춰 연산할 제네릭 메서드
-	private <T extends Candle> void addCandles(Map<String, Deque<CandleWithMA<T>>> cache, String stockCode,
-			List<T> candles, int maxSize) {
+	public void addCandles(CandleType type, String stockCode, List<? extends Candle> candles) {
 		if (candles == null || candles.isEmpty())
 			return;
 
-		cache.compute(stockCode, (key, existing) -> {
-			Deque<CandleWithMA<T>> deque = existing == null ? new ArrayDeque<>() : existing;
-
-			for (T candle : candles) {
-				CandleWithMA<T> wrapped = calculateLiveMA(deque, candle);
+		Map<String, Deque<CandleWithMA<Candle>>> cacheMap = candleCache.getTypedStore(type);
+		cacheMap.compute(stockCode, (key, existing) -> {
+			Deque<CandleWithMA<Candle>> deque = existing == null ? new ArrayDeque<>() : existing;
+			for (Candle candle : candles) {
+				CandleWithMA<Candle> wrapped = calculateLiveMA(deque, candle, type);
 				deque.addLast(wrapped);
-
-				while (deque.size() > maxSize) {
+				while (deque.size() > MAX_CACHE_SIZE) {
 					deque.removeFirst();
 				}
 			}
@@ -137,54 +59,102 @@ public class CandleCacheService {
 		});
 	}
 
-	private <T extends Candle> void addCandle(Map<String, Deque<CandleWithMA<T>>> cache, String stockCode, T candle,
-			int maxSize) {
+
+	public void upsertCandle(CandleType type, String stockCode, Candle candle) {
 		if (candle == null)
 			return;
 
-		cache.compute(stockCode, (key, existing) -> {
-			Deque<CandleWithMA<T>> deque = existing == null ? new ArrayDeque<>() : existing;
-			CandleWithMA<T> wrapped = calculateLiveMA(deque, candle);
+		Map<String, Deque<CandleWithMA<Candle>>> cacheMap = candleCache.getTypedStore(type);
+		cacheMap.compute(stockCode, (key, existing) -> {
+			Deque<CandleWithMA<Candle>> deque = existing == null ? new ArrayDeque<>() : existing;
+
+			if (!deque.isEmpty() && deque.getLast().getCandle().getCandleTime().equals(candle.getCandleTime())) {
+				deque.removeLast();
+			}
+			CandleWithMA<Candle> wrapped = calculateLiveMA(deque, candle, type);
 			deque.addLast(wrapped);
 
-			while (deque.size() > maxSize) {
+			while (deque.size() > MAX_CACHE_SIZE) {
 				deque.removeFirst();
 			}
 			return deque;
 		});
 	}
 
-	private <T extends Candle> CandleWithMA<T> calculateLiveMA(Deque<CandleWithMA<T>> deque, T newCandle) {
-		Map<Integer, Double> maMap = new HashMap<>();
+	/**
+	 * 평소 경계선 사이일 때, 큐의 맨 마지막(오른쪽) 칸만 실시간 미확정 데이터로 갱신하는 메서드
+	 */
+	public void updateLastCandle(CandleType type, String stockCode, Candle candle) {
+		if (candle == null)
+			return;
 
-		List<Integer> prices = new ArrayList<>();
-		for (CandleWithMA<T> c : deque) {
-			prices.add(c.getCandle().getClose());
-		}
-		prices.add(newCandle.getClose());
-
-		int totalSize = prices.size();
-
-		for (int period : MA_PERIODS) {
-			if (totalSize >= period) {
-				double avg = prices.subList(totalSize - period, totalSize).stream().mapToInt(Integer::intValue)
-						.average()
-						.orElse(0.0);
-				maMap.put(period, Math.round(avg * 100) / 100.0);
-			} else {
-				double avg = prices.stream().mapToInt(Integer::intValue).average().orElse(0.0);
-				maMap.put(period, Math.round(avg * 100) / 100.0);
+		Map<String, Deque<CandleWithMA<Candle>>> cacheMap = candleCache.getTypedStore(type);
+		cacheMap.compute(stockCode, (key, existing) -> {
+			Deque<CandleWithMA<Candle>> deque = existing == null ? new ArrayDeque<>() : existing;
+			if (!deque.isEmpty()) {
+				deque.removeLast(); // 현재 미완성 상태인 마지막 칸을 제거하고
 			}
-		}
-
-		return new CandleWithMA<>(newCandle, maMap);
+			// 새로 빌드된 합산 본으로 덮어쓰기 (이평선 재계산 포함)
+			CandleWithMA<Candle> wrapped = calculateLiveMA(deque, candle, type);
+			deque.addLast(wrapped);
+			return deque;
+		});
 	}
 
-	private <T> List<CandleWithMA<T>> getCandles(Map<String, Deque<CandleWithMA<T>>> cache, String stockCode) {
-		Deque<CandleWithMA<T>> candles = cache.get(stockCode);
-		if (candles == null || candles.isEmpty()) {
+
+	@SuppressWarnings("unchecked")
+	public <T extends Candle> List<CandleWithMA<T>> getCandles(CandleType type, String stockCode) {
+		Map<String, Deque<CandleWithMA<T>>> cacheMap = candleCache.getTypedStore(type);
+		if (cacheMap == null)
 			return List.of();
+
+		Deque<CandleWithMA<T>> deque = cacheMap.get(stockCode);
+		if (deque == null || deque.isEmpty())
+			return List.of();
+
+		return new ArrayList<>(deque);
+	}
+
+	private CandleWithMA<Candle> calculateLiveMA(Deque<CandleWithMA<Candle>> deque, Candle newCandle, CandleType type) {
+		Map<Integer, Double> maMap = new HashMap<>();
+		int newPrice = newCandle.getClose();
+
+		List<Integer> prices = new ArrayList<>();
+		for (CandleWithMA<Candle> c : deque) {
+			prices.add(c.getCandle().getClose());
 		}
-		return new ArrayList<>(candles);
+		prices.add(newPrice);
+		int totalSize = prices.size();
+
+		// 내부 상수 리스트를 참조하도록 변경
+		for (int period : MA_PERIODS) {
+			double avg;
+			if (totalSize >= period) {
+				if (!deque.isEmpty() && deque.getLast().getMa().containsKey(period)) {
+					double prevAvg = deque.getLast().getMa().get(period);
+					double prevSum = prevAvg * period;
+					int outgoingPrice = prices.get(totalSize - period - 1);
+					double currentSum = prevSum - outgoingPrice + newPrice;
+					avg = currentSum / period;
+				} else {
+					long sum = 0;
+					for (int i = totalSize - period; i < totalSize; i++) {
+						sum += prices.get(i);
+					}
+					avg = (double) sum / period;
+				}
+			} else {
+				if (!deque.isEmpty() && deque.getLast().getMa().containsKey(period)) {
+					double prevAvg = deque.getLast().getMa().get(period);
+					double prevSum = prevAvg * (totalSize - 1);
+					double currentSum = prevSum + newPrice;
+					avg = currentSum / totalSize;
+				} else {
+					avg = newPrice;
+				}
+			}
+			maMap.put(period, Math.round(avg * 100) / 100.0);
+		}
+		return new CandleWithMA<>(newCandle, maMap);
 	}
 }

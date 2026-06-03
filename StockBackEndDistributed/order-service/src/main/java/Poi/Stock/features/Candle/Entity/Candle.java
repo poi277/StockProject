@@ -16,4 +16,6 @@ public interface Candle {
 	Long getTotalVolume();
 
 	Long getTradeAmount();
+
+	String getCandleTime();
 }

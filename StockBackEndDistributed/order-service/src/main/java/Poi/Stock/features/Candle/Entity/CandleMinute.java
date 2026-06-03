@@ -57,4 +57,9 @@ public class CandleMinute implements Candle {
 	private static double parseDouble(Object val) {
 		return val == null ? 0.0 : Double.parseDouble(val.toString());
 	}
+
+	@Override
+	public String getCandleTime() {
+		return this.time.toString();
+	}
 }

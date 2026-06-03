@@ -34,4 +34,10 @@ public class CandleHour implements Candle {
 	private Long sellQty;
 	private Long totalVolume; // buyQty + sellQty (1시간 누적)
 	private Long tradeAmount; // 1시간 누적 거래대금
+
+	@Override
+	public String getCandleTime() {
+		// 분봉은 시분까지 유일해야 하므로 yyyy-MM-dd HH:mm 형식으로 반환
+		return this.time.toString();
+	}
 }
