@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -135,7 +136,7 @@ public class CandleSchedulerService {
 
 		candlesByStockCode.forEach((stockCode, newCandles) -> {
 			// 1. 1분봉 캐시에 최신 데이터 적재
-			candleCacheService.addCandles(CandleType.ONE_MINUTE, stockCode, newCandles);
+			candleCacheService.upsertCandles(CandleType.ONE_MINUTE, stockCode, newCandles);
 
 			// 1분봉 캐시 리스트 가져오기 (이미 시간 오름차순 정렬 상태)
 			List<CandleWithMA<CandleMinute>> oneMinCache = candleCacheService.getCandles(CandleType.ONE_MINUTE,
@@ -143,28 +144,29 @@ public class CandleSchedulerService {
 			if (oneMinCache.isEmpty())
 				return;
 
-			// 2. 상위 분봉 동적 순회 (3, 5, 10, 30, 60, 120, 240분봉 등)
+			// 2. 상위 분봉 동적 순회 (3, 5, 10, 30, 60 등)
 			for (CandleType targetType : CandleType.values()) {
 				if (!targetType.isMinuteType() || targetType == CandleType.ONE_MINUTE)
 					continue;
 
 				int targetGap = targetType.getMinute();
-				int cacheSize = oneMinCache.size();
 
-				int pieceCount = ((cacheSize - 1) % targetGap) + 1;
-				int fromIndex = Math.max(0, cacheSize - pieceCount);
+				// 캐시 전체를 해당 분봉 기준으로 한번만 그룹핑
+				Map<LocalDateTime, List<CandleMinute>> grouped = oneMinCache.stream().map(CandleWithMA::getCandle)
+						.collect(Collectors.groupingBy(c -> floorTime(c.getTime(), targetGap)));
 
-				// 뒤에서 pieceCount 개수만큼 리스트로 뚝 끊어오기
-				List<CandleMinute> livePieces = oneMinCache.subList(fromIndex, cacheSize).stream()
-						.map(CandleWithMA::getCandle).toList();
+				List<LocalDateTime> targetBlocks = newCandles.stream().map(c -> floorTime(c.getTime(), targetGap))
+						.distinct().toList();
 
-				if (!livePieces.isEmpty()) {
-					// 이 블록의 대표 시각은 잘라온 조각들의 맨 첫 번째(가장 오래된) 조각의 시간으로 자동 치환
-					LocalDateTime blockStartTime = livePieces.get(0).getTime();
+				for (LocalDateTime block : targetBlocks) {
 
-					CandleMinute combinedCandle = toGroupedCandleMinute(blockStartTime, livePieces);
+					List<CandleMinute> livePieces = grouped.get(block);
 
-					// upsert가 멱등하게 덮어쓰거나 새 칸을 열어줌
+					if (livePieces == null || livePieces.isEmpty())
+						continue;
+
+					CandleMinute combinedCandle = toGroupedCandleMinute(livePieces);
+
 					candleCacheService.upsertCandle(targetType, stockCode, combinedCandle);
 				}
 			}
@@ -172,18 +174,24 @@ public class CandleSchedulerService {
 	}
 
 	public List<CandleMinute> convertToMinute(List<CandleMinute> minutes, int minute) {
-		if (minutes == null || minutes.isEmpty())
+		if (minutes == null || minutes.isEmpty()) {
 			return List.of();
-		return minutes.stream().collect(Collectors.groupingBy(c -> floorTime(c.getTime(), minute))).entrySet().stream()
-				.sorted(Map.Entry.comparingByKey())
-				.map(entry -> toGroupedCandleMinute(entry.getKey(), entry.getValue())).toList();
+		}
+		Map<LocalDateTime, List<CandleMinute>> grouped = minutes.stream()
+				.collect(Collectors.groupingBy(c -> floorTime(c.getTime(), minute), TreeMap::new, Collectors.toList()));
+
+		return grouped.values().stream().map(this::toGroupedCandleMinute).toList();
 	}
 
 	private LocalDateTime floorTime(LocalDateTime time, int minute) {
-		return time.withMinute((time.getMinute() / minute) * minute).withSecond(0).withNano(0);
+		int totalMinutes = time.getHour() * 60 + time.getMinute();
+
+		int flooredMinutes = (totalMinutes / minute) * minute;
+
+		return time.withHour(flooredMinutes / 60).withMinute(flooredMinutes % 60).withSecond(0).withNano(0);
 	}
 
-	private CandleMinute toGroupedCandleMinute(LocalDateTime time, List<CandleMinute> group) {
+	private CandleMinute toGroupedCandleMinute(List<CandleMinute> group) {
 		List<CandleMinute> sortedGroup = new ArrayList<>(group);
 		sortedGroup.sort(Comparator.comparing(CandleMinute::getTime));
 
@@ -199,7 +207,8 @@ public class CandleSchedulerService {
 		long tradeAmount = sortedGroup.stream().mapToLong(c -> c.getTradeAmount() != null ? c.getTradeAmount() : 0L)
 				.sum();
 
-		return new CandleMinute(null, first.getStockCode(), time, open, high, low, close, buyQty, sellQty,
+		return new CandleMinute(null, first.getStockCode(), first.getTime(), open, high, low, close, buyQty,
+				sellQty,
 				buyQty + sellQty, tradeAmount);
 	}
 
@@ -279,4 +288,5 @@ public class CandleSchedulerService {
 		return new CandleDay(null, stockCode, date, open, high, low, close, buyQty, sellQty, buyQty + sellQty,
 				tradeAmount, changeAmount, changeRate);
 	}
+
 }

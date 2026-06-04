@@ -3,6 +3,7 @@ package Poi.Stock.features.Candle.repository;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -19,5 +20,7 @@ public interface CandleMinuteRepository extends JpaRepository<CandleMinute, Long
 	List<String> findDistinctStockCodes();
 
 	List<CandleMinute> findByStockCodeAndTimeAfter(String stockCode, LocalDateTime time);
+
+	List<CandleMinute> findByStockCodeOrderByTimeDesc(String stockCode, PageRequest of);
 
 }

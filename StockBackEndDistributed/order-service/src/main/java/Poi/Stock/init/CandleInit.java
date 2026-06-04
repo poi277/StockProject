@@ -2,10 +2,11 @@ package Poi.Stock.init;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import Poi.Stock.features.Candle.CandleCacheService;
@@ -34,48 +35,56 @@ public class CandleInit {
 	private final CandleDayRepository candleDayRepository;
 	private final CandleSchedulerService candleSchedulerService;
 	private final AssignedCodeHolder assignedCodeHolder;
+	int MAX_CACHE_SIZE = 100;
+
 
 	@PostConstruct
 	public void init() {
-
 		assignedCodeHolder.getAssignedCodes().forEach(stockCode -> {
 
 			LocalDateTime now = LocalDateTime.now();
 			LocalDate today = LocalDate.now();
 
-			// DB로부터 캐시 웜업에 필요한 기반 소스 데이터(1분봉 100개) 벌크 조회
-			List<CandleMinute> rawMinutes = candleMinuteRepository
-					.findByStockCodeAndTimeBetweenOrderByTimeAsc(stockCode, now.minusMinutes(100), now);
+			List<CandleMinute> rawMinutes = candleMinuteRepository.findByStockCodeOrderByTimeDesc(stockCode,
+					PageRequest.of(0, MAX_CACHE_SIZE));
 
-			// 1분봉 초기 데이터 필터링 및 캐싱 적재
-			List<CandleMinute> oneMin = rawMinutes.stream().filter(c -> !c.getTime().isBefore(now.minusMinutes(20)))
-					.collect(Collectors.toList());
+			Collections.reverse(rawMinutes);
 
-			// 구형 putOneMinCandles 대신 표준화된 단 하나의 공통 API 사용
-			candleCacheService.putCandles(CandleType.ONE_MINUTE, stockCode, oneMin);
+			if (rawMinutes.isEmpty()) {
+				log.warn("[{}] 초기화할 1분봉 데이터가 없습니다.", stockCode);
+				return;
+			}
 
-			// 5분봉 그룹핑 연산 및 캐싱 적재
-			List<CandleMinute> fiveMin = candleSchedulerService.convertToMinute(rawMinutes, 5);
+			for (CandleType type : CandleType.values()) {
 
-			// 구형 putFiveMinCandles 대신 표준화된 단 하나의 공통 API 사용
-			candleCacheService.putCandles(CandleType.FIVE_MINUTE, stockCode, fiveMin);
+				if (!type.isMinuteType()) {
+					continue;
+				}
 
-			// 시간봉(60분봉) 소스 조회 및 캐싱 적재
+				List<CandleMinute> processedMinutes;
+
+				if (type == CandleType.ONE_MINUTE) {
+					processedMinutes = rawMinutes;
+				} else {
+					processedMinutes = candleSchedulerService.convertToMinute(rawMinutes, type.getMinute());
+				}
+
+				candleCacheService.putCandles(type, stockCode, processedMinutes);
+
+				log.info("캔들 캐시 웜업 완료 -> 종목: {} | 타입: {} | 적재 개수: {}", stockCode, type.name(), processedMinutes.size());
+			}
+
 			List<CandleHour> hour = candleHourRepository.findByStockCodeAndTimeBetweenOrderByTimeAsc(stockCode,
-					now.minusHours(20), now);
+					now.minusHours(48), now);
 
-			// 구형 putHourCandles 대신 표준화된 단 하나의 공통 API 사용
 			candleCacheService.putCandles(CandleType.HOUR, stockCode, hour);
 
-			// 일봉 소스 조회 및 캐싱 적재
 			List<CandleDay> day = candleDayRepository.findByStockCodeAndDateBetweenOrderByDateAsc(stockCode,
-					today.minusDays(20), today);
+					today.minusDays(60), today);
 
-			// 구형 putDayCandles 대신 표준화된 단 하나의 공통 API 사용
 			candleCacheService.putCandles(CandleType.DAY, stockCode, day);
 
-			log.info("캔들 캐시 초기화 완료: {} / 1분봉: {}개 / 5분봉: {}개 / 시간봉: {}개 / 일봉: {}개", stockCode, oneMin.size(),
-					fiveMin.size(), hour.size(), day.size());
+			log.info("[{}] 모든 차트 캐시 초기화 완료 (시간봉: {}개 / 일봉: {}개)", stockCode, hour.size(), day.size());
 		});
 	}
 }
