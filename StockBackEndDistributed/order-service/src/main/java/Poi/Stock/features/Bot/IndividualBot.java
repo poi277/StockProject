@@ -1,6 +1,5 @@
 package Poi.Stock.features.Bot;
 
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import Poi.Stock.features.Stock.StockRealTimeSnapshot;
@@ -19,7 +18,7 @@ public class IndividualBot extends AbstractBot {
         return "BOT_INDIVIDUAL";
     }
 
-	@Scheduled(fixedDelay = 10000)
+	// @Scheduled(fixedDelay = 10000)
     @Override
     public void placeOrders() {
         super.placeOrders();

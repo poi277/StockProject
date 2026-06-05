@@ -89,14 +89,13 @@ public class CandleSchedulerService {
 				Integer.parseInt(result.get(2)), Integer.parseInt(result.get(3)), (long) sellQty, (long) buyQty);
 	}
 
-	public List<CandleMinute> save1MinCandle(List<String> assignedCodes) {
+	public List<CandleMinute> save1MinCandle(List<String> assignedCodes, LocalDateTime now) {
 		List<CandleMinute> savedCandles = new ArrayList<>();
 		Boolean lock = redisTemplate.opsForValue().setIfAbsent("lock:candle", "1", 10, TimeUnit.SECONDS);
 		if (!Boolean.TRUE.equals(lock))
 			return savedCandles;
 
 		try {
-			LocalDateTime now = LocalDateTime.now();
 			for (String stockCode : assignedCodes) {
 				Set<String> keys = redisTemplate.keys("candle:1m:" + stockCode + ":*");
 				if (keys == null || keys.isEmpty())
@@ -145,29 +144,30 @@ public class CandleSchedulerService {
 				return;
 
 			// 2. 상위 분봉 동적 순회 (3, 5, 10, 30, 60 등)
-			for (CandleType targetType : CandleType.values()) {
-				if (!targetType.isMinuteType() || targetType == CandleType.ONE_MINUTE)
+			for (CandleType candleType : CandleType.values()) {
+				if (!candleType.isMinuteType() || candleType == CandleType.ONE_MINUTE)
 					continue;
 
-				int targetGap = targetType.getMinute();
+				int candleMinute = candleType.getMinute();
 
 				// 캐시 전체를 해당 분봉 기준으로 한번만 그룹핑
 				Map<LocalDateTime, List<CandleMinute>> grouped = oneMinCache.stream().map(CandleWithMA::getCandle)
-						.collect(Collectors.groupingBy(c -> floorTime(c.getTime(), targetGap)));
+						.collect(Collectors.groupingBy(c -> floorTime(c.getTime(), candleMinute)));
 
-				List<LocalDateTime> targetBlocks = newCandles.stream().map(c -> floorTime(c.getTime(), targetGap))
+				List<LocalDateTime> targetLocalDateTime = newCandles.stream().map(c -> floorTime(c.getTime(), candleMinute))
 						.distinct().toList();
 
-				for (LocalDateTime block : targetBlocks) {
+				for (LocalDateTime localDateTime : targetLocalDateTime) {
 
-					List<CandleMinute> livePieces = grouped.get(block);
+					List<CandleMinute> livePieces = grouped.get(localDateTime);
 
-					if (livePieces == null || livePieces.isEmpty())
+					if (livePieces == null || livePieces.isEmpty()) {
 						continue;
+					}
 
-					CandleMinute combinedCandle = toGroupedCandleMinute(livePieces);
+					CandleMinute combinedCandle = toGroupedCandleMinute(livePieces, localDateTime);
 
-					candleCacheService.upsertCandle(targetType, stockCode, combinedCandle);
+					candleCacheService.upsertCandle(candleType, stockCode, combinedCandle);
 				}
 			}
 		});
@@ -177,10 +177,13 @@ public class CandleSchedulerService {
 		if (minutes == null || minutes.isEmpty()) {
 			return List.of();
 		}
+
 		Map<LocalDateTime, List<CandleMinute>> grouped = minutes.stream()
 				.collect(Collectors.groupingBy(c -> floorTime(c.getTime(), minute), TreeMap::new, Collectors.toList()));
 
-		return grouped.values().stream().map(this::toGroupedCandleMinute).toList();
+		return grouped.entrySet().stream()
+				.map(entry -> toGroupedCandleMinute(entry.getValue(), entry.getKey()
+		)).toList();
 	}
 
 	private LocalDateTime floorTime(LocalDateTime time, int minute) {
@@ -191,7 +194,8 @@ public class CandleSchedulerService {
 		return time.withHour(flooredMinutes / 60).withMinute(flooredMinutes % 60).withSecond(0).withNano(0);
 	}
 
-	private CandleMinute toGroupedCandleMinute(List<CandleMinute> group) {
+	private CandleMinute toGroupedCandleMinute(List<CandleMinute> group, LocalDateTime candleTime) {
+
 		List<CandleMinute> sortedGroup = new ArrayList<>(group);
 		sortedGroup.sort(Comparator.comparing(CandleMinute::getTime));
 
@@ -200,16 +204,20 @@ public class CandleSchedulerService {
 
 		int open = first.getOpen();
 		int close = last.getClose();
+
 		int high = sortedGroup.stream().mapToInt(CandleMinute::getHigh).max().orElse(open);
+
 		int low = sortedGroup.stream().mapToInt(CandleMinute::getLow).min().orElse(open);
+
 		long buyQty = sortedGroup.stream().mapToLong(c -> c.getBuyQty() != null ? c.getBuyQty() : 0L).sum();
+
 		long sellQty = sortedGroup.stream().mapToLong(c -> c.getSellQty() != null ? c.getSellQty() : 0L).sum();
+
 		long tradeAmount = sortedGroup.stream().mapToLong(c -> c.getTradeAmount() != null ? c.getTradeAmount() : 0L)
 				.sum();
 
-		return new CandleMinute(null, first.getStockCode(), first.getTime(), open, high, low, close, buyQty,
-				sellQty,
-				buyQty + sellQty, tradeAmount);
+		return new CandleMinute(null, first.getStockCode(), candleTime,
+				open, high, low, close, buyQty, sellQty, buyQty + sellQty, tradeAmount);
 	}
 
 	public void saveHourlyCandles(List<String> assignedCodes) {

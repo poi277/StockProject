@@ -35,38 +35,56 @@ public class CandleCacheService {
 		Map<String, Deque<CandleWithMA<Candle>>> cacheMap = candleCache.getTypedStore(type);
 		Deque<CandleWithMA<Candle>> deque = new ArrayDeque<>();
 
+		log.info("========== [putCandles 시작] 종목: {}, 타입: {}, 입력 캔들 개수: {} ==========", stockCode, type, candles.size());
+
 		for (Candle candle : candles) {
 			if (!deque.isEmpty() && deque.getLast().getCandle().getCandleTime().equals(candle.getCandleTime())) {
 				deque.removeLast();
 			}
 
+			// 🎯 1. 실시간 이평선 계산 수행
 			CandleWithMA<Candle> wrapped = calculateLiveMA(deque, candle, type);
+
+			// 🔍 [로그 1] 개별 캔들마다 이평선이 잘 계산되었는지 확인
+			log.info("[캐시 적재 중] 시간: {}, 종가: {}, 계산된 이평선(MA): {}", candle.getCandleTime(), candle.getClose(),
+					wrapped.getMa() // 여기서 {} 가 뜨는지 숫자가 찍히는지 봐야 합니다!
+			);
+
 			deque.addLast(wrapped);
 
 			if (deque.size() > MAX_CACHE_SIZE) {
 				deque.removeFirst();
 			}
 		}
+
+		// 🔍 [로그 2] 최종적으로 캐시 맵에 저장되기 직전 데크 상태 확인
+		log.info("[캐시 최종 저장] 종목: {}, 최종 데크 크기: {}", stockCode, deque.size());
+		if (!deque.isEmpty()) {
+			log.info("[캐시 맨 마지막 데이터 확인] 시간: {}, MA: {}", deque.getLast().getCandle().getCandleTime(),
+					deque.getLast().getMa());
+		}
+		log.info("==========================================================================");
+
 		cacheMap.put(stockCode, deque);
 	}
 
-	public void upsertCandles(CandleType type, String stockCode, List<? extends Candle> candles) {
-		if (candles == null || candles.isEmpty())
+	public void upsertCandles(CandleType type, String stockCode, List<? extends Candle> newCandles) {
+		if (newCandles == null || newCandles.isEmpty())
 			return;
 
 		Map<String, Deque<CandleWithMA<Candle>>> cacheMap = candleCache.getTypedStore(type);
 		cacheMap.compute(stockCode, (key, existing) -> {
 			Deque<CandleWithMA<Candle>> deque = existing == null ? new ArrayDeque<>() : existing;
 
-			for (Candle candle : candles) {
+			for (Candle newCandle : newCandles) {
 
 				if (!deque.isEmpty()) {
 					String lastTime = deque.getLast().getCandle().getCandleTime();
-					if (lastTime.equals(candle.getCandleTime())) {
+					if (lastTime.equals(newCandle.getCandleTime())) {
 						deque.removeLast();
 					}
 				}
-				CandleWithMA<Candle> wrapped = calculateLiveMA(deque, candle, type);
+				CandleWithMA<Candle> wrapped = calculateLiveMA(deque, newCandle, type);
 				deque.addLast(wrapped);
 				while (deque.size() > MAX_CACHE_SIZE) {
 					deque.removeFirst();
@@ -95,13 +113,15 @@ public class CandleCacheService {
 			Deque<CandleWithMA<Candle>> deque = existing == null ? new ArrayDeque<>() : existing;
 
 			if (!deque.isEmpty() && deque.getLast().getCandle().getCandleTime().equals(candle.getCandleTime())) {
+				log.info("[{}] {}분봉 큐 동일한 그룹이라 마지막 삭제 전 {}", stockCode, type.getMinute(), deque.size());
 				deque.removeLast();
+				log.info("[{}] {}분봉 큐 동일한 그룹이라 마지막 삭제 후 {}", stockCode, type.getMinute(), deque.size());
 			}
 
 			CandleWithMA<Candle> wrapped = calculateLiveMA(deque, candle, type);
 
 			deque.addLast(wrapped);
-
+			log.info("[{}] {}분봉 큐 추가 {}", stockCode, type.getMinute(), deque.size());
 			if (log.isInfoEnabled()) {
 				String queueDetails = deque.stream()
 						.map(c -> String.format("[%s -> MA:%s]", c.getCandle().getCandleTime(), c.getMa().toString()))

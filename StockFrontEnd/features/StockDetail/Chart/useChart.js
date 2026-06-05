@@ -17,7 +17,7 @@ export default function useCandle(stockCode, type = "ONE_MINUTE") {
     const timeRangeRef = useRef({
         startTime: (() => {
             const t = new Date();
-            t.setMinutes(t.getMinutes() - 160);
+            t.setMinutes(t.getMinutes() - 600);
             return t;
         })(),
         endTime: new Date(),
@@ -26,8 +26,9 @@ export default function useCandle(stockCode, type = "ONE_MINUTE") {
     useEffect(() => {
         if (!stockCode) return;
         const fetchCandle = async () => {
-            try {
+            try {    
                 const res = await getCandleApi(stockCode, type, timeRangeRef.current.startTime, timeRangeRef.current.endTime);
+                console.log(res.data)
                 setCandles(res.data);
             } catch (err) {
                 console.error(err);

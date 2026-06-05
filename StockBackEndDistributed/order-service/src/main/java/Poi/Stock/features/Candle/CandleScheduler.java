@@ -24,12 +24,11 @@ public class CandleScheduler {
 	public void candleScheduler() {
 
 		List<String> assignedCodes = assignedCodeHolder.getAssignedCodes();
+		LocalDateTime now = LocalDateTime.now();
 
-		List<CandleMinute> savedCandles = candleSaveService.save1MinCandle(assignedCodes);
-
+		List<CandleMinute> savedCandles = candleSaveService.save1MinCandle(assignedCodes, now);
 		candleSaveService.updateMinuteCaches(savedCandles);
 
-		LocalDateTime now = LocalDateTime.now();
 
 		// 매시간 정각
 		if (now.getMinute() == 0) {

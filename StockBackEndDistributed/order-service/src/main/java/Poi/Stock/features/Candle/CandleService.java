@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -56,13 +57,27 @@ public class CandleService {
 		List<CandleWithMA<CandleMinute>> finalMergedList;
 
 		if (wrappedCache.isEmpty()) {
+			System.out.println("캐시가 비어있음");
 			List<CandleMinute> dbCandles = findMinuteCandlesFromDb(stockCode, from, to, type.getMinute());
-			finalMergedList = dbCandles.stream().map(c -> new CandleWithMA<>(c, Map.of())).collect(Collectors.toList());
+			finalMergedList = dbCandles.stream().map(c -> new CandleWithMA<>(c, new HashMap<>())) // 가변 맵으로 세팅
+					.collect(Collectors.toList());
+			calculateMovingAveragesInPlace(finalMergedList);
 		} else {
-			finalMergedList = new ArrayList<>(wrappedCache);
+			finalMergedList = wrappedCache.stream().map(w -> new CandleWithMA<>(w.getCandle(), new HashMap<>()))
+					.collect(Collectors.toList());
 		}
+		// 문제 1 cache에 아닌 데이터베이스에서 계속 가져와서 ma가 없는거같음
+		log.info("MA 계산 후: {}", finalMergedList.get(0).getMa());
 
-		List<CandleDTO> result = new ArrayList<>(finalMergedList.stream().map(CandleDTO::from).toList());
+		// 명시적으로 안전하게 DTO 조립
+		List<CandleDTO> result = finalMergedList.stream().map(wrapped -> {
+			CandleMinute c = wrapped.getCandle();
+			String timeStr = c.getTime() != null ? c.getTime().toString() : "";
+			return CandleDTO.of(timeStr, c.getOpen(), c.getHigh(), c.getLow(), c.getClose(), c.getBuyQty(),
+					c.getSellQty(), c.getTotalVolume(), c.getTradeAmount(), wrapped.getMa()
+			);
+		}).collect(Collectors.toList());
+
 		addCurrentCandleIfNewer(result, stockCode);
 		return result;
 	}
@@ -85,6 +100,35 @@ public class CandleService {
 		CandleDTO todayCandle = getTodayCandle(stockCode);
 		addCandleIfNewer(result, todayCandle);
 		return result;
+	}
+
+	private void calculateMovingAveragesInPlace(List<CandleWithMA<CandleMinute>> list) {
+		int[] periods = { 5, 20, 60 };
+
+		for (int i = 0; i < list.size(); i++) {
+			Map<Integer, Double> maMap = list.get(i).getMa();
+
+			for (int period : periods) {
+				// 이평선 기간만큼 데이터가 확보되었을 때 계산
+				if (i >= period - 1) {
+					double sum = 0;
+					for (int j = i - period + 1; j <= i; j++) {
+						sum += list.get(j).getCandle().getClose();
+					}
+					double avg = sum / period;
+					maMap.put(period, Math.round(avg * 100.0) / 100.0);
+				}
+				// 데이터가 아직 부족할 때 (누적 평균 처리)
+				else {
+					double sum = 0;
+					for (int j = 0; j <= i; j++) {
+						sum += list.get(j).getCandle().getClose();
+					}
+					double avg = sum / (i + 1);
+					maMap.put(period, Math.round(avg * 100.0) / 100.0);
+				}
+			}
+		}
 	}
 
 	private List<CandleWithMA<CandleMinute>> getCachedMinuteCandlesInRange(String stockCode, CandleType type,

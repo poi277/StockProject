@@ -3,6 +3,7 @@ package Poi.Stock.DTO.user;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import Poi.Stock.features.Candle.Entity.Candle;
 import Poi.Stock.features.Candle.Entity.CandleDay;
@@ -11,8 +12,10 @@ import Poi.Stock.features.Candle.Entity.CandleWithMA;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Getter
 @Data
 @Builder // 💡 객체 조립 편의성을 위해 빌더 패턴 추가
 @NoArgsConstructor
@@ -29,13 +32,22 @@ public class CandleDTO {
 	private Long totalVolume;
 	private Long tradeAmount;
 
-	private Map<Integer, Double> movingAverages;
+	private Map<String, Double> movingAverages;
 
 	// 기본 공통 생성 팩토리 메서드
 	public static CandleDTO of(String time, int open, int high, int low, int close, Long sellQty, Long buyQty,
 			Long totalVolume, Long tradeAmount, Map<Integer, Double> movingAverages) {
+
+		// Integer Key 형태의 이평선 맵을 String Key 형태로 안전하게 스트림 변환
+		Map<String, Double> stringKeyMa = Map.of();
+		if (movingAverages != null && !movingAverages.isEmpty()) {
+			stringKeyMa = movingAverages.entrySet().stream()
+					.collect(Collectors.toMap(e -> String.valueOf(e.getKey()), 
+					Map.Entry::getValue));
+		}
+
 		return new CandleDTO(time, open, high, low, close, sellQty != null ? sellQty : 0L, buyQty != null ? buyQty : 0L,
-				totalVolume != null ? totalVolume : 0L, tradeAmount != null ? tradeAmount : 0L, movingAverages);
+				totalVolume != null ? totalVolume : 0L, tradeAmount != null ? tradeAmount : 0L, stringKeyMa);
 	}
 
 	public static <T extends Candle> CandleDTO from(CandleWithMA<T> wrapped) {
@@ -46,7 +58,6 @@ public class CandleDTO {
 				candle.getSellQty(), candle.getTotalVolume(), candle.getTradeAmount(), wrapped.getMa());
 	}
 
-	// 💡 분봉, 시봉, 일봉의 시간 필드명과 타입을 안전하게 문자열로 변환해 주는 헬퍼 메서드
 	private static <T extends Candle> String getCandidateTimeStr(T candle) {
 		if (candle instanceof CandleMinute) {
 			return ((CandleMinute) candle).getTime().toString();
