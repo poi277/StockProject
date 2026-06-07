@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 export function useCandleSocket(client, connected, stockCode) {
-    const [liveCandle, setLiveCandle] = useState(null); // 단일 현재봉
+    const [liveCandle, setLiveCandle] = useState(null); 
 
     useEffect(() => {
         console.log('useCandleSocket:', { client: !!client, connected, stockCode });

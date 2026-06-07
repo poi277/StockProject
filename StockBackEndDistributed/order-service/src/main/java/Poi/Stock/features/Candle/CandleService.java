@@ -38,7 +38,8 @@ public class CandleService {
 	private final CandleCacheService candleCacheService;
 	private final WebSocketService webSocketService;
 
-	public List<CandleDTO> getCandle(CandleType type, String stockCode, String startTime, String endTime) {
+	public List<CandleDTO> getCandle(CandleType type, String stockCode, String startTime, String endTime,
+			boolean isInit) {
 		LocalDateTime from = parseStartTime(startTime);
 		LocalDateTime to = parseEndTime(endTime);
 
@@ -53,33 +54,31 @@ public class CandleService {
 	}
 
 	private List<CandleDTO> getMinuteCandles(String stockCode, LocalDateTime from, LocalDateTime to, CandleType type) {
-		List<CandleWithMA<CandleMinute>> wrappedCache = getCachedMinuteCandlesInRange(stockCode, type, from, to);
-		List<CandleWithMA<CandleMinute>> finalMergedList;
+	    List<CandleWithMA<CandleMinute>> wrappedCache = getCachedMinuteCandlesInRange(stockCode, type, from, to);
 
-		if (wrappedCache.isEmpty()) {
-			System.out.println("캐시가 비어있음");
-			List<CandleMinute> dbCandles = findMinuteCandlesFromDb(stockCode, from, to, type.getMinute());
-			finalMergedList = dbCandles.stream().map(c -> new CandleWithMA<>(c, new HashMap<>())) // 가변 맵으로 세팅
-					.collect(Collectors.toList());
-			calculateMovingAveragesInPlace(finalMergedList);
-		} else {
-			finalMergedList = wrappedCache.stream().map(w -> new CandleWithMA<>(w.getCandle(), new HashMap<>()))
-					.collect(Collectors.toList());
-		}
-		// 문제 1 cache에 아닌 데이터베이스에서 계속 가져와서 ma가 없는거같음
-		log.info("MA 계산 후: {}", finalMergedList.get(0).getMa());
+	    if (wrappedCache.isEmpty()) {
+	        List<CandleMinute> dbCandles = findMinuteCandlesFromDb(stockCode, from, to, type.getMinute());
+	        wrappedCache = dbCandles.stream()
+	            .map(c -> new CandleWithMA<>(c, new HashMap<>()))
+	            .collect(Collectors.toList());
+	        calculateMovingAveragesInPlace(wrappedCache);
+	    }
 
-		// 명시적으로 안전하게 DTO 조립
-		List<CandleDTO> result = finalMergedList.stream().map(wrapped -> {
-			CandleMinute c = wrapped.getCandle();
+	    if (wrappedCache.isEmpty()) {
+	        return List.of();
+	    }
+
+	    log.info("MA 계산 후: {}", wrappedCache.get(0).getMa());
+
+	    List<CandleDTO> result = wrappedCache.stream().map(w -> {
+	        CandleMinute c = w.getCandle();
 			String timeStr = c.getTime() != null ? c.getTime().toString() : "";
-			return CandleDTO.of(timeStr, c.getOpen(), c.getHigh(), c.getLow(), c.getClose(), c.getBuyQty(),
-					c.getSellQty(), c.getTotalVolume(), c.getTradeAmount(), wrapped.getMa()
-			);
-		}).collect(Collectors.toList());
+	        return CandleDTO.of(timeStr, c.getOpen(), c.getHigh(), c.getLow(), c.getClose(),
+	            c.getBuyQty(), c.getSellQty(), c.getTotalVolume(), c.getTradeAmount(), w.getMa());
+	    }).collect(Collectors.toList());
 
-		addCurrentCandleIfNewer(result, stockCode);
-		return result;
+	    addCurrentCandleIfNewer(result, stockCode);
+	    return result;
 	}
 
 	private List<CandleDTO> getDayCandles(String stockCode, LocalDateTime from, LocalDateTime to) {
@@ -134,8 +133,12 @@ public class CandleService {
 	private List<CandleWithMA<CandleMinute>> getCachedMinuteCandlesInRange(String stockCode, CandleType type,
 			LocalDateTime from, LocalDateTime to) {
 		List<CandleWithMA<CandleMinute>> cache = candleCacheService.getCandles(type, stockCode);
+		log.info("스타트 {} 엔드 {} ", from, to);
 		if (!isMinuteCacheCoveringRange(cache, from, to))
+		{
+			log.info("비어있음");
 			return List.of();
+		}
 		return cache.stream().filter(c -> isBetween(c.getCandle().getTime(), from, to)).toList();
 	}
 
@@ -144,7 +147,10 @@ public class CandleService {
 			return false;
 		LocalDateTime cacheStart = cache.get(0).getCandle().getTime();
 		LocalDateTime cacheEnd = cache.get(cache.size() - 1).getCandle().getTime();
-		return !from.isBefore(cacheStart) && !to.isAfter(cacheEnd);
+		log.info("캐시 스타트 {} ", cacheStart);
+		log.info("캐시 엔드 {} ", cacheEnd);
+		// startTime이 캐시 범위 안에 있으면 OK
+		return !from.isBefore(cacheStart) && !from.isAfter(cacheEnd);
 	}
 
 	private List<CandleMinute> findMinuteCandlesFromDb(String stockCode, LocalDateTime from, LocalDateTime to,
