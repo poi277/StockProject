@@ -28,7 +28,7 @@ public class CandleController {
 			@RequestParam(name = "startTime", required = false) String startTime,
 			@RequestParam(name = "endTime", required = false) String endTime) {
 		// 기존 API는 false 전달
-		List<CandleDTO> data = candleService.getCandle(type, stockCode, startTime, endTime, false);
+		List<CandleDTO> data = candleService.getCandle(type, stockCode, startTime, endTime);
 		return ResponseEntity.ok(data);
 	}
 
@@ -38,7 +38,7 @@ public class CandleController {
 			@RequestParam(name = "startTime", required = false) String startTime,
 			@RequestParam(name = "endTime", required = false) String endTime) {
 		// 초기화 전용 API는 true 전달
-		List<CandleDTO> data = candleService.getCandle(type, stockCode, startTime, endTime, true);
+		List<CandleDTO> data = candleService.getCandleInit(type, stockCode);
 		return ResponseEntity.ok(data);
 	}
 }

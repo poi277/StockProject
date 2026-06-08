@@ -24,6 +24,7 @@ public class BotInit {
 	private final BotStockCache botStockCache;
 	private final BotHaveStockCache botHaveStockCache;
 	private final StockCache stockCache;
+	private final MarketStateHolder marketStateHolder;
 
 	private static final long INITIAL_ASSET = 100_000_000L;
 	private static final int INITIAL_QUANTITY = 5000;
@@ -82,14 +83,11 @@ public class BotInit {
 	}
 
 	private void initBotCache() {
-
 		stockCache.getCache().forEach((stockCode, stock) -> {
-
 			StockRealTimeSnapshot copiedStock = stock.botCacheCopy();
-
 			botStockCache.put(stockCode, copiedStock);
+			marketStateHolder.updateMarketState(stockCode);
 		});
-
 		log.info("BotStockCache 초기화 완료: {}", stockCache.getCache().size());
 	}
 }

@@ -38,8 +38,7 @@ public class CandleService {
 	private final CandleCacheService candleCacheService;
 	private final WebSocketService webSocketService;
 
-	public List<CandleDTO> getCandle(CandleType type, String stockCode, String startTime, String endTime,
-			boolean isInit) {
+	public List<CandleDTO> getCandle(CandleType type, String stockCode, String startTime, String endTime) {
 		LocalDateTime from = parseStartTime(startTime);
 		LocalDateTime to = parseEndTime(endTime);
 
@@ -53,11 +52,86 @@ public class CandleService {
 		};
 	}
 
+	public List<CandleDTO> getCandleInit(CandleType type, String stockCode) {
+		if (type.isMinuteType()) {
+			return getMinuteCandlesInit(stockCode, type);
+		}
+
+		return switch (type) {
+		case DAY -> getDayCandlesInit(stockCode, type);
+		default -> throw new IllegalArgumentException("지원하지 않는 타입: " + type);
+		};
+	}
+
+	private List<CandleDTO> getMinuteCandlesInit(String stockCode, CandleType type) {
+		// 캐시 스토어 전체 조회 (예: 1000개)
+		List<CandleWithMA<CandleMinute>> cache = candleCacheService.getCandles(type, stockCode);
+		List<CandleWithMA<CandleMinute>> wrappedCache;
+
+		if (cache.isEmpty()) {
+			// 시가 비어있다면 DB에서 최신 100개를 긁어옴
+			log.info("분봉 초기화 캐시 공백 - 종목: {}. DB에서 최신 100개를 호출합니다.", stockCode);
+			List<CandleMinute> dbCandles = candleMinuteRepository.findTop100ByStockCodeOrderByTimeDesc(stockCode);
+
+			// 과거 -> 현재 순서로 정렬
+			dbCandles.sort(Comparator.comparing(CandleMinute::getTime));
+
+			wrappedCache = dbCandles.stream().map(c -> new CandleWithMA<>(c, new HashMap<>()))
+					.collect(Collectors.toList());
+			calculateMovingAveragesInPlace(wrappedCache);
+		} else {
+			// 캐시가 존재한다면 뒤에서 최대 100개만 안전하게 짤라서 사용
+			int cacheSize = cache.size();
+			int targetSize = 10; // 초기화 스펙 개수
+			wrappedCache = cache.subList(Math.max(0, cacheSize - targetSize), cacheSize);
+		}
+		if (wrappedCache.isEmpty()) {
+			return List.of();
+		}
+		// 4. DTO 파싱 변환
+		List<CandleDTO> result = wrappedCache.stream().map(w -> {
+			CandleMinute c = w.getCandle();
+			String timeStr = c.getTime() != null ? c.getTime().toString() : "";
+			return CandleDTO.of(timeStr, c.getOpen(), c.getHigh(), c.getLow(), c.getClose(), c.getBuyQty(),
+					c.getSellQty(), c.getTotalVolume(), c.getTradeAmount(), w.getMa());
+		}).collect(Collectors.toList());
+
+		// 5. 실시간 Live 캔들 병합 보장
+		addCurrentCandleIfNewer(result, stockCode);
+		return result;
+	}
+
+	private List<CandleDTO> getDayCandlesInit(String stockCode, CandleType type) {
+		List<CandleWithMA<CandleDay>> cache = candleCacheService.getCandles(type, stockCode);
+		List<CandleWithMA<CandleDay>> wrappedCache;
+
+		if (cache.isEmpty()) {
+			log.info("일봉 초기화 캐시 공백 - 종목: {}. DB에서 최신 일봉 100개를 호출합니다.", stockCode);
+			List<CandleDay> days = candleDayRepository.findTop100ByStockCodeOrderByDateDesc(stockCode);
+			days.sort(Comparator.comparing(CandleDay::getDate));
+			wrappedCache = days.stream().map(d -> new CandleWithMA<>(d, new HashMap<>())).collect(Collectors.toList());
+		} else {
+			int cacheSize = cache.size();
+			int targetSize = 100;
+			wrappedCache = cache.subList(Math.max(0, cacheSize - targetSize), cacheSize);
+		}
+
+		if (wrappedCache.isEmpty()) {
+			return List.of();
+		}
+		List<CandleDTO> result = new ArrayList<>(wrappedCache.stream().map(CandleDTO::from).toList());
+		CandleDTO todayCandle = getTodayCandle(stockCode);
+		addCandleIfNewer(result, todayCandle);
+
+		return result;
+	}
+
 	private List<CandleDTO> getMinuteCandles(String stockCode, LocalDateTime from, LocalDateTime to, CandleType type) {
 	    List<CandleWithMA<CandleMinute>> wrappedCache = getCachedMinuteCandlesInRange(stockCode, type, from, to);
 
 	    if (wrappedCache.isEmpty()) {
 	        List<CandleMinute> dbCandles = findMinuteCandlesFromDb(stockCode, from, to, type.getMinute());
+
 	        wrappedCache = dbCandles.stream()
 	            .map(c -> new CandleWithMA<>(c, new HashMap<>()))
 	            .collect(Collectors.toList());
@@ -87,7 +161,6 @@ public class CandleService {
 
 		List<CandleWithMA<CandleDay>> wrappedCache = getCachedDayCandlesInRange(stockCode, fromDate, toDate);
 		List<CandleDTO> result;
-
 		if (wrappedCache.isEmpty()) {
 			List<CandleDay> days = candleDayRepository.findByStockCodeAndDateBetweenOrderByDateAsc(stockCode, fromDate,
 					toDate);
@@ -100,6 +173,7 @@ public class CandleService {
 		addCandleIfNewer(result, todayCandle);
 		return result;
 	}
+
 
 	private void calculateMovingAveragesInPlace(List<CandleWithMA<CandleMinute>> list) {
 		int[] periods = { 5, 20, 60 };
@@ -299,4 +373,5 @@ public class CandleService {
 				tradeAmount, lastExecutionTime);
 		webSocketService.sendCurrentCandle(candleDTO, stockCode);
 	}
+
 }

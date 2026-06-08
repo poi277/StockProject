@@ -14,3 +14,8 @@ export async function getCandleApi(stockCode, type, startTime, endTime) {
   if (endTime)   params.append("endTime",   toKSTDateTimeStr(endTime));
   return await apiFetch(`${ORDER_API_URL}/candle/${stockCode}?${params.toString()}`);
 }
+
+export async function getCandleInitApi(stockCode, type) {
+  const params = new URLSearchParams({ type });
+  return await apiFetch(`${ORDER_API_URL}/candle/${stockCode}/init?${params.toString()}`);
+}

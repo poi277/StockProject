@@ -42,12 +42,12 @@ public class CandleCacheService {
 				deque.removeLast();
 			}
 
-			// 🎯 1. 실시간 이평선 계산 수행
+			// 1. 실시간 이평선 계산 수행
 			CandleWithMA<Candle> wrapped = calculateLiveMA(deque, candle, type);
 
-			// 🔍 [로그 1] 개별 캔들마다 이평선이 잘 계산되었는지 확인
+			// 개별 캔들마다 이평선이 잘 계산되었는지 확인
 			log.info("[캐시 적재 중] 시간: {}, 종가: {}, 계산된 이평선(MA): {}", candle.getCandleTime(), candle.getClose(),
-					wrapped.getMa() // 여기서 {} 가 뜨는지 숫자가 찍히는지 봐야 합니다!
+					wrapped.getMa()
 			);
 
 			deque.addLast(wrapped);
@@ -56,8 +56,6 @@ public class CandleCacheService {
 				deque.removeFirst();
 			}
 		}
-
-		// 🔍 [로그 2] 최종적으로 캐시 맵에 저장되기 직전 데크 상태 확인
 		log.info("[캐시 최종 저장] 종목: {}, 최종 데크 크기: {}", stockCode, deque.size());
 		if (!deque.isEmpty()) {
 			log.info("[캐시 맨 마지막 데이터 확인] 시간: {}, MA: {}", deque.getLast().getCandle().getCandleTime(),

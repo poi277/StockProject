@@ -28,13 +28,10 @@ public class CandleScheduler {
 
 		List<CandleMinute> savedCandles = candleSaveService.save1MinCandle(assignedCodes, now);
 		candleSaveService.updateMinuteCaches(savedCandles);
-
-
 		// 매시간 정각
 		if (now.getMinute() == 0) {
 			candleSaveService.saveHourlyCandles(assignedCodes);
 		}
-
 		// 자정
 		if (now.getHour() == 0 && now.getMinute() == 0) {
 			candleSaveService.saveDailyCandles(assignedCodes);

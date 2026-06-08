@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useCallback, useRef } from "react";
-import { getCandleApi } from "../../../lib/candle";
+import { getCandleApi,getCandleInitApi } from "../../../lib/candle";
 import { useCandleSocket } from "../../../util/websocket/useCandleSocket";
 import { useOrderWebSocket } from "../../../util/websocket/context/OrderWebSocketContext";
 
@@ -84,7 +84,8 @@ export default function useCandle(stockCode, type = "ONE_MINUTE") {
             const endTime = new Date();
             const startTime = new Date();
             startTime.setMinutes(startTime.getMinutes() - 600);
-            const res = await getCandleApi(stockCode, type, startTime, endTime);
+            const res = await getCandleInitApi(stockCode, type);
+            console.log(res)
             datafeedRef.current.setInitialData(res.data);
             onCandleUpdateRef.current?.({ type: 'init', candles: res.data });
         } catch (err) {
@@ -103,7 +104,7 @@ export default function useCandle(stockCode, type = "ONE_MINUTE") {
     }, [liveCandle]);
 
     // 🎯 외부(Component)에서 프로미스 제어를 할 수 있도록 async/await 흐름 보장 및 데이터 반환
-    const loadMoreCandles = useCallback(async () => {
+        const loadMoreCandles = useCallback(async () => {
         const allCandles = await datafeedRef.current.loadMore(stockCode, type, getCandleApi);
         onCandleUpdateRef.current?.({ type: 'prepend', candles: allCandles });
         return allCandles;

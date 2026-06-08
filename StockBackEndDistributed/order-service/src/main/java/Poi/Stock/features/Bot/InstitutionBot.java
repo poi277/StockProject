@@ -1,19 +1,23 @@
 package Poi.Stock.features.Bot;
 
+import java.util.Map;
+
 import org.springframework.stereotype.Component;
 
+import Poi.Stock.features.Candle.CandleCacheService;
 import Poi.Stock.features.Stock.StockRealTimeSnapshot;
+import Poi.Stock.util.AssignedCodeHolder;
 import Poi.Stock.util.EnumUtil.MarketState;
 import Poi.Stock.util.EnumUtil.tradeType;
 
 @Component
 public class InstitutionBot extends AbstractBot {
-	private final BotHaveStockCache botHaveStockCache;
 
 	public InstitutionBot(BotOrderService botOrderService, BotCache botCache, BotStockCache botStockCache,
-			BotService botService, MarketStateHolder marketStateHolder, BotHaveStockCache botHaveStockCache) {
-		super(botOrderService, botCache, botStockCache, botService, marketStateHolder);
-		this.botHaveStockCache = botHaveStockCache;
+			BotService botService, MarketStateHolder marketStateHolder, BotHaveStockCache botHaveStockCache,
+			CandleCacheService candleCacheService, AssignedCodeHolder assignedCodeHolder) {
+		super(botOrderService, botCache, botStockCache, botService, marketStateHolder, botHaveStockCache,
+				candleCacheService, assignedCodeHolder);
 	}
 
 	@Override
@@ -21,55 +25,44 @@ public class InstitutionBot extends AbstractBot {
 		return "BOT_INSTITUTION";
 	}
 
-	// @Scheduled(fixedDelay = 500000)
 	@Override
 	public void placeOrders() {
 		super.placeOrders();
 	}
 
 	@Override
-	protected void executeStrategy(boolean isBuy, StockRealTimeSnapshot stock) {
-		// 1. 현재 자산 및 상태 스냅샷 가져오기
+	protected void executeStrategy(boolean isBuy, StockRealTimeSnapshot stock, Map<Integer, Double> ma) {
 		BotHaveStock haveStock = botHaveStockCache.get(getBotId(), stock.getStockCode());
 		int currentQuantity = (haveStock != null) ? haveStock.getQuantity() : 0;
 		double averagePrice = (haveStock != null) ? haveStock.getAveragePrice() : 0.0;
-
-		int currentPrice = stock.getYesterdayClosePrice();
+		int currentPrice = stock.getCurrentPrice();
 		int tickSize = stock.getTickSize(currentPrice);
-		int intensity = marketStateHolder.getIntensity();
+		String stockCode = stock.getStockCode();
+		int intensity = marketStateHolder.getIntensity(stockCode);
+
+		double ma20 = ma.getOrDefault(20, 0.0);
+		double ma60 = ma.getOrDefault(60, 0.0);
+		double maMin = Math.min(ma20, ma60);
 
 		int targetQuantity = 10000;
 
-		// 2. 목표 물량 달성 여부에 따른 매매 분기
 		if (currentQuantity < targetQuantity) {
-			// [매집] 미달성 시: 하락장(BEAR)에서 지정가 가이드라인에 맞춰 야금야금 매수
-			if (marketStateHolder.getState() == MarketState.BEAR) {
-				// 공포수치+차트에서의 최저가를 조합하여 price랑 quantity를 도출
+			// MA20, MA60 최저가 근처일 때 매수
+			if (ma20 > 0 && ma60 > 0 && currentPrice <= maMin * 1.01) {
 				int price = currentPrice - tickSize;
-				int quantity = calculateQuantity(500, 500, intensity); // 기본 500~999주 + 가중치
-
+				int quantity = calculateQuantity(500, 500, intensity);
 				if (botService.canBuy(getBotId(), price, quantity)) {
 					botOrderService.placeOrder(getBotId(), stock.getStockCode(), stock.getStockName(), tradeType.BUY,
 							price, quantity);
 				}
 			}
 		} else {
-			// [익절] 달성 시: 상승장(BULL)에서 평단가 가이드라인 확인 후 야금야금 매도
-			if (marketStateHolder.getState() == MarketState.BULL && averagePrice > 0) {
-
-				// 익절 가격 가이드라인 계산
+			if (marketStateHolder.getState(stockCode) == MarketState.BULL && averagePrice > 0) {
 				int targetProfitPrice = calculateTargetProfitPrice(averagePrice, intensity);
-
-				// 현재가가 익절 가이드라인을 넘었을 때만 실행
 				if (currentPrice >= targetProfitPrice) {
-
 					int price = currentPrice + tickSize;
-
-					int quantity = calculateQuantity(200, 300, intensity); // 기본 200~499주 + 가중치
-
-					// 오버 매도 방지 가이드라인 적용
+					int quantity = calculateQuantity(200, 300, intensity);
 					quantity = Math.min(quantity, currentQuantity);
-
 					if (botService.canSell(getBotId(), stock.getStockCode(), quantity)) {
 						botOrderService.placeOrder(getBotId(), stock.getStockCode(), stock.getStockName(),
 								tradeType.SELL, price, quantity);
@@ -79,20 +72,13 @@ public class InstitutionBot extends AbstractBot {
 		}
 	}
 
-	/**
-	 * [가이드라인 함수 1] 시장 강도(intensity)를 반영한 동적 주문 수량 계산
-	 */
 	private int calculateQuantity(int base, int range, int intensity) {
 		double intensityMultiplier = 1.0 + (intensity / 100.0);
 		int baseQuantity = base + random.nextInt(range);
 		return (int) (baseQuantity * intensityMultiplier);
 	}
 
-	/**
-	 * [가이드라인 함수 2] 평단가 및 시장 강도(intensity)를 반영한 목표 익절가 계산
-	 */
 	private int calculateTargetProfitPrice(double averagePrice, int intensity) {
-		// intensity가 높을수록 목표 익절%를 낮춰 1%~3% 사이로 동적 조절
 		double targetProfitPercent = 0.03 - (0.02 * (intensity / 100.0));
 		return (int) (averagePrice * (1.0 + targetProfitPercent));
 	}

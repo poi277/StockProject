@@ -23,4 +23,6 @@ public interface CandleMinuteRepository extends JpaRepository<CandleMinute, Long
 
 	List<CandleMinute> findByStockCodeOrderByTimeDesc(String stockCode, PageRequest of);
 
+	List<CandleMinute> findTop100ByStockCodeOrderByTimeDesc(String stockCode);
+
 }

@@ -12,8 +12,9 @@ public class EnumUtil {
 	}
 
 	public enum MarketState {
-		BULL, // 상승장 - 매수 우세, 가격 지속 상승
-		BEAR, // 하락장 - 매도 우세, 가격 지속 하락
+		BULL, // 상승장 - 완전 정배열 (MA5 > MA20 > MA60)
+		BEAR, // 하락장 - 완전 역배열 (MA5 < MA20 < MA60)
+		FLAT // 횡보장 - 그 외
 	}
 
 	public enum BotType {
