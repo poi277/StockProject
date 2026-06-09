@@ -26,24 +26,30 @@ public class MarketStateHolder {
 	private final Map<String, MarketState> stateMap = new ConcurrentHashMap<>();
 	private final Map<String, Integer> intensityMap = new ConcurrentHashMap<>();
 
-	// 1분마다 모든 종목 상태 업데이트
-	// @Scheduled(fixedDelay = 60000)
 	public void updateAllStocks() {
 		stateMap.keySet().forEach(this::updateMarketState);
 	}
 
 	public void updateMarketState(String stockCode) {
 		List<CandleWithMA<CandleMinute>> candles = candleCacheService.getCandles(CandleType.ONE_MINUTE, stockCode);
-		if (candles == null || candles.isEmpty())
+
+		if (candles == null || candles.isEmpty()) {
+			stateMap.put(stockCode, MarketState.FLAT);
+			intensityMap.put(stockCode, 30);
 			return;
+		}
 
 		Map<Integer, Double> ma = candles.get(candles.size() - 1).getMa();
 		double ma5 = ma.getOrDefault(5, 0.0);
 		double ma20 = ma.getOrDefault(20, 0.0);
 		double ma60 = ma.getOrDefault(60, 0.0);
 
-		if (ma5 == 0.0 || ma20 == 0.0 || ma60 == 0.0)
+		// MA 없으면 횡보장으로 처리
+		if (ma5 == 0.0 || ma20 == 0.0 || ma60 == 0.0) {
+			stateMap.put(stockCode, MarketState.FLAT);
+			intensityMap.put(stockCode, 30);
 			return;
+		}
 
 		// 시장 상태 결정
 		MarketState state;
@@ -58,17 +64,16 @@ public class MarketStateHolder {
 		// 괴리율로 intensity 결정
 		double divergence = Math.abs((ma5 - ma60) / ma60 * 100);
 		int intensity;
-		if (divergence >= 3.0) {
+		if (divergence >= 3.0)
 			intensity = 90;
-		} else if (divergence >= 2.0) {
+		else if (divergence >= 2.0)
 			intensity = 75;
-		} else if (divergence >= 1.0) {
+		else if (divergence >= 1.0)
 			intensity = 60;
-		} else if (divergence >= 0.5) {
+		else if (divergence >= 0.5)
 			intensity = 45;
-		} else {
+		else
 			intensity = 30;
-		}
 
 		stateMap.put(stockCode, state);
 		intensityMap.put(stockCode, intensity);
@@ -82,7 +87,13 @@ public class MarketStateHolder {
 	}
 
 	public int getIntensity(String stockCode) {
-		return intensityMap.getOrDefault(stockCode, 50);
+		return intensityMap.getOrDefault(stockCode, 30);
+	}
+
+	public void register(String stockCode) {
+		stateMap.put(stockCode, MarketState.FLAT);
+		intensityMap.put(stockCode, 30);
+		updateMarketState(stockCode);
 	}
 
 	public void unregister(String stockCode) {
