@@ -25,38 +25,25 @@ public class InstitutionBot extends AbstractBot {
 	}
 
 	@Override
-	protected int getBotBaseIntensity() {
-		return 40;
-	}
-
-	@Override
 	protected int getBuyBase() {
-		return 50;
+		return 5;
 	}
-
+	@Override
+	protected int getSellBase() {
+		return 5;
+	}
 	@Override
 	protected int getBuyRange() {
 		return 50;
 	}
-
-	@Override
-	protected int getSellBase() {
-		return 200;
-	}
-
 	@Override
 	protected int getSellRange() {
-		return 300;
+		return 50;
 	}
 
 	@Override
-	protected int calculateBuyPrice(int currentPrice, int tickSize, int finalIntensity, int vix) {
-		return currentPrice - (tickSize * random.nextInt(vix));
-	}
-
-	@Override
-	protected int calculateSellPrice(int currentPrice, int tickSize, int finalIntensity, int vix) {
-		return Math.max(tickSize, currentPrice + (tickSize * random.nextInt(vix)));
+	protected int getBotBaseIntensity() {
+		return 40;
 	}
 
 	@Override

@@ -34,9 +34,7 @@ public abstract class AbstractBot {
 	protected abstract void executeTrade(StockRealTimeSnapshot stock, int currentPrice, int tickSize, MarketState state,
 			int assetBonus, int finalIntensity);
 
-	protected abstract int calculateBuyPrice(int currentPrice, int tickSize, int finalIntensity, int vix);
 
-	protected abstract int calculateSellPrice(int currentPrice, int tickSize, int finalIntensity, int vix);
 	protected abstract int getBuyBase();
 
 	protected abstract int getBuyRange();
@@ -84,6 +82,21 @@ public abstract class AbstractBot {
 		return ma != null ? ma : Map.of();
 	}
 
+	// 사는 가격 계산 (호가 단위 방어)
+	protected int calculateBuyPrice(int currentPrice, int tickSize, int finalIntensity, int vix) {
+		int maxDiscountTicks = (int) (vix * (1.0 - finalIntensity / 100.0));
+		int randomTickCount = random.nextInt(Math.max(1, maxDiscountTicks + 1));
+		int targetPrice = currentPrice - (randomTickCount * tickSize);
+		return Math.max(tickSize, targetPrice);
+	}
+
+	// 파는 가격 계산 (호가 단위 방어)
+	protected int calculateSellPrice(int currentPrice, int tickSize, int finalIntensity, int vix) {
+		int maxPremiumTicks = (int) (vix * (1.0 - finalIntensity / 100.0));
+		int randomTickCount = random.nextInt(Math.max(1, maxPremiumTicks + 1));
+		return currentPrice + (randomTickCount * tickSize);
+	}
+
 	protected void executeBuy(StockRealTimeSnapshot stock, int currentPrice, int tickSize, int finalIntensity) {
 		String stockCode = stock.getStockCode();
 		int quantity = calculateQuantity(getBuyBase(), getBuyRange(), finalIntensity);
@@ -93,19 +106,18 @@ public abstract class AbstractBot {
 			botOrderService.placeOrder(getBotId(), stockCode, stock.getStockName(), tradeType.BUY, price, quantity);
 		}
 	}
-
-
-	protected void executeSell(StockRealTimeSnapshot stock, int currentPrice, int tickSize, double ma5, double ma20,
-			double ma60, MarketState state, int assetBonus, int finalIntensity) {
+	protected void executeSell(StockRealTimeSnapshot stock, int currentPrice, int tickSize, double maLow, double maMid,
+			double maHigh, MarketState state, int assetBonus, int finalIntensity) {
 		String stockCode = stock.getStockCode();
 		BotHaveStock haveStock = botHaveStockCache.get(getBotId(), stockCode);
 		if (haveStock == null || haveStock.getQuantity() <= 0)
 			return;
-
+		// 평균가
 		double avgPrice = haveStock.getAveragePrice();
+		// 손익률
 		double profitRate = (currentPrice - avgPrice) / avgPrice * 100;
-
-		int sellProb = calculateSellProb(currentPrice, ma5, ma20, ma60, state, profitRate);
+		// 매도 할 확률
+		int sellProb = calculateSellProb(currentPrice, maLow, maMid, maHigh, state, profitRate);
 		sellProb = (int) (sellProb * (finalIntensity / 100.0));
 
 		if ((sellProb > 0) && (random.nextInt(100) < (sellProb + assetBonus))) {
@@ -119,7 +131,6 @@ public abstract class AbstractBot {
 			}
 		}
 	}
-
 
 	protected int calculateSellProb(int currentPrice, double maLow, double maMid, double maHigh, MarketState state,
 			double profitRate) {
@@ -138,8 +149,8 @@ public abstract class AbstractBot {
 		return 0;
 	}
 
-	protected int calculateQuantity(int base, int range, int intensity) {
-		double intensityMultiplier = 1.0 + (intensity / 100.0);
+	protected int calculateQuantity(int base, int range, int finalIntensity) {
+		double intensityMultiplier = 1.0 + (finalIntensity / 100.0);
 		int baseQuantity = base + random.nextInt(range);
 		return (int) (baseQuantity * intensityMultiplier);
 	}
