@@ -2,26 +2,32 @@ package Poi.Stock.features.Bot;
 
 import java.util.Map;
 
-import org.springframework.stereotype.Component;
-
 import Poi.Stock.features.Candle.CandleCacheService;
 import Poi.Stock.features.Stock.StockRealTimeSnapshot;
 import Poi.Stock.util.AssignedCodeHolder;
+import Poi.Stock.util.EnumUtil.BotType;
 import Poi.Stock.util.EnumUtil.MarketState;
 
-@Component
 public class IndividualBot extends AbstractBot {
 
-	public IndividualBot(BotOrderService botOrderService, BotCache botCache, BotStockCache botStockCache,
+	private final String botId;
+
+	public IndividualBot(String botId, BotOrderService botOrderService, BotCache botCache, BotStockCache botStockCache,
 			BotService botService, MarketStateHolder marketStateHolder, BotHaveStockCache botHaveStockCache,
 			CandleCacheService candleCacheService, AssignedCodeHolder assignedCodeHolder) {
 		super(botOrderService, botCache, botStockCache, botService, marketStateHolder, botHaveStockCache,
 				candleCacheService, assignedCodeHolder);
-    }
+		this.botId = botId;
+	}
 
 	@Override
 	protected String getBotId() {
-		return "BOT_INDIVIDUAL";
+		return this.botId;
+	}
+
+	@Override
+	public BotType getBotType() {
+		return BotType.INDIVIDUAL;
 	}
 
 	@Override
@@ -43,17 +49,31 @@ public class IndividualBot extends AbstractBot {
 	protected int getBuyRange() {
 		return 10;
 	}
+
 	@Override
 	protected int getSellRange() {
 		return 10;
 	}
-    @Override
+
+	@Override
 	public void placeOrders() {
 		super.placeOrders();
 	}
 
+	@Override
+	protected int calculateBuyPrice(int currentPrice, int tickSize, int finalIntensity, int vix) {
+		// VIX 지수를 1.2배 뻥튀기하여 훨씬 더 난폭하고 넓은 범위로 호가를 던지게 만듦
+		int individualVix = (int) (vix * 1.2);
+		return super.calculateBuyPrice(currentPrice, tickSize, finalIntensity, individualVix);
+	}
 
-    @Override
+	@Override
+	protected int calculateSellPrice(int currentPrice, int tickSize, int finalIntensity, int vix) {
+		int individualVix = (int) (vix * 1.2);
+		return super.calculateSellPrice(currentPrice, tickSize, finalIntensity, individualVix);
+	}
+
+	@Override
 	protected void executeTrade(StockRealTimeSnapshot stock, int currentPrice, int tickSize, MarketState state,
 			int assetBonus, int finalIntensity) {
 		String stockCode = stock.getStockCode();
@@ -85,5 +105,5 @@ public class IndividualBot extends AbstractBot {
 		if (buyProb == 0)
 			return false;
 		return random.nextInt(100) < (buyProb + assetBonus);
-    }
+	}
 }

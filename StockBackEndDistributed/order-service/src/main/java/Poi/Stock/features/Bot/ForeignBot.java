@@ -2,31 +2,38 @@ package Poi.Stock.features.Bot;
 
 import java.util.Map;
 
-import org.springframework.stereotype.Component;
-
 import Poi.Stock.features.Candle.CandleCacheService;
 import Poi.Stock.features.Stock.StockRealTimeSnapshot;
 import Poi.Stock.util.AssignedCodeHolder;
+import Poi.Stock.util.EnumUtil.BotType;
 import Poi.Stock.util.EnumUtil.MarketState;
 
-@Component
 public class ForeignBot extends AbstractBot {
 
-	public ForeignBot(BotOrderService botOrderService, BotCache botCache, BotStockCache botStockCache,
+	private final String botId;
+
+	public ForeignBot(String botId, BotOrderService botOrderService, BotCache botCache, BotStockCache botStockCache,
 			BotService botService, MarketStateHolder marketStateHolder, BotHaveStockCache botHaveStockCache,
 			CandleCacheService candleCacheService, AssignedCodeHolder assignedCodeHolder) {
 		super(botOrderService, botCache, botStockCache, botService, marketStateHolder, botHaveStockCache,
 				candleCacheService, assignedCodeHolder);
+		this.botId = botId; // 주입받은 ID 저장
 	}
 
 	@Override
 	protected String getBotId() {
-		return "BOT_FOREIGN";
+		return this.botId;
 	}
+	@Override
+	public BotType getBotType() {
+		return BotType.FOREIGN;
+	}
+
 	@Override
 	protected int getBuyBase() {
 		return 3;
 	}
+
 	@Override
 	protected int getSellBase() {
 		return 3;
@@ -36,6 +43,7 @@ public class ForeignBot extends AbstractBot {
 	protected int getBuyRange() {
 		return 30;
 	}
+
 	@Override
 	protected int getSellRange() {
 		return 30;

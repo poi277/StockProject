@@ -9,11 +9,14 @@ import Poi.Stock.features.Candle.Entity.CandleMinute;
 import Poi.Stock.features.Candle.Entity.CandleWithMA;
 import Poi.Stock.features.Stock.StockRealTimeSnapshot;
 import Poi.Stock.util.AssignedCodeHolder;
+import Poi.Stock.util.EnumUtil.BotType;
 import Poi.Stock.util.EnumUtil.CandleType;
 import Poi.Stock.util.EnumUtil.MarketState;
 import Poi.Stock.util.EnumUtil.tradeType;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RequiredArgsConstructor
 public abstract class AbstractBot {
 
@@ -29,31 +32,33 @@ public abstract class AbstractBot {
     protected final Random random = new Random();
 
     protected abstract String getBotId();
+
+	public abstract BotType getBotType();
     protected abstract int getBotBaseIntensity();
 
 	protected abstract void executeTrade(StockRealTimeSnapshot stock, int currentPrice, int tickSize, MarketState state,
 			int assetBonus, int finalIntensity);
-
-
 	protected abstract int getBuyBase();
-
 	protected abstract int getBuyRange();
-
 	protected abstract int getSellBase();
-
 	protected abstract int getSellRange();
 
-    public void placeOrders() {
-        String botId = getBotId();
-        Bot bot = botCache.get(botId);
-        if (bot == null) return;
+	public void placeOrders() {
+		String botId = getBotId();
+		BotType type = this.getBotType();
 
-        assignedCodeHolder.getAssignedCodes().forEach(stockCode -> {
-            StockRealTimeSnapshot stock = botStockCache.get(stockCode);
-            if (stock == null || stock.getCurrentPrice() <= 0) return;
+		Bot bot = botCache.get(botId);
+		if (bot == null)
+			return;
+		log.info("[주문 시작] 봇 ID: {} / 종류: {} / 현재 자산: {}", botId, type, bot.getAsset());
+
+		assignedCodeHolder.getAssignedCodes().forEach(stockCode -> {
+			StockRealTimeSnapshot stock = botStockCache.get(stockCode);
+			if (stock == null || stock.getCurrentPrice() <= 0)
+				return;
 			executeStrategy(stock);
-        });
-    }
+		});
+	}
 
 	protected void executeStrategy(StockRealTimeSnapshot stock) {
 		String stockCode = stock.getStockCode();

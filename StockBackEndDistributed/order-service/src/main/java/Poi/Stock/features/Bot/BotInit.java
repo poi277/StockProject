@@ -5,8 +5,10 @@ import java.util.List;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
+import Poi.Stock.features.Candle.CandleCacheService;
 import Poi.Stock.features.Stock.StockCache;
 import Poi.Stock.features.Stock.StockRealTimeSnapshot;
+import Poi.Stock.util.AssignedCodeHolder;
 import Poi.Stock.util.EnumUtil.BotType;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,13 @@ public class BotInit {
 	private final StockCache stockCache;
 	private final MarketStateHolder marketStateHolder;
 
+	// 🎯 봇 객체를 동적으로 생성하기 위해 필요한 하위 서비스 의존성들을 주입받습니다.
+	private final BotOrderService botOrderService;
+	private final BotService botService;
+	private final CandleCacheService candleCacheService;
+	private final AssignedCodeHolder assignedCodeHolder;
+
+
 	private static final long INITIAL_ASSET = 100_000_000L;
 	private static final int INITIAL_QUANTITY = 5000;
 
@@ -35,16 +44,32 @@ public class BotInit {
 		initBotHaveStocks();
 		initBotCache();
 	}
-	private void initBots() {
-		createBot("BOT_INSTITUTION", BotType.INSTITUTION);
-		createBot("BOT_FOREIGN", BotType.FOREIGN);
-		createBot("BOT_INDIVIDUAL", BotType.INDIVIDUAL);
-	}
 
-	private void createBot(String botId, BotType botType) {
-		Bot bot = getOrCreateBot(botId, botType);
-		botCache.register(bot);
-		log.info("봇 초기화 완료: {} / 자산: {}", botId, bot.getAsset());
+	private void initBots() {
+		for (BotList botInfo : BotList.values()) {
+			String botId = botInfo.getBotId();
+			BotType botType = botInfo.getBotType();
+
+			Bot bot = getOrCreateBot(botId, botType);
+			botCache.register(bot);
+
+			AbstractBot botInstance = null;
+			if (botType == BotType.INDIVIDUAL) {
+				botInstance = new IndividualBot(botId, botOrderService, botCache, botStockCache, botService,
+						marketStateHolder, botHaveStockCache, candleCacheService, assignedCodeHolder);
+			} else if (botType == BotType.INSTITUTION) {
+				botInstance = new InstitutionBot(botId, botOrderService, botCache, botStockCache, botService,
+						marketStateHolder, botHaveStockCache, candleCacheService, assignedCodeHolder);
+			} else if (botType == BotType.FOREIGN) {
+				botInstance = new ForeignBot(botId, botOrderService, botCache, botStockCache, botService,
+						marketStateHolder, botHaveStockCache, candleCacheService, assignedCodeHolder);
+			}
+			if (botInstance != null) {
+				botCache.registerInstance(botInstance);
+			}
+
+			log.info("봇 초기화 완료: {} / 자산: {}", botId, bot.getAsset());
+		}
 	}
 
 	private void initBotHaveStocks() {
