@@ -30,6 +30,19 @@ public class MarketStateHolder {
 		stateMap.keySet().forEach(this::updateMarketState);
 	}
 
+	public void updateRadomStocksState() {
+		stateMap.keySet().forEach(this::updateMarketStateRamdom);
+	}
+
+	public void updateMarketStateRamdom(String stockCode) {
+		MarketState[] states = MarketState.values();
+		MarketState state = states[random.nextInt(states.length)];
+		int intensity = random.nextInt(100);
+		stateMap.put(stockCode, state);
+		intensityMap.put(stockCode, intensity);
+		log.info("[시장 상태 완전랜덤 업데이트] stockCode: {}, state: {}, intensity: {}", stockCode, state, intensity);
+	}
+
 	public void updateMarketState(String stockCode) {
 		List<CandleWithMA<CandleMinute>> candles = candleCacheService.getCandles(CandleType.ONE_MINUTE, stockCode);
 
@@ -78,8 +91,8 @@ public class MarketStateHolder {
 		stateMap.put(stockCode, state);
 		intensityMap.put(stockCode, intensity);
 
-		log.info("시장 상태 업데이트 - stockCode: {}, state: {}, intensity: {}, MA5: {}, MA20: {}, MA60: {}", stockCode, state,
-				intensity, ma5, ma20, ma60);
+		log.info("시장 상태 업데이트 - stockCode: {}, state: {},장 상태:{} intensity: {}, MA5: {}, MA20: {}, MA60: {}", stockCode,
+				state, stateMap.get(stockCode), intensity, ma5, ma20, ma60);
 	}
 
 	public MarketState getState(String stockCode) {
@@ -101,13 +114,4 @@ public class MarketStateHolder {
 		intensityMap.remove(stockCode);
 	}
 
-	public int peoplevix(String stockCode) {
-		int intensity = getIntensity(stockCode);
-		int roll = random.nextInt(100);
-		if (roll < intensity) {
-			return random.nextInt(2) + 1;
-		} else {
-			return random.nextInt(2) + 2;
-		}
-	}
 }

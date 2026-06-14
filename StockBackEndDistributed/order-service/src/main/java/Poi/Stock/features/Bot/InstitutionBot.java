@@ -7,6 +7,7 @@ import Poi.Stock.features.Stock.StockRealTimeSnapshot;
 import Poi.Stock.util.AssignedCodeHolder;
 import Poi.Stock.util.EnumUtil.BotType;
 import Poi.Stock.util.EnumUtil.MarketState;
+import Poi.Stock.util.EnumUtil.TradeDecision;
 
 public class InstitutionBot extends AbstractBot {
 
@@ -27,6 +28,18 @@ public class InstitutionBot extends AbstractBot {
 	@Override
 	public BotType getBotType() {
 		return BotType.INSTITUTION;
+	}
+
+	// 🎯 기관 봇의 취소 기준 호가창 설정
+	@Override
+	protected int getCancelHogaLevel() {
+		return 30; // 30호가 이상 아주 멀리 벌어져야 "이제 취소할까" 하고 묵직하게 움직임
+	}
+
+	// 🎯 기관 봇의 시장 급변 시 취소 지수 설정
+	@Override
+	protected int getMarketShockCancelProbability() {
+		return 10; // 폭락장이 와도 10 수준만 유지 (내부 보정 시 0.5% 미만의 확률로, 거의 안 빼고 벽을 지킴)
 	}
 
 	@Override
@@ -55,16 +68,13 @@ public class InstitutionBot extends AbstractBot {
 	}
 
 	@Override
-	protected int calculateBuyPrice(int currentPrice, int tickSize, int finalIntensity, int vix) {
-		// VIX 지수를 0.5배로 줄여서 현재가 주변 호가창에 아주 촘촘하게 주문을 깔아둠
-		int institutionVix = (int) (vix * 0.5);
-		return super.calculateBuyPrice(currentPrice, tickSize, finalIntensity, institutionVix);
+	protected int calculateBuyPrice(int currentPrice, int tickSize, int finalIntensity) {
+		return super.calculateBuyPrice(currentPrice, tickSize, finalIntensity);
 	}
 
 	@Override
-	protected int calculateSellPrice(int currentPrice, int tickSize, int finalIntensity, int vix) {
-		int institutionVix = (int) (vix * 0.5);
-		return super.calculateSellPrice(currentPrice, tickSize, finalIntensity, institutionVix);
+	protected int calculateSellPrice(int currentPrice, int tickSize, int finalIntensity) {
+		return super.calculateSellPrice(currentPrice, tickSize, finalIntensity);
 	}
 
 	@Override
@@ -82,33 +92,87 @@ public class InstitutionBot extends AbstractBot {
 		double ma60 = ma.getOrDefault(60, 0.0);
 		double maMax = Math.max(ma20, ma60);
 
-		if (shouldBuy(currentPrice, ma20, ma60, state, assetBonus)) {
-			executeBuy(stock, currentPrice, tickSize, finalIntensity);
-		} else {
-			executeSell(stock, currentPrice, tickSize, maMax * 0.95, maMax * 0.97, maMax * 0.99, state, assetBonus,
-					finalIntensity);
+		switch (decideAction(currentPrice, ma20, ma60, state, assetBonus)) {
+		case BUY -> executeBuy(stock, currentPrice, tickSize, finalIntensity);
+		case SELL -> executeSell(stock, currentPrice, tickSize, maMax * 0.95, maMax * 0.97, maMax * 0.99, state,
+				assetBonus, finalIntensity);
+		case HOLD -> {
+		}
 		}
 	}
 
-	private boolean shouldBuy(int currentPrice, double ma20, double ma60, MarketState state, int assetBonus) {
-		if (state == MarketState.FLAT)
-			return random.nextInt(100) < (30 + assetBonus);
+	private TradeDecision decideAction(int currentPrice, double ma20, double ma60, MarketState state, int assetBonus) {
+		int baseIntensity = getBotBaseIntensity();
+		int roll = random.nextInt(100);
 
-		if (ma20 == 0.0 || ma60 == 0.0)
-			return random.nextInt(100) < (30 + assetBonus);
+		// 각 행동별 가중치(Weight) 변수
+		int buyWeight = 0;
+		int holdWeight = 0;
+		int sellWeight = 0;
 
-		double maMin = Math.min(ma20, ma60);
+		// 예외 처리: 이평선 데이터가 없으면 안전하게 횡보장(FLAT) 로직으로 처리
+		MarketState effectiveState = (ma20 == 0.0 || ma60 == 0.0) ? MarketState.FLAT : state;
 
-		int buyProb = 0;
-		if (currentPrice <= maMin * 1.01)
-			buyProb = 60;
-		else if (currentPrice <= maMin * 1.03)
-			buyProb = 40;
-		else if (currentPrice <= maMin * 1.05)
-			buyProb = 20;
+		switch (effectiveState) {
+		case BULL: // 1. 상승장 (MA20, MA60 상태에 따라 가중치 디테일 부여)
+			// [기본 규칙] 클수록 매수↑, 관망/매도 적절 / 작을수록 매도↑, 관망/매수 적절
 
-		if (buyProb == 0)
-			return false;
-		return random.nextInt(100) < (buyProb + assetBonus);
+			if (currentPrice > ma60 && ma20 > ma60) {
+				// 완벽한 상승 추세 (정배열) -> 매수 가중치 극대화
+				buyWeight = (int) (baseIntensity * 1.2) + assetBonus;
+				sellWeight = Math.max(10, 100 - baseIntensity);
+			} else if (currentPrice > ma20) {
+				// 준수한 상승 추세
+				buyWeight = baseIntensity + assetBonus;
+				sellWeight = Math.max(10, 120 - baseIntensity);
+			} else {
+				// 상승장이지만 일시적 눌림목 혹은 약세
+				buyWeight = (int) (baseIntensity * 0.7) + assetBonus;
+				sellWeight = Math.max(15, 130 - baseIntensity);
+			}
+			holdWeight = 30; // 관망 확률 완충 지대
+			break;
+
+		case FLAT: // 2. 횡보장 (이평선 기준 모호할 때 포함)
+			// [기본 규칙] 클수록 매수/매도↑ (거래 활성화) / 작을수록 관망↑
+			buyWeight = (baseIntensity / 2) + assetBonus;
+			sellWeight = baseIntensity / 2;
+			// baseIntensity가 작을수록 holdWeight가 커져서 관망 확률이 지배적이 됨
+			holdWeight = Math.max(10, 100 - baseIntensity);
+			break;
+
+		case BEAR: // 3. 하락장
+			// [기본 규칙] 클수록 매도↑, 관망/매수 적절 / 작을수록 매수↑, 관망/매도 적절
+
+			if (currentPrice < ma60 && ma20 < ma60) {
+				// 완벽한 하락 추세 (역배열) -> 매도 가중치 극대화
+				sellWeight = (int) (baseIntensity * 1.2);
+				buyWeight = Math.max(10, 100 - baseIntensity) + assetBonus;
+			} else {
+				// 일반 하락 추세
+				sellWeight = baseIntensity;
+				buyWeight = Math.max(10, 120 - baseIntensity) + assetBonus;
+			}
+			holdWeight = 30; // 관망 확률 완충 지대
+			break;
+
+		default:
+			return TradeDecision.HOLD;
+		}
+
+		// --- 🎯 가중치 기반 확률 구간(0 ~ 100%) 정규화 계산 ---
+		int totalWeight = buyWeight + holdWeight + sellWeight;
+
+		int buyThreshold = (buyWeight * 100) / totalWeight;
+		int holdThreshold = buyThreshold + ((holdWeight * 100) / totalWeight);
+
+		// 주사위 굴려 최종 결정
+		if (roll < buyThreshold) {
+			return TradeDecision.BUY;
+		} else if (roll < holdThreshold) {
+			return TradeDecision.HOLD;
+		} else {
+			return TradeDecision.SELL;
+		}
 	}
 }

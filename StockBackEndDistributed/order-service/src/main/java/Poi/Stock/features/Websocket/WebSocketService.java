@@ -37,11 +37,6 @@ public class WebSocketService {
 		payload.put("side", side.name());
 		payload.put("price", price);
 		payload.put("qty", qty);
-
-		System.out.println("=== WebSocket 전송 ===");
-		System.out.println("destination: /topic/hoga/" + stockCode);
-		System.out.println("payload: " + payload);
-
 		messagingTemplate.convertAndSend("/topic/hoga/" + stockCode, payload);
 	}
 	public void sendCurrentCandle(CandleDTO candleDTO, String stockCode) {
@@ -82,12 +77,6 @@ public class WebSocketService {
 		payload.put("remainingQuantity", order.getRemainingQuantity());
 		payload.put("tradePrice", order.getTradePrice());
 		payload.put("status", orderStatus);
-
-		log.info(
-				"Order Update Send -> userId: {}, orderId: {}, stockCode: {}, status: {}, quantity: {}, remainingQuantity: {}, price: {}",
-				userId, order.getOrderId(), order.getStockCode(), orderStatus, order.getQuantity(),
-				order.getRemainingQuantity(), order.getTradePrice());
-
 		messagingTemplate.convertAndSendToUser(userId, "/queue/orders", payload);
 	}
 

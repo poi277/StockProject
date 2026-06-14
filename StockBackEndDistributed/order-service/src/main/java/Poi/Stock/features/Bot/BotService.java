@@ -1,9 +1,19 @@
 package Poi.Stock.features.Bot;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Stream;
+
 import org.springframework.stereotype.Service;
 
+import Poi.Stock.features.Order.Order;
+import Poi.Stock.features.Order.OrderBook;
+import Poi.Stock.features.Order.OrderBookCache;
 import Poi.Stock.features.Stock.StockRealTimeSnapshot;
 import Poi.Stock.object.MatchingResult;
+import Poi.Stock.repository.OrderRepository;
+import Poi.Stock.util.EnumUtil.MarketState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,6 +25,8 @@ public class BotService {
 	private final BotCache botCache;
 	private final BotStockCache botStockCache;
 	private final BotHaveStockCache botHaveStockCache;
+	private final OrderRepository orderRepository;
+	private final OrderBookCache orderBookCache;
 
 	// 봇 자산 변경
 	public void updateAsset(String botId, long delta) {
@@ -94,5 +106,55 @@ public class BotService {
 		// 4. 복사본을 만들어 멀티스레드 환경이나 안전한 봇 매매 판단을 위해 캐시에 갱신
 		// (만약 botStockCache 내부 맵이 객체 주소를 직접 공유해도 상관없는 가벼운 구조라면 copy 없이 그냥 둬도 무방합니다)
 		botStockCache.put(result.getStockCode(), snapshot);
+	}
+
+	public void cancelBotOrdersByMarketShock(String botId, String stockCode, MarketState currentState,
+			int cancelProbability) {
+		OrderBook book = orderBookCache.get(stockCode);
+		int realProbability = (int) Math.max(1, cancelProbability * 0.05);
+		Random random = new Random();
+		if (book == null || random.nextInt(100) > realProbability)
+			return;
+		List<Order> toCancel = new ArrayList<>();
+		if (currentState == MarketState.BEAR) {
+			book.getBuyBook().values().stream().flatMap(level -> level.getOrders().stream())
+					.filter(o -> o.getUserId().equals(botId)).forEach(o -> {
+						toCancel.add(o);
+					});
+		}
+		else if (currentState == MarketState.BULL) {
+			book.getSellBook().values().stream().flatMap(level -> level.getOrders().stream())
+					.filter(o -> o.getUserId().equals(botId)).forEach(o -> {
+							toCancel.add(o);
+					});
+		}
+
+		if (toCancel.isEmpty())
+			return;
+
+		toCancel.forEach(book::removeOrder);
+		orderRepository.deleteAllInBatch(toCancel);
+		log.info("[시장급변 미세취소] 봇: {} / 종목: {} / 장세: {} / 적용확률: {}% / {}건 취소", botId, stockCode, currentState,
+				realProbability, toCancel.size());
+	}
+
+	public void cancelOutOfRange(String botId, String stockCode, int currentPrice, int tickSize, int hogaLevel) {
+		OrderBook book = orderBookCache.get(stockCode);
+		if (book == null)
+			return;
+		int range = tickSize * hogaLevel;
+		List<Order> toCancel = Stream
+				.concat(book.getSellBook().values().stream().flatMap(level -> level.getOrders().stream()),
+						book.getBuyBook().values().stream().flatMap(level -> level.getOrders().stream()))
+				.filter(order -> order.getUserId().equals(botId)) // 이 봇의 주문인가?
+				.filter(order -> Math.abs(order.getTradePrice() - currentPrice) > range) // 범위를 벗어났는가?
+				.toList();
+
+		if (toCancel.isEmpty())
+			return;
+		toCancel.forEach(book::removeOrder);
+		orderRepository.deleteAllInBatch(toCancel);
+
+		log.info("[호가이탈 취소] 봇: {} / 종목: {} / 현재가: {} / {}건 취소 완료", botId, stockCode, currentPrice, toCancel.size());
 	}
 }

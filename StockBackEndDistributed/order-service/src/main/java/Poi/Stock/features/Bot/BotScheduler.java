@@ -32,7 +32,7 @@ public class BotScheduler {
 	}
 
 	// 🎯 2. 외국인 봇 매매 주기: 2초마다 실행 (fixedDelay = 2000)
-	@Scheduled(fixedDelay = 2000)
+	// @Scheduled(fixedDelay = 2000)
 	public void runForeignBots() {
 		List<AbstractBot> runningBots = botCache.getRunningBotsCache();
 
@@ -46,7 +46,7 @@ public class BotScheduler {
 	}
 
 	// 🎯 3. 기관 봇 매매 주기: 10초마다 실행 (fixedDelay = 10000)
-	@Scheduled(fixedDelay = 10000)
+	// @Scheduled(fixedDelay = 10000)
 	public void runInstitutionBots() {
 		List<AbstractBot> runningBots = botCache.getRunningBotsCache();
 
@@ -60,11 +60,11 @@ public class BotScheduler {
 	}
 
 	// 🎯 4. 시장 상태 업데이트 주기: 60초마다 실행
-	@Scheduled(fixedDelay = 60000)
+	@Scheduled(fixedDelay = 30000)
 	public void updateMarketState() {
 		try {
-			marketStateHolder.updateAllStocks();
-			log.info("시장 상태 업데이트 완료");
+			// marketStateHolder.updateAllStocks();
+			marketStateHolder.updateRadomStocksState();
 		} catch (Exception e) {
 			log.error("시장 상태 업데이트 오류: {}", e.getMessage());
 		}

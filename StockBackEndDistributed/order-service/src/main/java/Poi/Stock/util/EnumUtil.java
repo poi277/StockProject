@@ -27,6 +27,10 @@ public class EnumUtil {
 		PENDING_REVIEW, PERMANENT_FAIL
 	}
 
+	public enum TradeDecision {
+		BUY, SELL, HOLD, CANCEL
+	}
+
 	public enum CandleType {
 		ONE_MINUTE(1), THREE_MINUTE(3), FIVE_MINUTE(5), TEN_MINUTE(10),
 		HOUR(0), DAY(0), WEEK(0), MONTH(0), YEAR(0);
