@@ -25,6 +25,7 @@ public class TradeHistory {
 
 	public static TradeHistory from(TradeExecution ex) {
 		TradeHistory h = new TradeHistory();
+		h.stockCode = ex.getStockCode();
 		h.buyerId = ex.getBuyerId();
 		h.sellerId = ex.getSellerId();
 		h.quantity = ex.getQuantity();

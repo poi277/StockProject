@@ -8,7 +8,7 @@ const TEXT_STYLE = (weight, color, size = "12px") => ({ "--tds-wts-font-weight":
 
 
 export default function HogaChart({ stock, onPriceSelect }) {
-  const { sellOrders, buyOrders, maxQuantity, getBarWidth, totalSellQuantity, totalBuyQuantity, executions, closePrice, lastExecutionPrice,scrollRef } = useHoga(stock.stockCode ,stock.closePrice );
+  const { sellOrders, buyOrders, maxQuantity, getBarWidth, totalSellQuantity, totalBuyQuantity, executions, closePrice, lastExecutionPrice, scrollRef } = useHoga(stock.stockCode, stock.closePrice);
 
   return (
     <div className="sa1m6r0" style={{ paddingLeft: "0px", paddingRight: "0px" }}>
@@ -30,9 +30,9 @@ export default function HogaChart({ stock, onPriceSelect }) {
                     <div className="_1oug70od _1oug70oc _1oug70oh"><TradingStrengthKr executions={executions} /></div>
                   </div>
                   <div className="_1oug70o8">
-                    <OrderBook type="sell" orders={sellOrders} getBarWidth={getBarWidth} yesterdayClosePrice={stock.yesterdayClosePrice} lastExecutionPrice={lastExecutionPrice} onPriceSelect={onPriceSelect} />
+                    <OrderBook type="sell" orders={sellOrders} getBarWidth={getBarWidth} yesterdayClosePrice={stock.yesterdayClosePrice} lastExecutionPrice={lastExecutionPrice} onPriceSelect={onPriceSelect} highPrice={stock.highPrice} lowPrice={stock.lowPrice} />
                     <div className="_1oug70o11"></div>
-                    <OrderBook type="buy"  orders={buyOrders} getBarWidth={getBarWidth} yesterdayClosePrice={stock.yesterdayClosePrice} lastExecutionPrice={lastExecutionPrice} onPriceSelect={onPriceSelect} />
+                    <OrderBook type="buy" orders={buyOrders} getBarWidth={getBarWidth} yesterdayClosePrice={stock.yesterdayClosePrice} lastExecutionPrice={lastExecutionPrice} onPriceSelect={onPriceSelect} highPrice={stock.highPrice} lowPrice={stock.lowPrice} />
                   </div>
                 </div>
               </div>
@@ -45,17 +45,17 @@ export default function HogaChart({ stock, onPriceSelect }) {
   );
 }
 
-function OrderBook({ type, orders,getBarWidth, yesterdayClosePrice, lastExecutionPrice, onPriceSelect }) {
+function OrderBook({ type, orders, getBarWidth, yesterdayClosePrice, lastExecutionPrice, onPriceSelect, highPrice, lowPrice }) {
   const [keyDownPrice, setKeyDownPrice] = useState(null);
   const isSell = type === 'sell';
-  
+
 
   useEffect(() => {
     const handleMouseUp = () => setKeyDownPrice(null);
     window.addEventListener('mouseup', handleMouseUp);
     return () => window.removeEventListener('mouseup', handleMouseUp);
   }, []);
-  
+
 
   return (
     <ul className={isSell ? "_1oug70of" : "_1oug70og"}>
@@ -63,6 +63,8 @@ function OrderBook({ type, orders,getBarWidth, yesterdayClosePrice, lastExecutio
         const priceColor = getHogaPriceColor(order.price, yesterdayClosePrice);
         const changeRateStr = getHogaChangeRateStr(order.price, yesterdayClosePrice);
         const isActive = order.price === keyDownPrice;
+        const isHigh = order.price === highPrice;
+        const isLow = order.price === lowPrice;
 
         const quantityDiv = (
           <div id="quote-row-quantity" className={`_14zza80 ${isSell ? '_14zza84' : '_14zza85'}`}>
@@ -79,7 +81,22 @@ function OrderBook({ type, orders,getBarWidth, yesterdayClosePrice, lastExecutio
           <button id="quote-row-price" className={`dj9of22 ${order.price === lastExecutionPrice || isActive ? 'dj9of20' : ''}`}>
             <div></div>
             <div className="dj9of25 dj9of23">
-              <span className="tw3v-1r5dc8g0 gvo66u1" style={PRICE_STYLE(priceColor)}>{order.price.toLocaleString('ko-KR')}</span>
+              <span className="tw3v-1r5dc8g0 gvo66u1" style={PRICE_STYLE(priceColor)}>{order.price.toLocaleString('ko-KR')}
+                {isHigh && (
+                  <span
+                    className="tw3v-1r5dc8g0 dj9of28" style={{ backgroundColor: 'var(--wts-adaptive-red500)', '--tds-wts-font-weight': 'var(--tw-font-weight-bold)', '--tds-wts-foreground-color': 'var(--wts-adaptive-background)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '15px' }}
+                  >
+                    고
+                  </span>
+                )}
+                {isLow && (
+                  <span
+                    className="tw3v-1r5dc8g0 dj9of28" style={{ backgroundColor: 'var(--wts-adaptive-blue600)', '--tds-wts-font-weight': 'var(--tw-font-weight-bold)', '--tds-wts-foreground-color': 'var(--wts-adaptive-background)', '--tds-wts-line-height': '1.45', '--tds-wts-font-size': '15px' }}
+                  >
+                    저
+                  </span>
+                )}
+              </span>
               <span className="tw3v-1r5dc8g0 dj9of2e dj9of2c" style={RATE_STYLE(priceColor)}>{changeRateStr}</span>
             </div>
             <div></div>
@@ -87,8 +104,8 @@ function OrderBook({ type, orders,getBarWidth, yesterdayClosePrice, lastExecutio
         );
 
         return (
-          <li key={i} data-price={order.price}  className={isSell ? "hmbv031 hmbv030" : "_1kcm3421 _1kcm3420"} role="button" tabIndex="0"
-            onMouseDown={() => setKeyDownPrice(order.price)} 
+          <li key={i} data-price={order.price} className={isSell ? "hmbv031 hmbv030" : "_1kcm3421 _1kcm3420"} role="button" tabIndex="0"
+            onMouseDown={() => setKeyDownPrice(order.price)}
             onMouseUp={() => { setKeyDownPrice(null); onPriceSelect?.(order.price); }}>
             {isSell ? <>{quantityDiv}{priceButton}<div></div></> : <><div></div>{priceButton}{quantityDiv}</>}
           </li>

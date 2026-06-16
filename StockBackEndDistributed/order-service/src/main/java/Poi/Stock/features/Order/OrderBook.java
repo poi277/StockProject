@@ -29,6 +29,25 @@ public class OrderBook {
 		level.addOrder(order);
 	}
 
+//	public void removeOrder(Order order) {
+//		TreeMap<Integer, PriceLevel> book = order.getTradeType() == tradeType.BUY ? buyBook : sellBook;
+//		PriceLevel level = book.get(order.getTradePrice());
+//		if (level == null)
+//			return;
+//
+//		level.getOrders().removeIf(o -> {
+//			if (o.getOrderId().equals(order.getOrderId())) {
+//				level.reduceQuantity(o.getRemainingQuantity());
+//				return true;
+//			}
+//			return false;
+//		});
+//
+//		if (level.isEmpty()) {
+//			book.remove(order.getTradePrice());
+//		}
+//	}
+
 	public void removeOrder(Order order) {
 		TreeMap<Integer, PriceLevel> book = order.getTradeType() == tradeType.BUY ? buyBook : sellBook;
 		PriceLevel level = book.get(order.getTradePrice());
@@ -36,7 +55,12 @@ public class OrderBook {
 			return;
 
 		level.getOrders().removeIf(o -> {
-			if (o.getOrderId().equals(order.getOrderId())) {
+			boolean isSameId = java.util.Objects.equals(o.getOrderId(), order.getOrderId());
+			if (o.getOrderId() == null && order.getOrderId() == null) {
+				isSameId = (o == order)
+						|| (o.getUserId().equals(order.getUserId()) && o.getQuantity().equals(order.getQuantity()));
+			}
+			if (isSameId) {
 				level.reduceQuantity(o.getRemainingQuantity());
 				return true;
 			}

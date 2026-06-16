@@ -11,4 +11,7 @@ public interface CandleMinuteRepository extends JpaRepository<CandleMinute, Long
 
 	@Query("SELECT DISTINCT c.stockCode FROM CandleMinute c")
 	List<String> findDistinctStockCodes();
+
+	List<CandleMinute> findByStockCodeAndTimeBetweenOrderByTimeAsc(String stockCode, LocalDateTime startOfDay,
+			LocalDateTime endOfDay);
 }

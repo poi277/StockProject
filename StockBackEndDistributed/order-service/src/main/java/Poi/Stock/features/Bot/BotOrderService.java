@@ -27,6 +27,8 @@ public class BotOrderService {
 		stockLock.lock(stockCode);
 		try {
 			TradeDTO tradeDTO = new TradeDTO();
+			long fakeOrderId = -Math.abs(java.util.UUID.randomUUID().getMostSignificantBits());
+			tradeDTO.setOrderId(fakeOrderId); // TradeDTO에 orderId 세터가 있다면 세팅!
 			tradeDTO.setStockCode(stockCode);
 			tradeDTO.setUserId(botId);
 			tradeDTO.setTradeType(type);

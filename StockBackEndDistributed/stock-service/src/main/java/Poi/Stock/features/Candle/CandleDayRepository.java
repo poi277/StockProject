@@ -21,4 +21,6 @@ public interface CandleDayRepository extends JpaRepository<CandleDay, Long> {
 	// 전체 일봉 데이터에서 존재하는 종목 코드 목록 추출
 	@Query("SELECT DISTINCT c.stockCode FROM CandleDay c")
 	List<String> findDistinctStockCodes();
+
+	Optional<CandleDay> findTopByStockCodeOrderByDateDesc(String stockCode);
 }

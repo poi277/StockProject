@@ -115,27 +115,31 @@ public class BotService {
 		Random random = new Random();
 		if (book == null || random.nextInt(100) > realProbability)
 			return;
+
 		List<Order> toCancel = new ArrayList<>();
 		if (currentState == MarketState.BEAR) {
 			book.getBuyBook().values().stream().flatMap(level -> level.getOrders().stream())
 					.filter(o -> o.getUserId().equals(botId)).forEach(o -> {
 						toCancel.add(o);
 					});
-		}
-		else if (currentState == MarketState.BULL) {
+		} else if (currentState == MarketState.BULL) {
 			book.getSellBook().values().stream().flatMap(level -> level.getOrders().stream())
 					.filter(o -> o.getUserId().equals(botId)).forEach(o -> {
-							toCancel.add(o);
+						toCancel.add(o);
 					});
 		}
 
 		if (toCancel.isEmpty())
 			return;
-
 		toCancel.forEach(book::removeOrder);
-		orderRepository.deleteAllInBatch(toCancel);
-		log.info("[시장급변 미세취소] 봇: {} / 종목: {} / 장세: {} / 적용확률: {}% / {}건 취소", botId, stockCode, currentState,
-				realProbability, toCancel.size());
+		List<Order> dbOrders = toCancel.stream().filter(o -> o.getOrderId() != null).toList();
+
+		if (!dbOrders.isEmpty()) {
+			orderRepository.deleteAllInBatch(dbOrders);
+		}
+
+		log.info("[시장급변 미세취소] 봇: {} / 종목: {} / 장세: {} / 적용확률: {}% / {}건 취소 (DB 삭제: {}건)", botId, stockCode,
+				currentState, realProbability, toCancel.size(), dbOrders.size());
 	}
 
 	public void cancelOutOfRange(String botId, String stockCode, int currentPrice, int tickSize, int hogaLevel) {
@@ -146,15 +150,21 @@ public class BotService {
 		List<Order> toCancel = Stream
 				.concat(book.getSellBook().values().stream().flatMap(level -> level.getOrders().stream()),
 						book.getBuyBook().values().stream().flatMap(level -> level.getOrders().stream()))
-				.filter(order -> order.getUserId().equals(botId)) // 이 봇의 주문인가?
-				.filter(order -> Math.abs(order.getTradePrice() - currentPrice) > range) // 범위를 벗어났는가?
-				.toList();
+				.filter(order -> order.getUserId().equals(botId))
+				.filter(order -> Math.abs(order.getTradePrice() - currentPrice) > range).toList();
 
 		if (toCancel.isEmpty())
 			return;
 		toCancel.forEach(book::removeOrder);
-		orderRepository.deleteAllInBatch(toCancel);
 
-		log.info("[호가이탈 취소] 봇: {} / 종목: {} / 현재가: {} / {}건 취소 완료", botId, stockCode, currentPrice, toCancel.size());
+		// 🎯 2. 수정 포인트: orderId가 null이 아닌(DB에 존재하는) 주문만 골라내서 이괄 삭제
+		List<Order> dbOrders = toCancel.stream().filter(o -> o.getOrderId() != null).toList();
+
+		if (!dbOrders.isEmpty()) {
+			orderRepository.deleteAllInBatch(dbOrders);
+		}
+
+		log.info("[호가이탈 취소] 봇: {} / 종목: {} / 현재가: {} / {}건 취소 완료 (DB 삭제: {}건)", botId, stockCode, currentPrice,
+				toCancel.size(), dbOrders.size());
 	}
 }

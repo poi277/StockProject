@@ -102,7 +102,7 @@ public class OrderTradeService {
 			result.getExecutions()
 					.add(new TradeExecution(order.getTradeType(), order.getStatus(), buyerId, sellerId, fillQty,
 							fillPrice,
-					order.getStockCode(), LocalDateTime.now()));
+							order.getStockCode(), LocalDateTime.now()));
 			if (restingOrder.isCompleted()) {
 				level.removeTopOrder();
 				result.getCompletedResting().add(restingOrder);
@@ -135,23 +135,34 @@ public class OrderTradeService {
 		boolean incomingIsBot = isBot(result.getIncomingOrder().getUserId());
 		if (!result.getCompletedResting().isEmpty()) {
 			List<Order> completedToSave = result.getCompletedResting().stream()
-					.filter(o -> !isBot(o.getUserId()) || !incomingIsBot).toList();
+					.filter(o -> !isBot(o.getUserId()) && !incomingIsBot)
+					.toList();
+
 			if (!completedToSave.isEmpty()) {
 				completedOrderRepository
 						.saveAll(completedToSave.stream().map(CompletedOrder::setCompletedOrder).toList());
 			}
-			orderRepository.deleteAllInBatch(result.getCompletedResting());
+			List<Order> realUserOrdersToDelete = result.getCompletedResting().stream()
+					.filter(o -> !isBot(o.getUserId()) && o.getOrderId() != null && o.getOrderId() > 0).toList();
+
+			if (!realUserOrdersToDelete.isEmpty()) {
+				orderRepository.deleteAllInBatch(realUserOrdersToDelete);
+			}
 		}
 		if (!result.getPartialResting().isEmpty()) {
-			orderRepository.saveAll(result.getPartialResting());
-		}
-		if (result.getIncomingOrder().isCompleted()) {
-			if (!incomingIsBot || !result.getCompletedResting().stream().allMatch(o -> isBot(o.getUserId()))) {
-				completedOrderRepository.save(CompletedOrder.setCompletedOrder(result.getIncomingOrder()));
+			List<Order> partialUserOrders = result.getPartialResting().stream().filter(o -> !isBot(o.getUserId()))
+					.toList();
+			if (!partialUserOrders.isEmpty()) {
+				orderRepository.saveAll(partialUserOrders);
 			}
-			orderRepository.delete(result.getIncomingOrder());
-		} else {
-			orderRepository.save(result.getIncomingOrder());
+		}
+		if (!incomingIsBot) {
+			if (result.getIncomingOrder().isCompleted()) {
+				completedOrderRepository.save(CompletedOrder.setCompletedOrder(result.getIncomingOrder()));
+				orderRepository.delete(result.getIncomingOrder());
+			} else {
+				orderRepository.save(result.getIncomingOrder());
+			}
 		}
 	}
 

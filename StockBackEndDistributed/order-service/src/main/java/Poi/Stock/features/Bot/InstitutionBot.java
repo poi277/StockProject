@@ -114,9 +114,7 @@ public class InstitutionBot extends AbstractBot {
 		MarketState effectiveState = (ma20 == 0.0 || ma60 == 0.0) ? MarketState.FLAT : state;
 
 		switch (effectiveState) {
-		case BULL: // 1. 상승장 (MA20, MA60 상태에 따라 가중치 디테일 부여)
-			// [기본 규칙] 클수록 매수↑, 관망/매도 적절 / 작을수록 매도↑, 관망/매수 적절
-
+		case BULL:
 			if (currentPrice > ma60 && ma20 > ma60) {
 				// 완벽한 상승 추세 (정배열) -> 매수 가중치 극대화
 				buyWeight = (int) (baseIntensity * 1.2) + assetBonus;
@@ -141,19 +139,15 @@ public class InstitutionBot extends AbstractBot {
 			holdWeight = Math.max(10, 100 - baseIntensity);
 			break;
 
-		case BEAR: // 3. 하락장
-			// [기본 규칙] 클수록 매도↑, 관망/매수 적절 / 작을수록 매수↑, 관망/매도 적절
-
+		case BEAR:
 			if (currentPrice < ma60 && ma20 < ma60) {
-				// 완벽한 하락 추세 (역배열) -> 매도 가중치 극대화
 				sellWeight = (int) (baseIntensity * 1.2);
 				buyWeight = Math.max(10, 100 - baseIntensity) + assetBonus;
 			} else {
-				// 일반 하락 추세
 				sellWeight = baseIntensity;
 				buyWeight = Math.max(10, 120 - baseIntensity) + assetBonus;
 			}
-			holdWeight = 30; // 관망 확률 완충 지대
+			holdWeight = 30;
 			break;
 
 		default:

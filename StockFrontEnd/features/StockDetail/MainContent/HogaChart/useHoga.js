@@ -5,6 +5,8 @@ import { useHogaSocket } from "../../../../util/websocket/useHogaSocket";
 import { useExecutionSocket } from "../../../../util/websocket/useExecutionSocket";
 import { useStockWebSocket } from "../../../../util/websocket/context/StockWebSocketContext";
 
+const MAX_VISIBLE_ORDERS = 10;
+
 export function getHogaPriceColor(price, yesterdayClosePrice) {
   if (!yesterdayClosePrice || price === yesterdayClosePrice) return "var(--wts-adaptive-grey700)";
   return price > yesterdayClosePrice ? "var(--wts-adaptive-red500)" : "var(--wts-adaptive-blue500)";
@@ -69,13 +71,25 @@ export default function useHoga(stockCode) {
     });
     },
   });
-  
+
 
   // 3. 파생값 계산
   const maxQuantity = useMemo(() => {
     const all = [...sellOrders, ...buyOrders];
     return all.length === 0 ? 1 : Math.max(...all.map(o => o.quantity));
   }, [sellOrders, buyOrders]);
+
+  // 매도는 내림차순으로 정렬돼있으니 뒤에서 10개 (현재가에 가까운 낮은 가격 쪽)
+  const visibleSellOrders = useMemo(
+    () => sellOrders.slice(-MAX_VISIBLE_ORDERS),
+    [sellOrders]
+  );
+
+  // 매수는 내림차순으로 정렬돼있으니 앞에서 10개 (현재가에 가까운 높은 가격 쪽)
+  const visibleBuyOrders = useMemo(
+    () => buyOrders.slice(0, MAX_VISIBLE_ORDERS),
+    [buyOrders]
+  );
 
   const totalSellQuantity = useMemo(() => sellOrders.reduce((s, o) => s + o.quantity, 0), [sellOrders]);
   const totalBuyQuantity  = useMemo(() => buyOrders.reduce((s, o) => s + o.quantity, 0), [buyOrders]);
@@ -84,6 +98,18 @@ export default function useHoga(stockCode) {
   const lastExecutionPrice = useMemo(() => 
     executions[0]?.price ?? null
     , [executions]);
-  
-  return { scrollRef,sellOrders, buyOrders, maxQuantity, getBarWidth, totalSellQuantity, totalBuyQuantity,executions,lastExecutionPrice,getHogaPriceColor,getHogaChangeRateStr};
+
+  return {
+    scrollRef,
+    sellOrders: visibleSellOrders,
+    buyOrders: visibleBuyOrders,
+    maxQuantity,
+    getBarWidth,
+    totalSellQuantity,
+    totalBuyQuantity,
+    executions,
+    lastExecutionPrice,
+    getHogaPriceColor,
+    getHogaChangeRateStr
+  };
 }

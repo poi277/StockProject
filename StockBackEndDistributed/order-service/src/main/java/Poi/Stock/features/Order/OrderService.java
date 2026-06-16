@@ -100,10 +100,10 @@ public class OrderService {
 
     @Transactional
     public void processOrder(TradeDTO tradeDTO) {
-        Order order = orderTradeService.setOrder(tradeDTO);
-        OrderBook book = orderBookCache.get(order.getStockCode());
+		Order order = orderTradeService.setOrder(tradeDTO);
+		OrderBook book = orderBookCache.get(order.getStockCode());
 		MatchingResult result = orderTradeService.matchLoop(order, book);
-        orderTradeService.saveTradeHistories(result.getExecutions());
+		orderTradeService.saveTradeHistories(result.getExecutions());
 		orderTradeService.saveOrders(result);
 		orderTradeService.settlement(result);
 		orderTradeService.updateCurrentCandle(result);

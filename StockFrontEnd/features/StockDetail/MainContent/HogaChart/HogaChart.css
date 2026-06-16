@@ -438,3 +438,12 @@
     box-shadow: inset 0 0 0 1px var(--wts-adaptive-grey700);
     border-radius: 8px;
 }
+.dj9of28 {
+    position: absolute;
+    font-size: 8px;
+    padding: 1px 3px;
+    border-radius: 3px;
+    left: -10px;
+    top: 50%;
+    transform: translate(-100%, -50%);
+}

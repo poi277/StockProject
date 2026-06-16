@@ -18,7 +18,7 @@ public class BotScheduler {
 	private final BotCache botCache;
 
 	// 🎯 1. 개인 봇 매매 주기: 1초마다 실행 (fixedDelay = 1000)
-	@Scheduled(fixedDelay = 1000)
+	@Scheduled(fixedDelay = 5000)
 	public void runIndividualBots() {
 		List<AbstractBot> runningBots = botCache.getRunningBotsCache();
 

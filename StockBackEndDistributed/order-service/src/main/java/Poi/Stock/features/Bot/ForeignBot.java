@@ -95,12 +95,12 @@ public class ForeignBot extends AbstractBot {
 		int holdWeight = 0;
 		int sellWeight = 0;
 
-		// 예외 처리: 이평선 데이터가 없으면 안전하게 횡보장(FLAT) 로직으로 처리
+		// 이평선 데이터가 없으면 횡보장 로직으로 처리
 		MarketState effectiveState = (ma20 == 0.0 || ma60 == 0.0) ? MarketState.FLAT : state;
 
 		switch (effectiveState) {
 		case BULL: // 1. 상승장
-			// [기존 로직 계승] 이평선 정배열 및 가격 위치에 따른 강도 분기
+			// 이평선 정배열 및 가격 위치에 따른 강도 분기
 			int trendIntensity = 0;
 			if (currentPrice > ma60 && ma20 > ma60) {
 				trendIntensity = baseIntensity;
@@ -110,7 +110,7 @@ public class ForeignBot extends AbstractBot {
 				trendIntensity = baseIntensity / 3;
 			}
 
-			// [기본 규칙] 클수록 매수↑, 관망/매도 적절 / 작을수록 매도↑, 관망/매수 적절
+			// 클수록 매수↑, 관망/매도 적절 / 작을수록 매도↑, 관망/매수 적절
 			// 기존 코드의 'threshold * 0.7' 성향을 반영하여 매수 가중치 밸런싱
 			buyWeight = (int) ((trendIntensity + assetBonus) * 0.7);
 			sellWeight = Math.max(10, 120 - baseIntensity); // 전체 intensity가 작을수록 매도세 증가

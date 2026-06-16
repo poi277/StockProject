@@ -25,4 +25,6 @@ public interface CandleDayRepository extends JpaRepository<CandleDay, Long> {
 	List<String> findDistinctStockCodes();
 
 	List<CandleDay> findTop100ByStockCodeOrderByDateDesc(String stockCode);
+
+	Optional<CandleDay> findTopByStockCodeOrderByDateDesc(String stockCode);
 }
