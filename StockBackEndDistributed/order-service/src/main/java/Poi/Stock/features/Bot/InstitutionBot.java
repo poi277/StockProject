@@ -11,20 +11,13 @@ import Poi.Stock.util.EnumUtil.TradeDecision;
 
 public class InstitutionBot extends AbstractBot {
 
-	private final String botId;
-	public InstitutionBot(String botId, BotOrderService botOrderService, BotCache botCache, BotStockCache botStockCache,
-			BotService botService, MarketStateHolder marketStateHolder, BotHaveStockCache botHaveStockCache,
-			CandleCacheService candleCacheService, AssignedCodeHolder assignedCodeHolder) {
+	public InstitutionBot(String botId, int botBaseIntensity, BotOrderService botOrderService, BotCache botCache,
+			BotStockCache botStockCache, BotService botService, MarketStateHolder marketStateHolder,
+			BotHaveStockCache botHaveStockCache, CandleCacheService candleCacheService,
+			AssignedCodeHolder assignedCodeHolder) {
 		super(botOrderService, botCache, botStockCache, botService, marketStateHolder, botHaveStockCache,
-				candleCacheService, assignedCodeHolder);
-		this.botId = botId; // 주입받은 ID 저장
+				candleCacheService, assignedCodeHolder, botId, botBaseIntensity);
 	}
-
-	@Override
-	protected String getBotId() {
-		return this.botId;
-	}
-
 	@Override
 	public BotType getBotType() {
 		return BotType.INSTITUTION;
@@ -63,18 +56,13 @@ public class InstitutionBot extends AbstractBot {
 	}
 
 	@Override
-	protected int getBotBaseIntensity() {
-		return 40;
+	protected int calculateBuyPrice(int currentPrice, int finalIntensity) {
+		return super.calculateBuyPrice(currentPrice, finalIntensity);
 	}
 
 	@Override
-	protected int calculateBuyPrice(int currentPrice, int tickSize, int finalIntensity) {
-		return super.calculateBuyPrice(currentPrice, tickSize, finalIntensity);
-	}
-
-	@Override
-	protected int calculateSellPrice(int currentPrice, int tickSize, int finalIntensity) {
-		return super.calculateSellPrice(currentPrice, tickSize, finalIntensity);
+	protected int calculateSellPrice(int currentPrice, int finalIntensity) {
+		return super.calculateSellPrice(currentPrice, finalIntensity);
 	}
 
 	@Override
@@ -83,7 +71,7 @@ public class InstitutionBot extends AbstractBot {
 	}
 
 	@Override
-	protected void executeTrade(StockRealTimeSnapshot stock, int currentPrice, int tickSize, MarketState state,
+	protected void executeTrade(StockRealTimeSnapshot stock, int currentPrice, MarketState state,
 			int assetBonus, int finalIntensity) {
 		String stockCode = stock.getStockCode();
 
@@ -93,8 +81,8 @@ public class InstitutionBot extends AbstractBot {
 		double maMax = Math.max(ma20, ma60);
 
 		switch (decideAction(currentPrice, ma20, ma60, state, assetBonus)) {
-		case BUY -> executeBuy(stock, currentPrice, tickSize, finalIntensity);
-		case SELL -> executeSell(stock, currentPrice, tickSize, maMax * 0.95, maMax * 0.97, maMax * 0.99, state,
+		case BUY -> executeBuy(stock, currentPrice, finalIntensity);
+		case SELL -> executeSell(stock, currentPrice, maMax * 0.95, maMax * 0.97, maMax * 0.99, state,
 				assetBonus, finalIntensity);
 		case HOLD -> {
 		}

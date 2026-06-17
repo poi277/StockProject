@@ -3,11 +3,7 @@ import StockHeaderPrice from "./StockHeaderName/StockHeaderPrice";
 import StockHeaderTabs from "./StockHeaderTabs/StockHeaderTabs";
 import '../../../tossCss/toss-layout.css'
 import './StockPriceHeader.css'
-import { useStockHeader } from "./useStockHeader";
-
-export default function StockPriceHeader({ initStock }) {
-  const {stock } = useStockHeader(initStock);
-
+export default function StockPriceHeader({ stock }) {
   return (
     <div className="ia3qp41" style={{ display: 'flex', flexDirection: 'row', gap: '0px', justifyContent: 'normal', alignItems: 'center' }}>
       <div className="ia3qp42">

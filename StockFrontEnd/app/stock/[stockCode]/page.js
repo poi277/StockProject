@@ -8,6 +8,6 @@ export default async function StockDetail({ params }) {
         StockDetailApi(stockCode),
     ]);
     return (
-        <StockDetailForm stock={res.data} />
+        <StockDetailForm initstock={res.data} />
     );
 }

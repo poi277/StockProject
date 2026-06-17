@@ -49,26 +49,26 @@ public class BotInit {
 		for (BotList botInfo : BotList.values()) {
 			String botId = botInfo.getBotId();
 			BotType botType = botInfo.getBotType();
-
+			int intensity = botInfo.getBotBaseIntensity();
 			Bot bot = getOrCreateBot(botId, botType);
 			botCache.register(bot);
-
 			AbstractBot botInstance = null;
 			if (botType == BotType.INDIVIDUAL) {
-				botInstance = new IndividualBot(botId, botOrderService, botCache, botStockCache, botService,
+				botInstance = new IndividualBot(botId, intensity, botOrderService, botCache, botStockCache, botService,
 						marketStateHolder, botHaveStockCache, candleCacheService, assignedCodeHolder);
 			} else if (botType == BotType.INSTITUTION) {
-				botInstance = new InstitutionBot(botId, botOrderService, botCache, botStockCache, botService,
+				botInstance = new InstitutionBot(botId, intensity, botOrderService, botCache, botStockCache, botService,
 						marketStateHolder, botHaveStockCache, candleCacheService, assignedCodeHolder);
 			} else if (botType == BotType.FOREIGN) {
-				botInstance = new ForeignBot(botId, botOrderService, botCache, botStockCache, botService,
+				botInstance = new ForeignBot(botId, intensity, botOrderService, botCache, botStockCache, botService,
 						marketStateHolder, botHaveStockCache, candleCacheService, assignedCodeHolder);
 			}
+
 			if (botInstance != null) {
 				botCache.registerInstance(botInstance);
 			}
 
-			log.info("봇 초기화 완료: {} / 자산: {}", botId, bot.getAsset());
+			log.info("봇 초기화 완료: {} / 타입: {} / 강도: {} / 자산: {}", botId, botType, intensity, bot.getAsset());
 		}
 	}
 

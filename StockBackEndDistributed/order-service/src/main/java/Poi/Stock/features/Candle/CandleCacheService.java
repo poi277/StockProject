@@ -102,37 +102,30 @@ public class CandleCacheService {
 	}
 
 
-	public void upsertCandle(CandleType type, String stockCode, Candle candle) {
+	// 🎯 void 대신 CandleWithMA<Candle>을 반환하도록 수정!
+	public CandleWithMA<Candle> upsertCandle(CandleType type, String stockCode, Candle candle) {
 		if (candle == null)
-			return;
+			return null;
 
 		Map<String, Deque<CandleWithMA<Candle>>> cacheMap = candleCache.getTypedStore(type);
-		cacheMap.compute(stockCode, (key, existing) -> {
+
+		// compute의 결과로 최종 갱신된 Deque를 받습니다.
+		Deque<CandleWithMA<Candle>> finalDeque = cacheMap.compute(stockCode, (key, existing) -> {
 			Deque<CandleWithMA<Candle>> deque = existing == null ? new ArrayDeque<>() : existing;
 
 			if (!deque.isEmpty() && deque.getLast().getCandle().getCandleTime().equals(candle.getCandleTime())) {
-				log.info("[{}] {}분봉 큐 동일한 그룹이라 마지막 삭제 전 {}", stockCode, type.getMinute(), deque.size());
 				deque.removeLast();
-				log.info("[{}] {}분봉 큐 동일한 그룹이라 마지막 삭제 후 {}", stockCode, type.getMinute(), deque.size());
 			}
 
 			CandleWithMA<Candle> wrapped = calculateLiveMA(deque, candle, type);
-
 			deque.addLast(wrapped);
-			log.info("[{}] {}분봉 큐 추가 {}", stockCode, type.getMinute(), deque.size());
-			if (log.isInfoEnabled()) {
-				String queueDetails = deque.stream()
-						.map(c -> String.format("[%s -> MA:%s]", c.getCandle().getCandleTime(), c.getMa().toString()))
-						.collect(Collectors.joining(", "));
-				log.info("[{}] {}분봉 큐 전체 리스트 확인 (사이즈: {}) \n 👉 {}", stockCode, type.getMinute(), deque.size(),
-						queueDetails);
-			}
 
 			while (deque.size() > MAX_CACHE_SIZE) {
 				deque.removeFirst();
 			}
 			return deque;
 		});
+		return finalDeque != null ? finalDeque.getLast() : null;
 	}
 
 	/**

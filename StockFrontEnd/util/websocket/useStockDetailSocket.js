@@ -12,7 +12,6 @@ export function useStockDetailSocket(client, connected, initStock) {
     console.log('주식 한개 구독 시작:', initStock.stockCode);
 
     const subscription = client.subscribe(`/topic/stock/${initStock.stockCode}`, message => {
-      console.log("주식 한개 메세지 도착")
       const data = JSON.parse(message.body);
       setStock(prev => ({
         ...prev,

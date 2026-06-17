@@ -13,6 +13,7 @@ import Poi.Stock.util.EnumUtil.BotType;
 import Poi.Stock.util.EnumUtil.CandleType;
 import Poi.Stock.util.EnumUtil.MarketState;
 import Poi.Stock.util.EnumUtil.tradeType;
+import Poi.Stock.util.TickSizeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,7 +21,9 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public abstract class AbstractBot {
 
-    protected final BotOrderService botOrderService;
+	public abstract BotType getBotType();
+
+	protected final BotOrderService botOrderService;
     protected final BotCache botCache;
     protected final BotStockCache botStockCache;
     protected final BotService botService;
@@ -28,24 +31,28 @@ public abstract class AbstractBot {
     protected final BotHaveStockCache botHaveStockCache;
     protected final CandleCacheService candleCacheService;
     protected final AssignedCodeHolder assignedCodeHolder;
+	protected final String botId;
+	protected final int botBaseIntensity;
 
-    protected final Random random = new Random();
+	protected final Random random = new Random();
 
-    protected abstract String getBotId();
-
-	public abstract BotType getBotType();
-    protected abstract int getBotBaseIntensity();
-
-	protected abstract void executeTrade(StockRealTimeSnapshot stock, int currentPrice, int tickSize, MarketState state,
+	protected abstract void executeTrade(StockRealTimeSnapshot stock, int currentPrice, MarketState state,
 			int assetBonus, int finalIntensity);
 	protected abstract int getBuyBase();
 	protected abstract int getBuyRange();
 	protected abstract int getSellBase();
 	protected abstract int getSellRange();
 
-	protected abstract int getCancelHogaLevel(); // 현재가와 호가 벌어지면 취소
+	protected abstract int getCancelHogaLevel();
 
-	protected abstract int getMarketShockCancelProbability(); // 취소 처리될 확률 (%)
+	protected abstract int getMarketShockCancelProbability();
+
+	public String getBotId() {
+		return this.botId;
+	}
+	public int getBotBaseIntensity() {
+		return this.botBaseIntensity;
+	}
 
 	public void placeOrders() {
 		String botId = getBotId();
@@ -68,14 +75,13 @@ public abstract class AbstractBot {
 	protected void executeStrategy(StockRealTimeSnapshot stock) {
 		String stockCode = stock.getStockCode();
 		int currentPrice = stock.getCurrentPrice();
-		int tickSize = stock.getTickSize(currentPrice);
 
 		MarketState state = marketStateHolder.getState(stockCode);
 		Bot bot = botCache.get(getBotId());
 		int assetBonus = (int) Math.min(30, bot.getAsset() / 100_000);
 		int finalIntensity = getFinalIntensity(stockCode);
 
-		executeTrade(stock, currentPrice, tickSize, state, assetBonus, finalIntensity);
+		executeTrade(stock, currentPrice, state, assetBonus, finalIntensity);
 	}
 
 	protected int getFinalIntensity(String stockCode) {
@@ -93,34 +99,43 @@ public abstract class AbstractBot {
 	}
 
 	// 사는 가격 계산 (호가 단위 방어)
-	protected int calculateBuyPrice(int currentPrice, int tickSize, int finalIntensity) {
+	protected int calculateBuyPrice(int currentPrice, int finalIntensity) {
 	    int maxDiscountTicks = (100 - finalIntensity + random.nextInt(100)) / 10;
-	    
+
 	    if (maxDiscountTicks <= 0)
 	        maxDiscountTicks = 1;
-	        
+
 	    int randomTickCount = random.nextInt(maxDiscountTicks);
 
-		int targetPrice = currentPrice + tickSize - (randomTickCount * tickSize);
-		return Math.max(tickSize, targetPrice);
-	}
-	protected int calculateSellPrice(int currentPrice, int tickSize, int finalIntensity) {
-		int maxPremiumTicks = (100 - finalIntensity + random.nextInt(100)) / 10;
-		if (maxPremiumTicks <= 0)
-			maxPremiumTicks = 1;
-		int randomTickCount = random.nextInt(maxPremiumTicks);
-		return currentPrice - tickSize + (randomTickCount * tickSize);
+	    // 현재가에서 한 틱 위로 보정 후, randomTickCount만큼 아래로 이동
+	    int basePrice = TickSizeUtil.addTicks(currentPrice, 1);
+	    int targetPrice = TickSizeUtil.subtractTicks(basePrice, randomTickCount);
+
+	    return Math.max(TickSizeUtil.getTickSize(1), targetPrice);
 	}
 
-	protected void executeBuy(StockRealTimeSnapshot stock, int currentPrice, int tickSize, int finalIntensity) {
+	protected int calculateSellPrice(int currentPrice, int finalIntensity) {
+	    int maxPremiumTicks = (100 - finalIntensity + random.nextInt(100)) / 10;
+	    if (maxPremiumTicks <= 0)
+	        maxPremiumTicks = 1;
+
+	    int randomTickCount = random.nextInt(maxPremiumTicks);
+
+	    // 현재가에서 한 틱 아래로 보정 후, randomTickCount만큼 위로 이동
+	    int basePrice = TickSizeUtil.subtractTicks(currentPrice, 1);
+	    return TickSizeUtil.addTicks(basePrice, randomTickCount);
+	}
+
+	protected void executeBuy(StockRealTimeSnapshot stock, int currentPrice, int finalIntensity) {
 		String stockCode = stock.getStockCode();
 		int quantity = calculateQuantity(getBuyBase(), getBuyRange(), finalIntensity);
-		int price = calculateBuyPrice(currentPrice, tickSize, finalIntensity);
+		int price = calculateBuyPrice(currentPrice, finalIntensity);
 		if (botService.canBuy(getBotId(), price, quantity)) {
 			botOrderService.placeOrder(getBotId(), stockCode, stock.getStockName(), tradeType.BUY, price, quantity);
 		}
 	}
-	protected void executeSell(StockRealTimeSnapshot stock, int currentPrice, int tickSize, double maLow, double maMid,
+
+	protected void executeSell(StockRealTimeSnapshot stock, int currentPrice, double maLow, double maMid,
 			double maHigh, MarketState state, int assetBonus, int finalIntensity) {
 		String stockCode = stock.getStockCode();
 		BotHaveStock haveStock = botHaveStockCache.get(getBotId(), stockCode);
@@ -128,7 +143,7 @@ public abstract class AbstractBot {
 			return;
 		int quantity = calculateQuantity(getSellBase(), getSellRange(), finalIntensity);
 		quantity = Math.min(quantity, haveStock.getQuantity());
-		int price = calculateSellPrice(currentPrice, tickSize, finalIntensity);
+		int price = calculateSellPrice(currentPrice, finalIntensity);
 
 		if (botService.canSell(getBotId(), stockCode, quantity)) {
 			botOrderService.placeOrder(getBotId(), stockCode, stock.getStockName(), tradeType.SELL, price, quantity);

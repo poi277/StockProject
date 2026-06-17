@@ -18,6 +18,7 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
 import Poi.Stock.DTO.user.CandleDTO;
+import Poi.Stock.features.Candle.Entity.Candle;
 import Poi.Stock.features.Candle.Entity.CandleDay;
 import Poi.Stock.features.Candle.Entity.CandleHour;
 import Poi.Stock.features.Candle.Entity.CandleMinute;
@@ -25,6 +26,7 @@ import Poi.Stock.features.Candle.Entity.CandleWithMA;
 import Poi.Stock.features.Candle.repository.CandleDayRepository;
 import Poi.Stock.features.Candle.repository.CandleHourRepository;
 import Poi.Stock.features.Candle.repository.CandleMinuteRepository;
+import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.util.EnumUtil.CandleType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +43,7 @@ public class CandleSchedulerService {
 	private final CandleHourRepository candleHourRepository;
 	private final CandleDayRepository candleDayRepository;
 	private final CandleCacheService candleCacheService;
+	private final WebSocketService webSocketService;
 
 	private static final String UPDATE_CANDLE_SCRIPT = """
 			local candleKey   = KEYS[1]
@@ -135,6 +138,8 @@ public class CandleSchedulerService {
 
 		candlesByStockCode.forEach((stockCode, newCandles) -> {
 			// 1. 1분봉 캐시에 최신 데이터 적재
+			// (※ 만약 1분봉 마감도 웹소켓으로 쏴야 한다면, upsertCandles가 갱신된 리스트를 반환하게 하거나
+			// 루프를 돌며 낱개로 쏘아줄 수 있습니다. 우선 상위 분봉 매커니즘을 집중적으로 적용해볼게요.)
 			candleCacheService.upsertCandles(CandleType.ONE_MINUTE, stockCode, newCandles);
 
 			// 1분봉 캐시 리스트 가져오기 (이미 시간 오름차순 정렬 상태)
@@ -154,20 +159,21 @@ public class CandleSchedulerService {
 				Map<LocalDateTime, List<CandleMinute>> grouped = oneMinCache.stream().map(CandleWithMA::getCandle)
 						.collect(Collectors.groupingBy(c -> floorTime(c.getTime(), candleMinute)));
 
-				List<LocalDateTime> targetLocalDateTime = newCandles.stream().map(c -> floorTime(c.getTime(), candleMinute))
-						.distinct().toList();
+				List<LocalDateTime> targetLocalDateTime = newCandles.stream()
+						.map(c -> floorTime(c.getTime(), candleMinute)).distinct().toList();
 
 				for (LocalDateTime localDateTime : targetLocalDateTime) {
-
 					List<CandleMinute> livePieces = grouped.get(localDateTime);
 
 					if (livePieces == null || livePieces.isEmpty()) {
 						continue;
 					}
-
 					CandleMinute combinedCandle = toGroupedCandleMinute(livePieces, localDateTime);
-
-					candleCacheService.upsertCandle(candleType, stockCode, combinedCandle);
+					CandleWithMA<Candle> wrapped = candleCacheService.upsertCandle(candleType, stockCode,
+							combinedCandle);
+					if (wrapped != null) {
+						webSocketService.sendCompleteCandle(wrapped, stockCode, candleType);
+					}
 				}
 			}
 		});
@@ -231,6 +237,10 @@ public class CandleSchedulerService {
 					continue;
 				CandleHour candleHour = toCandleHour(stockCode, startTime, minutes);
 				candleHourRepository.save(candleHour);
+				CandleWithMA<Candle> wrapped = candleCacheService.upsertCandle(CandleType.HOUR, stockCode, candleHour);
+				if (wrapped != null) {
+					webSocketService.sendCompleteCandle(wrapped, stockCode, CandleType.HOUR);
+				}
 			} catch (Exception e) {
 				log.error("60분봉 집계 에러 - 종목: {} error: {}", stockCode, e.getMessage());
 			}
@@ -264,7 +274,11 @@ public class CandleSchedulerService {
 					continue;
 				CandleDay candleDay = toCandleDay(stockCode, today, dayMinutes);
 				candleDayRepository.save(candleDay);
-				candleCacheService.upsertCandle(CandleType.DAY, stockCode, candleDay);
+				CandleWithMA<Candle> wrapped = candleCacheService.upsertCandle(CandleType.DAY, stockCode, candleDay);
+				if (wrapped != null) {
+					webSocketService.sendCompleteCandle(wrapped, stockCode, CandleType.DAY);
+
+				}
 			} catch (Exception e) {
 				log.error("일봉 마감 에러 - 종목: {} error: {}", stockCode, e.getMessage());
 			}

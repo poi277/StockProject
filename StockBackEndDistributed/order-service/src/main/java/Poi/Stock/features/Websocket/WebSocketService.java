@@ -9,11 +9,14 @@ import org.springframework.stereotype.Service;
 import Poi.Stock.DTO.user.CandleDTO;
 import Poi.Stock.features.Bot.Bot;
 import Poi.Stock.features.Bot.BotCache;
+import Poi.Stock.features.Candle.Entity.Candle;
+import Poi.Stock.features.Candle.Entity.CandleWithMA;
 import Poi.Stock.features.Order.Order;
 import Poi.Stock.features.Order.OrderBookCache;
 import Poi.Stock.object.MatchingResult;
 import Poi.Stock.repository.OrderRepository;
 import Poi.Stock.repository.StockRepository;
+import Poi.Stock.util.EnumUtil.CandleType;
 import Poi.Stock.util.EnumUtil.OrderStatus;
 import Poi.Stock.util.EnumUtil.tradeType;
 import lombok.RequiredArgsConstructor;
@@ -46,9 +49,26 @@ public class WebSocketService {
 		payload.put("high", candleDTO.getHigh());
 		payload.put("close", candleDTO.getClose());
 		payload.put("buyQty", candleDTO.getBuyQty());
-		payload.put("sellQty", candleDTO.getBuyQty());
+		payload.put("sellQty", candleDTO.getSellQty());
 		payload.put("time", candleDTO.getTime());
 		System.out.println(payload);
+		messagingTemplate.convertAndSend("/topic/candle/" + stockCode, payload);
+	}
+
+	public void sendCompleteCandle(CandleWithMA<Candle> wrapped, String stockCode, CandleType candleType) {
+		if (wrapped == null || wrapped.getCandle() == null)
+			return;
+		Candle candle = wrapped.getCandle();
+		Map<String, Object> payload = new HashMap<>();
+		payload.put("open", candle.getOpen());
+		payload.put("high", candle.getHigh());
+		payload.put("low", candle.getLow());
+		payload.put("close", candle.getClose());
+		payload.put("sellQty", candle.getSellQty());
+		payload.put("buyQty", candle.getBuyQty());
+		payload.put("time", candle.getCandleTime() != null ? candle.getCandleTime().toString() : "");
+		payload.put("movingAverages", wrapped.getMa());
+		payload.put("candleType", candleType.name());
 		messagingTemplate.convertAndSend("/topic/candle/" + stockCode, payload);
 	}
 

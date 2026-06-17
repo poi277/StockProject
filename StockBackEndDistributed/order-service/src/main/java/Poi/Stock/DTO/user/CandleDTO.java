@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import Poi.Stock.features.Candle.Entity.Candle;
 import Poi.Stock.features.Candle.Entity.CandleDay;
+import Poi.Stock.features.Candle.Entity.CandleHour;
 import Poi.Stock.features.Candle.Entity.CandleMinute;
 import Poi.Stock.features.Candle.Entity.CandleWithMA;
 import lombok.AllArgsConstructor;
@@ -56,6 +57,11 @@ public class CandleDTO {
 		return of(getCandidateTimeStr(candle),
 				candle.getOpen(), candle.getHigh(), candle.getLow(), candle.getClose(), candle.getBuyQty(),
 				candle.getSellQty(), candle.getTotalVolume(), candle.getTradeAmount(), wrapped.getMa());
+	}
+
+	public static CandleDTO from(CandleHour candle) {
+		return of(candle.getTime().toString(), candle.getOpen(), candle.getHigh(), candle.getLow(), candle.getClose(),
+				candle.getSellQty(), candle.getBuyQty(), candle.getTotalVolume(), candle.getTradeAmount(), Map.of());
 	}
 
 	private static <T extends Candle> String getCandidateTimeStr(T candle) {

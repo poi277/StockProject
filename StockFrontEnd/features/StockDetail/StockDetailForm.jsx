@@ -7,8 +7,10 @@ import StockRollingBar from './StockRollingBar/StockRollingBar';
 import MainContent from './MainContent/MainContent';
 import '../../tossCss/toss-layout.css'
 import SideBar from '../UI/SideBar/SideBar';
+import { useStockDetail } from './StockHeader/useStockDetail';
 
-export default function StockDetailForm({ stock }) {
+export default function StockDetailForm({ initstock }) {
+  const {stock } = useStockDetail(initstock);
 
   return (
     <>
@@ -36,7 +38,7 @@ export default function StockDetailForm({ stock }) {
                 }}
               >
                 {/* 여기에 종목명, 가격 정보 등이 들어갑니다. */}
-                <StockPriceHeader initStock={stock} />
+                <StockPriceHeader stock={stock} />
               </div>
               {/* 여기에 차트/호가/종목정보/뉴스 탭 메뉴가 들어갑니다. */}
               <StockTabSelection />

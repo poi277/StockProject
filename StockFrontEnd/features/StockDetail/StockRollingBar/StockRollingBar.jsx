@@ -29,10 +29,10 @@ export default function StockRollingBar() {
             <span key={i} className="e9yr872">
               <a tabIndex="-1"  className="e9yr873"  href="/indices/RGI..DXY" >
                 <span className="tw3v-1r5dc8g0" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-grey700)', '--tds-wts-line-height': 1.45, '--tds-wts-font-size': '14px',}}>
-                  준찬이 엉덩이 때리기
+                  여기에 코스피
                 </span>
                 <span className="tw3v-1r5dc8g0 e9yr878" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-semibold)', '--tds-wts-foreground-color': 'var(--wts-adaptive-grey800)', '--tds-wts-line-height': 1.45, '--tds-wts-font-size': '14px',}}>
-                  찰싹
+                 넣으면 됩니다
                 </span>
                 <span className="tw3v-1r5dc8g0 e9yr879" style={{ '--tds-wts-font-weight': 'var(--tw-font-weight-medium)', '--tds-wts-foreground-color': 'var(--wts-adaptive-red500)', '--tds-wts-line-height': 1.45, '--tds-wts-font-size': '14px', }} >
                   +1 (1%)

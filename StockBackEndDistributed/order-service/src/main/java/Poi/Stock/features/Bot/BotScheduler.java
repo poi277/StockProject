@@ -18,7 +18,7 @@ public class BotScheduler {
 	private final BotCache botCache;
 
 	// 🎯 1. 개인 봇 매매 주기: 1초마다 실행 (fixedDelay = 1000)
-	@Scheduled(fixedDelay = 5000)
+	@Scheduled(fixedDelay = 1000)
 	public void runIndividualBots() {
 		List<AbstractBot> runningBots = botCache.getRunningBotsCache();
 
@@ -31,8 +31,8 @@ public class BotScheduler {
 		});
 	}
 
-	// 🎯 2. 외국인 봇 매매 주기: 2초마다 실행 (fixedDelay = 2000)
-	// @Scheduled(fixedDelay = 2000)
+	// 2. 외국인 봇 매매 주기: 2초마다 실행 (fixedDelay = 2000)
+	@Scheduled(fixedDelay = 2000)
 	public void runForeignBots() {
 		List<AbstractBot> runningBots = botCache.getRunningBotsCache();
 
@@ -45,8 +45,8 @@ public class BotScheduler {
 		});
 	}
 
-	// 🎯 3. 기관 봇 매매 주기: 10초마다 실행 (fixedDelay = 10000)
-	// @Scheduled(fixedDelay = 10000)
+	// 3. 기관 봇 매매 주기: 10초마다 실행 (fixedDelay = 10000)
+	@Scheduled(fixedDelay = 10000)
 	public void runInstitutionBots() {
 		List<AbstractBot> runningBots = botCache.getRunningBotsCache();
 
@@ -63,8 +63,8 @@ public class BotScheduler {
 	@Scheduled(fixedDelay = 30000)
 	public void updateMarketState() {
 		try {
-			// marketStateHolder.updateAllStocks();
-			marketStateHolder.updateRadomStocksState();
+			marketStateHolder.updateAllStocks();
+			// marketStateHolder.updateRadomStocksState();
 		} catch (Exception e) {
 			log.error("시장 상태 업데이트 오류: {}", e.getMessage());
 		}

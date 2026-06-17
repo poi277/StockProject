@@ -13,24 +13,13 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class IndividualBot extends AbstractBot {
-
-	private final String botId;
-
 	// 🎯 생성자 파라미터에 OrderCancelService 추가 및 super()에 전달
-	public IndividualBot(String botId, BotOrderService botOrderService, BotCache botCache, BotStockCache botStockCache,
-			BotService botService, MarketStateHolder marketStateHolder, BotHaveStockCache botHaveStockCache,
-			CandleCacheService candleCacheService, AssignedCodeHolder assignedCodeHolder) {
-
-		// 🎯 부모 생성자 규격(8개 인자)에 정확히 맞춰서 넘겨줍니다. 맨 뒤의 중복 botService 제거!
+	public IndividualBot(String botId, int botBaseIntensity, BotOrderService botOrderService, BotCache botCache,
+			BotStockCache botStockCache, BotService botService, MarketStateHolder marketStateHolder,
+			BotHaveStockCache botHaveStockCache, CandleCacheService candleCacheService,
+			AssignedCodeHolder assignedCodeHolder) {
 		super(botOrderService, botCache, botStockCache, botService, marketStateHolder, botHaveStockCache,
-				candleCacheService, assignedCodeHolder);
-
-		this.botId = botId;
-	}
-
-	@Override
-	protected String getBotId() {
-		return this.botId;
+				candleCacheService, assignedCodeHolder, botId, botBaseIntensity);
 	}
 
 	@Override
@@ -46,11 +35,6 @@ public class IndividualBot extends AbstractBot {
 	@Override
 	public BotType getBotType() {
 		return BotType.INDIVIDUAL;
-	}
-
-	@Override
-	protected int getBotBaseIntensity() {
-		return 60;
 	}
 
 	@Override
@@ -79,17 +63,17 @@ public class IndividualBot extends AbstractBot {
 	}
 
 	@Override
-	protected int calculateBuyPrice(int currentPrice, int tickSize, int finalIntensity) {
-		return super.calculateBuyPrice(currentPrice, tickSize, finalIntensity);
+	protected int calculateBuyPrice(int currentPrice, int finalIntensity) {
+		return super.calculateBuyPrice(currentPrice, finalIntensity);
 	}
 
 	@Override
-	protected int calculateSellPrice(int currentPrice, int tickSize, int finalIntensity) {
-		return super.calculateSellPrice(currentPrice, tickSize, finalIntensity);
+	protected int calculateSellPrice(int currentPrice, int finalIntensity) {
+		return super.calculateSellPrice(currentPrice, finalIntensity);
 	}
 
 	@Override
-	protected void executeTrade(StockRealTimeSnapshot stock, int currentPrice, int tickSize, MarketState state,
+	protected void executeTrade(StockRealTimeSnapshot stock, int currentPrice, MarketState state,
 			int assetBonus, int finalIntensity) {
 		String stockCode = stock.getStockCode();
 
@@ -101,8 +85,8 @@ public class IndividualBot extends AbstractBot {
 		TradeDecision decision = decideAction(currentPrice, ma5, ma20, ma60, state, assetBonus);
 
 		switch (decision) {
-		case BUY -> executeBuy(stock, currentPrice, tickSize, finalIntensity);
-		case SELL -> executeSell(stock, currentPrice, tickSize, ma5, ma20, ma60, state, assetBonus, finalIntensity);
+		case BUY -> executeBuy(stock, currentPrice, finalIntensity);
+		case SELL -> executeSell(stock, currentPrice, ma5, ma20, ma60, state, assetBonus, finalIntensity);
 		case HOLD -> log.debug("관망 - stockCode: {}", stockCode);
 		}
 	}
