@@ -1,9 +1,46 @@
 'use client'
 
 import { useEffect, useCallback, useRef } from "react";
-import { getCandleApi,getCandleInitApi } from "../../../lib/candle";
+import { getCandleApi, getCandleInitApi } from "../../../lib/candle";
 import { useCandleSocket } from "../../../util/websocket/useCandleSocket";
 import { useOrderWebSocket } from "../../../util/websocket/context/OrderWebSocketContext";
+
+const MA_PERIODS = [5, 20, 60];
+
+function calculateLiveMA(confirmedCandles, currentCandle) {
+    const ma = {};
+    const closes = confirmedCandles.map(c => c.close);
+
+    for (const period of MA_PERIODS) {
+        const recentCloses = closes.slice(-(period - 1));
+        const allCloses = [...recentCloses, currentCandle.close];
+        const sum = allCloses.reduce((a, b) => a + b, 0);
+        ma[period] = Math.round((sum / allCloses.length) * 100) / 100;
+    }
+
+    return ma;
+}
+
+// 🎯 MA가 5/20/60 전부 채워져 있는지 확인 (빈 객체 {}도 비어있는 것으로 취급)
+function hasFullMA(candle) {
+    return !!candle.movingAverages
+        && Object.keys(candle.movingAverages).length > 0
+        && MA_PERIODS.every(p => candle.movingAverages[p] != null);
+}
+
+// 🎯 캔들 배열의 마지막 항목에 MA가 없으면 직전 항목들 기준으로 직접 계산해서 채움
+function enrichLastCandleMA(candles) {
+    if (!candles || candles.length === 0) return candles;
+
+    const last = candles[candles.length - 1];
+    if (hasFullMA(last)) return candles;
+
+    const confirmedCandles = candles.slice(0, -1);
+    const liveMA = calculateLiveMA(confirmedCandles, last);
+    const enrichedLast = { ...last, movingAverages: liveMA };
+
+    return [...confirmedCandles, enrichedLast];
+}
 
 class Datafeed {
     constructor() {
@@ -26,20 +63,20 @@ class Datafeed {
         this._isLoading = true;
         const endTime = new Date(this._earliestTime);
         const startTime = new Date(this._earliestTime);
-        
-        // 🎯 [서버 부하 경감 최적화] 드래그 시 청크 단위로 120분(2시간) 치 데이터를 한 번에 요청
+
         startTime.setMinutes(startTime.getMinutes() - 120);
         this._earliestTime = startTime;
 
         try {
             const res = await fetchFn(stockCode, type, startTime, endTime);
             if (res.data?.length) {
-                // 가져온 과거 데이터를 배열 맨 앞에 결합
-                this._candles = [...res.data, ...this._candles];
+                // 🎯 prepend되는 과거 청크의 마지막 항목도 MA 보정
+                const enrichedData = enrichLastCandleMA(res.data);
+                this._candles = [...enrichedData, ...this._candles];
             }
         } catch (err) {
             console.error(err);
-            this._earliestTime = endTime; // 실패 시 타임라인 롤백 방어
+            this._earliestTime = endTime;
         } finally {
             this._isLoading = false;
         }
@@ -51,18 +88,48 @@ class Datafeed {
         return this._candles;
     }
 
+    // 🎯 완성봉 도착 — 동일 시간의 봉을 정확히 찾아 교체 (없으면 추가)
+    addCompletedCandle(completedCandle) {
+        const candles = this._candles;
+        const toUnix = (timeStr) => Math.floor(new Date(timeStr).getTime() / 1000);
+        const targetUnix = toUnix(completedCandle.time);
+
+        const idx = candles.findIndex(c => toUnix(c.time) === targetUnix);
+
+        if (idx === -1) {
+            this._candles = [...candles, completedCandle];
+        } else {
+            this._candles = [
+                ...candles.slice(0, idx),
+                completedCandle,
+                ...candles.slice(idx + 1),
+            ];
+        }
+    }
+
+    // 🎯 실시간 틱 도착 — 직전 확정봉들 기반으로 MA 직접 계산
     addLiveCandle(liveCandle) {
         const candles = this._candles;
-        if (candles.length === 0) return;
-        const last = candles[candles.length - 1];
-        
-        // 시간 비교를 위해 Unix 타임스탬프로 변환 후 마지막 캔들 업데이트 또는 신규 추가
         const toUnix = (timeStr) => Math.floor(new Date(timeStr).getTime() / 1000);
-        
+
+        const confirmedCandles = candles.length > 0 &&
+            toUnix(candles[candles.length - 1].time) === toUnix(liveCandle.time)
+            ? candles.slice(0, -1)
+            : candles;
+
+        const liveMA = calculateLiveMA(confirmedCandles, liveCandle);
+        const enrichedCandle = { ...liveCandle, movingAverages: liveMA };
+
+        if (candles.length === 0) {
+            this._candles = [enrichedCandle];
+            return;
+        }
+
+        const last = candles[candles.length - 1];
         if (toUnix(last.time) === toUnix(liveCandle.time)) {
-            this._candles = [...candles.slice(0, -1), liveCandle];
+            this._candles = [...candles.slice(0, -1), enrichedCandle];
         } else {
-            this._candles = [...candles, liveCandle];
+            this._candles = [...candles, enrichedCandle];
         }
     }
 }
@@ -71,7 +138,7 @@ export default function useCandle(stockCode, type = "ONE_MINUTE") {
     const datafeedRef = useRef(new Datafeed());
     const onCandleUpdateRef = useRef(null);
     const { client, connected } = useOrderWebSocket();
-    const { liveCandle } = useCandleSocket(client, connected, stockCode);
+    const { liveCandle, completedCandle } = useCandleSocket(client, connected, stockCode, type);
 
     const setOnCandleUpdate = useCallback((cb) => {
         onCandleUpdateRef.current = cb;
@@ -81,13 +148,10 @@ export default function useCandle(stockCode, type = "ONE_MINUTE") {
         if (!stockCode) return;
         datafeedRef.current = new Datafeed();
         try {
-            const endTime = new Date();
-            const startTime = new Date();
-            startTime.setMinutes(startTime.getMinutes() - 600);
             const res = await getCandleInitApi(stockCode, type);
-            console.log(res)
-            datafeedRef.current.setInitialData(res.data);
-            onCandleUpdateRef.current?.({ type: 'init', candles: res.data });
+            const enrichedCandles = enrichLastCandleMA(res.data); // 🎯 init 마지막 봉 MA 보정
+            datafeedRef.current.setInitialData(enrichedCandles);
+            onCandleUpdateRef.current?.({ type: 'init', candles: enrichedCandles });
         } catch (err) {
             console.error(err);
         }
@@ -98,13 +162,19 @@ export default function useCandle(stockCode, type = "ONE_MINUTE") {
     }, [fetchInitialCandles]);
 
     useEffect(() => {
+        if (!completedCandle) return;
+        datafeedRef.current.addCompletedCandle(completedCandle);
+        onCandleUpdateRef.current?.({ type: 'completed', candles: datafeedRef.current.getCandles() });
+    }, [completedCandle]);
+
+    useEffect(() => {
         if (!liveCandle) return;
         datafeedRef.current.addLiveCandle(liveCandle);
-        onCandleUpdateRef.current?.({ type: 'live', candle: liveCandle });
+        const enriched = datafeedRef.current.getCandles().slice(-1)[0];
+        onCandleUpdateRef.current?.({ type: 'live', candle: enriched });
     }, [liveCandle]);
 
-    // 🎯 외부(Component)에서 프로미스 제어를 할 수 있도록 async/await 흐름 보장 및 데이터 반환
-        const loadMoreCandles = useCallback(async () => {
+    const loadMoreCandles = useCallback(async () => {
         const allCandles = await datafeedRef.current.loadMore(stockCode, type, getCandleApi);
         onCandleUpdateRef.current?.({ type: 'prepend', candles: allCandles });
         return allCandles;

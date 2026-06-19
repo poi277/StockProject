@@ -137,16 +137,13 @@ public class CandleSchedulerService {
 				.collect(Collectors.groupingBy(CandleMinute::getStockCode));
 
 		candlesByStockCode.forEach((stockCode, newCandles) -> {
-			// 1. 1분봉 캐시에 최신 데이터 적재
-			// (※ 만약 1분봉 마감도 웹소켓으로 쏴야 한다면, upsertCandles가 갱신된 리스트를 반환하게 하거나
-			// 루프를 돌며 낱개로 쏘아줄 수 있습니다. 우선 상위 분봉 매커니즘을 집중적으로 적용해볼게요.)
 			candleCacheService.upsertCandles(CandleType.ONE_MINUTE, stockCode, newCandles);
-
-			// 1분봉 캐시 리스트 가져오기 (이미 시간 오름차순 정렬 상태)
 			List<CandleWithMA<CandleMinute>> oneMinCache = candleCacheService.getCandles(CandleType.ONE_MINUTE,
 					stockCode);
 			if (oneMinCache.isEmpty())
 				return;
+			CandleWithMA<CandleMinute> latestOneMin = oneMinCache.get(oneMinCache.size() - 1);
+			webSocketService.sendCompleteCandle((CandleWithMA) latestOneMin, stockCode, CandleType.ONE_MINUTE);
 
 			// 2. 상위 분봉 동적 순회 (3, 5, 10, 30, 60 등)
 			for (CandleType candleType : CandleType.values()) {

@@ -8,6 +8,7 @@ import MainContent from './MainContent/MainContent';
 import '../../tossCss/toss-layout.css'
 import SideBar from '../UI/SideBar/SideBar';
 import { useStockDetail } from './StockHeader/useStockDetail';
+import ChartSelectMenu from './Chart/ChartSelectMenu';
 
 export default function StockDetailForm({ initstock }) {
   const {stock } = useStockDetail(initstock);
@@ -19,7 +20,8 @@ export default function StockDetailForm({ initstock }) {
           <div
             className="_2ozzgcf _2ozzgca _2ozzgch"
             style={{ '--_2ozzgcg': '42.046875' }}
-          >
+            >
+        
             <div
               className="_2x64iu3 _2x64iu1"
               data-section-name="종목상세"
@@ -42,20 +44,16 @@ export default function StockDetailForm({ initstock }) {
               </div>
               {/* 여기에 차트/호가/종목정보/뉴스 탭 메뉴가 들어갑니다. */}
               <StockTabSelection />
-
               {/* 3. 메인 콘텐츠 루트: div class="_2x64iu0" id="stock-contents-root" */}
               <div
                 className="_2x64iu0"
                 id="stock-contents-root"
                 data-nosnippet="true"
-
-              >
+                >
                 {/* 실제 차트나 호가 내용이 렌더링되는 지점입니다. */}
                 <MainContent stock={stock} />
               </div>
-
               {/* 4. 지수 롤링 바: div data-section-name="지수Rolling" */}
-
               <StockRollingBar />
               {/* 하단에 흐르는 지수 정보 영역입니다. */}
             </div>

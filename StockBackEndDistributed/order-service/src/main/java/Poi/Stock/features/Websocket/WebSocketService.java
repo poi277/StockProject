@@ -69,7 +69,7 @@ public class WebSocketService {
 		payload.put("time", candle.getCandleTime() != null ? candle.getCandleTime().toString() : "");
 		payload.put("movingAverages", wrapped.getMa());
 		payload.put("candleType", candleType.name());
-		messagingTemplate.convertAndSend("/topic/candle/" + stockCode, payload);
+		messagingTemplate.convertAndSend("/topic/candle/completed/" + stockCode, payload);
 	}
 
 	public void sendOrderUpdate(MatchingResult result) {

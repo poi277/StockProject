@@ -1,0 +1,12 @@
+.tw69-dsueog8[data-side=bottom], .tw69-dsueog8[data-side=top] {
+    padding: 8px 0;
+}
+
+[data-radix-scroll-area-viewport] {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+}
+.tw69-dsueogj[data-highlighted], .tw69-dsueogj[data-state=open], .tw69-dsueogj[data-tds-wts-dropdown-item-focus=""] {
+    background-color: var(--wts-adaptive-greyOpacity100);
+}

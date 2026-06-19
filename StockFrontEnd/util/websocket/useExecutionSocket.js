@@ -18,9 +18,6 @@ export function useExecutionSocket(client, connected, stockCode) {
         totalVolume: data.totalVolume,
         time: data.time,
       };
-
-      console.log('체결 데이터:', execution);
-
       setExecutions(prev => [execution, ...prev.slice(0, 99)]);
     });
 

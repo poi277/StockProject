@@ -158,57 +158,66 @@ export default function ChartComponent({ stockCode, type = 'ONE_MINUTE' }) {
     }
 
     setOnCandleUpdate((event) => {
-      if (event.type === 'init') {
-        const chartData = toChartData(event.candles);
-        const maData = toMAData(event.candles);
-        candleSeries.setData(chartData);
-        maSeries.ma5.setData(maData.ma5);
-        maSeries.ma20.setData(maData.ma20);
-        maSeries.ma60.setData(maData.ma60);
-        chart.timeScale().fitContent();
-        setTimeout(() => {
-          isReadyForLoadMore.current = true;
-        }, 500);
+  if (event.type === 'init') {
+    const chartData = toChartData(event.candles);
+    const maData = toMAData(event.candles);
+    candleSeries.setData(chartData);
+    maSeries.ma5.setData(maData.ma5);
+    maSeries.ma20.setData(maData.ma20);
+    maSeries.ma60.setData(maData.ma60);
+    chart.timeScale().fitContent();
+    setTimeout(() => {
+      isReadyForLoadMore.current = true;
+    }, 500);
 
-      } else if (event.type === 'live') {
-        const c = event.candle;
-        candleSeries.update({
-          time: toUnixTime(c.time),
-          open: c.open,
-          high: c.high,
-          low: c.low,
-          close: c.close,
-        });
-        if (c.movingAverages?.[5] != null) maSeries.ma5.update({ time: toUnixTime(c.time), value: c.movingAverages[5] });
-        if (c.movingAverages?.[20] != null) maSeries.ma20.update({ time: toUnixTime(c.time), value: c.movingAverages[20] });
-        if (c.movingAverages?.[60] != null) maSeries.ma60.update({ time: toUnixTime(c.time), value: c.movingAverages[60] });
-
-      } else if (event.type === 'prepend') {
-        const chartData = toChartData(event.candles);
-        const maData = toMAData(event.candles);
-        const timeScale = chart.timeScale();
-        const currentRange = timeScale.getVisibleLogicalRange();
-        const oldLength = candleSeries.data?.()?.length ?? 0;
-
-        candleSeries.setData(chartData);
-        maSeries.ma5.setData(maData.ma5);
-        maSeries.ma20.setData(maData.ma20);
-        maSeries.ma60.setData(maData.ma60);
-
-        const newLength = chartData.length;
-        const addedCount = newLength - oldLength;
-        if (currentRange && addedCount > 0) {
-          timeScale.setVisibleLogicalRange({
-            from: currentRange.from + addedCount,
-            to: currentRange.to + addedCount,
-          });
-        }
-
-        setTimeout(() => {
-          isLoadingRef.current = false;
-        }, 300);
-      }
+  } else if (event.type === 'live') {
+    const c = event.candle;
+    candleSeries.update({
+      time: toUnixTime(c.time),
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close,
     });
+    if (c.movingAverages?.[5] != null) maSeries.ma5.update({ time: toUnixTime(c.time), value: c.movingAverages[5] });
+    if (c.movingAverages?.[20] != null) maSeries.ma20.update({ time: toUnixTime(c.time), value: c.movingAverages[20] });
+    if (c.movingAverages?.[60] != null) maSeries.ma60.update({ time: toUnixTime(c.time), value: c.movingAverages[60] });
+
+  } else if (event.type === 'completed') {
+    // 🎯 완성봉은 setData로 안전하게 전체 갱신 (update는 마지막 시점 이후만 가능해서 위험)
+    const chartData = toChartData(event.candles);
+    const maData = toMAData(event.candles);
+    candleSeries.setData(chartData);
+    maSeries.ma5.setData(maData.ma5);
+    maSeries.ma20.setData(maData.ma20);
+    maSeries.ma60.setData(maData.ma60);
+
+  } else if (event.type === 'prepend') {
+    const chartData = toChartData(event.candles);
+    const maData = toMAData(event.candles);
+    const timeScale = chart.timeScale();
+    const currentRange = timeScale.getVisibleLogicalRange();
+    const oldLength = candleSeries.data?.()?.length ?? 0;
+
+    candleSeries.setData(chartData);
+    maSeries.ma5.setData(maData.ma5);
+    maSeries.ma20.setData(maData.ma20);
+    maSeries.ma60.setData(maData.ma60);
+
+    const newLength = chartData.length;
+    const addedCount = newLength - oldLength;
+    if (currentRange && addedCount > 0) {
+      timeScale.setVisibleLogicalRange({
+        from: currentRange.from + addedCount,
+        to: currentRange.to + addedCount,
+      });
+    }
+
+    setTimeout(() => {
+      isLoadingRef.current = false;
+    }, 300);
+  }
+});
 
     chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
       if (!range) return;
