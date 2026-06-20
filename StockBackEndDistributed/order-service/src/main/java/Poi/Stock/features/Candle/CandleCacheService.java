@@ -23,12 +23,15 @@ public class CandleCacheService {
 
 	private static final int MAX_CACHE_SIZE = 100;
 
-	// 🎯 차트에 기본적으로 그려질 이동평균선 기간 설정 (5선, 20선, 60선, 120선)
+	// 🎯 차트에 기본적으로 그려질 이동평균선 기간 설정 (5선, 20선, 60선)
 	private static final List<Integer> MA_PERIODS = List.of(5, 20, 60);
 
 	private final CandleCache candleCache;
 
-	public void putCandles(CandleType type, String stockCode, List<? extends Candle> candles) {
+	/**
+	 * 캐시 일괄 생성 및 적재
+	 */
+	public void putCandles(CandleType type, String stockCode, List<Candle> candles) {
 		if (candles == null || candles.isEmpty())
 			return;
 
@@ -38,17 +41,16 @@ public class CandleCacheService {
 		log.info("========== [putCandles 시작] 종목: {}, 타입: {}, 입력 캔들 개수: {} ==========", stockCode, type, candles.size());
 
 		for (Candle candle : candles) {
+			// 동일 시간 데이터가 이미 있으면 마지막 칸 초기화
 			if (!deque.isEmpty() && deque.getLast().getCandle().getCandleTime().equals(candle.getCandleTime())) {
 				deque.removeLast();
 			}
 
-			// 1. 실시간 이평선 계산 수행
-			CandleWithMA<Candle> wrapped = calculateLiveMA(deque, candle, type);
+			// 1. 실시간 이평선 계산 및 랩핑
+			CandleWithMA<Candle> wrapped = calculateLiveMA(deque, candle);
 
-			// 개별 캔들마다 이평선이 잘 계산되었는지 확인
 			log.info("[캐시 적재 중] 시간: {}, 종가: {}, 계산된 이평선(MA): {}", candle.getCandleTime(), candle.getClose(),
-					wrapped.getMa()
-			);
+					wrapped.getMa());
 
 			deque.addLast(wrapped);
 
@@ -56,6 +58,7 @@ public class CandleCacheService {
 				deque.removeFirst();
 			}
 		}
+
 		log.info("[캐시 최종 저장] 종목: {}, 최종 데크 크기: {}", stockCode, deque.size());
 		if (!deque.isEmpty()) {
 			log.info("[캐시 맨 마지막 데이터 확인] 시간: {}, MA: {}", deque.getLast().getCandle().getCandleTime(),
@@ -66,7 +69,10 @@ public class CandleCacheService {
 		cacheMap.put(stockCode, deque);
 	}
 
-	public void upsertCandles(CandleType type, String stockCode, List<? extends Candle> newCandles) {
+	/**
+	 * 복수 캔들 업서트 (캐시 갱신)
+	 */
+	public void upsertCandles(CandleType type, String stockCode, List<Candle> newCandles) {
 		if (newCandles == null || newCandles.isEmpty())
 			return;
 
@@ -75,15 +81,12 @@ public class CandleCacheService {
 			Deque<CandleWithMA<Candle>> deque = existing == null ? new ArrayDeque<>() : existing;
 
 			for (Candle newCandle : newCandles) {
-
-				if (!deque.isEmpty()) {
-					String lastTime = deque.getLast().getCandle().getCandleTime();
-					if (lastTime.equals(newCandle.getCandleTime())) {
-						deque.removeLast();
-					}
+				if (!deque.isEmpty() && deque.getLast().getCandle().getCandleTime().equals(newCandle.getCandleTime())) {
+					deque.removeLast();
 				}
-				CandleWithMA<Candle> wrapped = calculateLiveMA(deque, newCandle, type);
+				CandleWithMA<Candle> wrapped = calculateLiveMA(deque, newCandle);
 				deque.addLast(wrapped);
+
 				while (deque.size() > MAX_CACHE_SIZE) {
 					deque.removeFirst();
 				}
@@ -101,15 +104,15 @@ public class CandleCacheService {
 		});
 	}
 
-
-	// 🎯 void 대신 CandleWithMA<Candle>을 반환하도록 수정!
+	/**
+	 * 단일 캔들 업서트 후 최신 갱신 본 반환
+	 */
 	public CandleWithMA<Candle> upsertCandle(CandleType type, String stockCode, Candle candle) {
 		if (candle == null)
 			return null;
 
 		Map<String, Deque<CandleWithMA<Candle>>> cacheMap = candleCache.getTypedStore(type);
 
-		// compute의 결과로 최종 갱신된 Deque를 받습니다.
 		Deque<CandleWithMA<Candle>> finalDeque = cacheMap.compute(stockCode, (key, existing) -> {
 			Deque<CandleWithMA<Candle>> deque = existing == null ? new ArrayDeque<>() : existing;
 
@@ -117,7 +120,7 @@ public class CandleCacheService {
 				deque.removeLast();
 			}
 
-			CandleWithMA<Candle> wrapped = calculateLiveMA(deque, candle, type);
+			CandleWithMA<Candle> wrapped = calculateLiveMA(deque, candle);
 			deque.addLast(wrapped);
 
 			while (deque.size() > MAX_CACHE_SIZE) {
@@ -125,11 +128,12 @@ public class CandleCacheService {
 			}
 			return deque;
 		});
+
 		return finalDeque != null ? finalDeque.getLast() : null;
 	}
 
 	/**
-	 * 평소 경계선 사이일 때, 큐의 맨 마지막(오른쪽) 칸만 실시간 미확정 데이터로 갱신하는 메서드
+	 * 미확정 봉 실시간 업데이트 (마지막 칸 리프레시용)
 	 */
 	public void updateLastCandle(CandleType type, String stockCode, Candle candle) {
 		if (candle == null)
@@ -139,51 +143,51 @@ public class CandleCacheService {
 		cacheMap.compute(stockCode, (key, existing) -> {
 			Deque<CandleWithMA<Candle>> deque = existing == null ? new ArrayDeque<>() : existing;
 			if (!deque.isEmpty()) {
-				deque.removeLast(); // 현재 미완성 상태인 마지막 칸을 제거하고
+				deque.removeLast();
 			}
-			// 새로 빌드된 합산 본으로 덮어쓰기 (이평선 재계산 포함)
-			CandleWithMA<Candle> wrapped = calculateLiveMA(deque, candle, type);
+			CandleWithMA<Candle> wrapped = calculateLiveMA(deque, candle);
 			deque.addLast(wrapped);
 			return deque;
 		});
 	}
 
-
-	@SuppressWarnings("unchecked")
-	public <T extends Candle> List<CandleWithMA<T>> getCandles(CandleType type, String stockCode) {
-		Map<String, Deque<CandleWithMA<T>>> cacheMap = candleCache.getTypedStore(type);
+	/**
+	 * [리팩토링] 와일드카드와 T를 지우고 무조건 명확한 Candle 기반 리스트로 반환
+	 */
+	public List<CandleWithMA<Candle>> getCandles(CandleType type, String stockCode) {
+		Map<String, Deque<CandleWithMA<Candle>>> cacheMap = candleCache.getTypedStore(type);
 		if (cacheMap == null)
 			return List.of();
 
-		Deque<CandleWithMA<T>> deque = cacheMap.get(stockCode);
+		Deque<CandleWithMA<Candle>> deque = cacheMap.get(stockCode);
 		if (deque == null || deque.isEmpty())
 			return List.of();
 
 		return new ArrayList<>(deque);
 	}
 
-	private CandleWithMA<Candle> calculateLiveMA(Deque<CandleWithMA<Candle>> deque, Candle newCandle, CandleType type) {
+	/**
+	 * 실시간 이동평균선(MA) 계산 연산 로직 (기존 내부 인자 정리)
+	 */
+	private CandleWithMA<Candle> calculateLiveMA(Deque<CandleWithMA<Candle>> deque, Candle newCandle) {
 		Map<Integer, Double> maMap = new HashMap<>();
 		List<Integer> prices = new ArrayList<>(deque.stream().map(c -> c.getCandle().getClose()).toList());
 
-		int newPrice = newCandle.getClose();
-		prices.add(newPrice);
-
+		prices.add(newCandle.getClose());
 		int totalSize = prices.size();
-		// 2. 이평선 기간 순회 (5, 20, 60, 120)
+
 		for (int period : MA_PERIODS) {
 			double avg;
 
-			// 데이터가 충분히 쌓였을 때 (정석 이평선 계산)
+			// 데이터가 충분히 쌓였을 때
 			if (totalSize >= period) {
 				long sum = 0;
-				// 딱 필요한 기간(최신 N개)만큼만 깔끔하게 합산
 				for (int i = totalSize - period; i < totalSize; i++) {
 					sum += prices.get(i);
 				}
 				avg = (double) sum / period;
 			}
-			// 데이터가 아직 부족할 때 (현재까지 쌓인 개수만큼만 누적 평균)
+			// 데이터가 아직 부족할 때 (누적 평균 처리)
 			else {
 				long sum = 0;
 				for (int price : prices) {
@@ -192,7 +196,6 @@ public class CandleCacheService {
 				avg = (double) sum / totalSize;
 			}
 
-			// 소수점 둘째 자리 반올림 후 저장
 			maMap.put(period, Math.round(avg * 100) / 100.0);
 		}
 

@@ -32,21 +32,30 @@ public class EnumUtil {
 	}
 
 	public enum CandleType {
-		ONE_MINUTE(1), THREE_MINUTE(3), FIVE_MINUTE(5), TEN_MINUTE(10),
-		HOUR(0), DAY(0), WEEK(0), MONTH(0), YEAR(0);
-
+		ONE_MINUTE(1, 0), THREE_MINUTE(3, 0), FIVE_MINUTE(5, 0), TEN_MINUTE(10, 0), HOUR(0, 1), TWO_HOUR(0, 2),
+		THREE_HOUR(0, 3), FOUR_HOUR(0, 4), DAY(0, 0), WEEK(0, 0), MONTH(0, 0), YEAR(0, 0);
 		private final int minute;
+		private final int hourGroup;
 
-		CandleType(int minute) {
+		CandleType(int minute, int hourGroup) {
 			this.minute = minute;
+			this.hourGroup = hourGroup;
 		}
 
 		public int getMinute() {
 			return minute;
 		}
 
+		public int getHourGroup() {
+			return hourGroup;
+		}
+
 		public boolean isMinuteType() {
 			return minute > 0;
+		}
+
+		public boolean isHourType() {
+			return hourGroup > 0;
 		}
 	}
 

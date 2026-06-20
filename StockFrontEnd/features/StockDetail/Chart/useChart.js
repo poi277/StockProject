@@ -4,6 +4,7 @@ import { useEffect, useCallback, useRef } from "react";
 import { getCandleApi, getCandleInitApi } from "../../../lib/candle";
 import { useCandleSocket } from "../../../util/websocket/useCandleSocket";
 import { useOrderWebSocket } from "../../../util/websocket/context/OrderWebSocketContext";
+import useChartButtonStore from "../../../store/chartButtonStore";
 
 const MA_PERIODS = [5, 20, 60];
 
@@ -21,14 +22,12 @@ function calculateLiveMA(confirmedCandles, currentCandle) {
     return ma;
 }
 
-// 🎯 MA가 5/20/60 전부 채워져 있는지 확인 (빈 객체 {}도 비어있는 것으로 취급)
 function hasFullMA(candle) {
     return !!candle.movingAverages
         && Object.keys(candle.movingAverages).length > 0
         && MA_PERIODS.every(p => candle.movingAverages[p] != null);
 }
 
-// 🎯 캔들 배열의 마지막 항목에 MA가 없으면 직전 항목들 기준으로 직접 계산해서 채움
 function enrichLastCandleMA(candles) {
     if (!candles || candles.length === 0) return candles;
 
@@ -70,7 +69,6 @@ class Datafeed {
         try {
             const res = await fetchFn(stockCode, type, startTime, endTime);
             if (res.data?.length) {
-                // 🎯 prepend되는 과거 청크의 마지막 항목도 MA 보정
                 const enrichedData = enrichLastCandleMA(res.data);
                 this._candles = [...enrichedData, ...this._candles];
             }
@@ -88,7 +86,6 @@ class Datafeed {
         return this._candles;
     }
 
-    // 🎯 완성봉 도착 — 동일 시간의 봉을 정확히 찾아 교체 (없으면 추가)
     addCompletedCandle(completedCandle) {
         const candles = this._candles;
         const toUnix = (timeStr) => Math.floor(new Date(timeStr).getTime() / 1000);
@@ -107,7 +104,6 @@ class Datafeed {
         }
     }
 
-    // 🎯 실시간 틱 도착 — 직전 확정봉들 기반으로 MA 직접 계산
     addLiveCandle(liveCandle) {
         const candles = this._candles;
         const toUnix = (timeStr) => Math.floor(new Date(timeStr).getTime() / 1000);
@@ -134,7 +130,9 @@ class Datafeed {
     }
 }
 
-export default function useCandle(stockCode, type = "ONE_MINUTE") {
+export default function useCandle(stockCode) {
+    const type = useChartButtonStore((state) => state.selectedChartTime);
+
     const datafeedRef = useRef(new Datafeed());
     const onCandleUpdateRef = useRef(null);
     const { client, connected } = useOrderWebSocket();
@@ -145,11 +143,11 @@ export default function useCandle(stockCode, type = "ONE_MINUTE") {
     }, []);
 
     const fetchInitialCandles = useCallback(async () => {
-        if (!stockCode) return;
+        if (!stockCode || !type) return;
         datafeedRef.current = new Datafeed();
         try {
             const res = await getCandleInitApi(stockCode, type);
-            const enrichedCandles = enrichLastCandleMA(res.data); // 🎯 init 마지막 봉 MA 보정
+            const enrichedCandles = enrichLastCandleMA(res.data);
             datafeedRef.current.setInitialData(enrichedCandles);
             onCandleUpdateRef.current?.({ type: 'init', candles: enrichedCandles });
         } catch (err) {

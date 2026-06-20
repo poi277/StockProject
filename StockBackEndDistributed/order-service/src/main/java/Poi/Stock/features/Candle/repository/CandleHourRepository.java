@@ -19,4 +19,6 @@ public interface CandleHourRepository extends JpaRepository<CandleHour, Long> {
 	// 스케줄러 집계 시 필요한 유효한 종목 코드 목록 추출
 	@Query("SELECT DISTINCT c.stockCode FROM CandleHour c")
 	List<String> findDistinctStockCodes();
+
+	List<CandleHour> findTop100ByStockCodeOrderByTimeDesc(String stockCode);
 }

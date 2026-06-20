@@ -104,7 +104,7 @@ function toMAData(candles) {
   };
 }
 
-export default function ChartComponent({ stockCode, type = 'ONE_MINUTE' }) {
+export default function ChartComponent({ stockCode }) {
   const containerRef = useRef(null);
   const chartRef = useRef(null);
   const candleSeriesRef = useRef(null);
@@ -115,7 +115,7 @@ export default function ChartComponent({ stockCode, type = 'ONE_MINUTE' }) {
   const isLoadingRef = useRef(false);
   const currentMarginRef = useRef({ top: 0.15, bottom: 0.15 });
 
-  const { datafeedRef, loadMoreCandles, setOnCandleUpdate } = useCandle(stockCode, type);
+  const { datafeedRef, loadMoreCandles, setOnCandleUpdate } = useCandle(stockCode);
   const loadMoreCandlesRef = useRef(loadMoreCandles);
 
   useEffect(() => {

@@ -28,6 +28,7 @@ public class CandleController {
 			@RequestParam(name = "startTime", required = false) String startTime,
 			@RequestParam(name = "endTime", required = false) String endTime) {
 		// 기존 API는 false 전달
+		log.info("들어온 time {} {} {} ", startTime, endTime, type);
 		List<CandleDTO> data = candleService.getCandle(type, stockCode, startTime, endTime);
 		return ResponseEntity.ok(data);
 	}

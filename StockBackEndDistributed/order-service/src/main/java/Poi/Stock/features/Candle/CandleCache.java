@@ -23,7 +23,7 @@ public class CandleCache {
 		}
 	}
 	@SuppressWarnings("unchecked")
-	public <T extends Candle> Map<String, Deque<CandleWithMA<T>>> getTypedStore(CandleType type) {
-		return (Map<String, Deque<CandleWithMA<T>>>) (Map<?, ?>) candleWithMACache.get(type);
+	public <T extends Candle> Map<String, Deque<CandleWithMA<Candle>>> getTypedStore(CandleType type) {
+		return (Map<String, Deque<CandleWithMA<Candle>>>) (Map<?, ?>) candleWithMACache.get(type);
 	}
 }

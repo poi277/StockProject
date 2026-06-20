@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Component;
 
 import Poi.Stock.features.Candle.CandleCacheService;
-import Poi.Stock.features.Candle.Entity.CandleMinute;
+import Poi.Stock.features.Candle.Entity.Candle;
 import Poi.Stock.features.Candle.Entity.CandleWithMA;
 import Poi.Stock.util.EnumUtil.CandleType;
 import Poi.Stock.util.EnumUtil.MarketState;
@@ -44,7 +44,7 @@ public class MarketStateHolder {
 	}
 
 	public void updateMarketState(String stockCode) {
-		List<CandleWithMA<CandleMinute>> candles = candleCacheService.getCandles(CandleType.ONE_MINUTE, stockCode);
+		List<CandleWithMA<Candle>> candles = candleCacheService.getCandles(CandleType.ONE_MINUTE, stockCode);
 
 		if (candles == null || candles.isEmpty()) {
 			stateMap.put(stockCode, MarketState.FLAT);

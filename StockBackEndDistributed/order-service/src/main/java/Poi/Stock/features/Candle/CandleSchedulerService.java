@@ -76,6 +76,9 @@ public class CandleSchedulerService {
 			}
 			""";
 
+	/**
+	 * 실시간 체결 엔진 연동 - 미확정 캔들 Redis 적재 및 DTO 반환
+	 */
 	public CandleDTO saveCurrentCandle(String stockCode, int price, int buyQty, int sellQty, long tradeAmount,
 			LocalDateTime executionTime) {
 		LocalDateTime minuteTime = executionTime.withSecond(0).withNano(0);
@@ -92,6 +95,9 @@ public class CandleSchedulerService {
 				Integer.parseInt(result.get(2)), Integer.parseInt(result.get(3)), (long) sellQty, (long) buyQty);
 	}
 
+	/**
+	 * 스케줄러 - Redis 미확정 캔들 1분 주기로 DB 벌크 이관
+	 */
 	public List<CandleMinute> save1MinCandle(List<String> assignedCodes, LocalDateTime now) {
 		List<CandleMinute> savedCandles = new ArrayList<>();
 		Boolean lock = redisTemplate.opsForValue().setIfAbsent("lock:candle", "1", 10, TimeUnit.SECONDS);
@@ -129,21 +135,32 @@ public class CandleSchedulerService {
 		return savedCandles;
 	}
 
+	/**
+	 * 스케줄러 후처리 - 1분봉 기반 상위 멀티 분봉 캐시 동적 빌드 파이프라인
+	 */
 	public void updateMinuteCaches(List<CandleMinute> savedCandles) {
 		if (savedCandles == null || savedCandles.isEmpty())
 			return;
 
+		// 1. 종목 코드로 그룹핑
 		Map<String, List<CandleMinute>> candlesByStockCode = savedCandles.stream()
 				.collect(Collectors.groupingBy(CandleMinute::getStockCode));
 
 		candlesByStockCode.forEach((stockCode, newCandles) -> {
-			candleCacheService.upsertCandles(CandleType.ONE_MINUTE, stockCode, newCandles);
-			List<CandleWithMA<CandleMinute>> oneMinCache = candleCacheService.getCandles(CandleType.ONE_MINUTE,
-					stockCode);
+			// 안전하게 List<Candle> 형태로 전달하기 위해 변환
+			List<Candle> genericNewCandles = new ArrayList<>(newCandles);
+
+			// 1분봉 캐시 업서트
+			candleCacheService.upsertCandles(CandleType.ONE_MINUTE, stockCode, genericNewCandles);
+
+			// Candle 기반 인터페이스로 직접 조회
+			List<CandleWithMA<Candle>> oneMinCache = candleCacheService.getCandles(CandleType.ONE_MINUTE, stockCode);
 			if (oneMinCache.isEmpty())
 				return;
-			CandleWithMA<CandleMinute> latestOneMin = oneMinCache.get(oneMinCache.size() - 1);
-			webSocketService.sendCompleteCandle((CandleWithMA) latestOneMin, stockCode, CandleType.ONE_MINUTE);
+
+			// 1분봉의 최신 확정 데이터 추출 및 웹소켓 전송 (Raw Type 캐스팅 완전 제거)
+			CandleWithMA<Candle> latestOneMin = oneMinCache.get(oneMinCache.size() - 1);
+			webSocketService.sendCompleteCandle(latestOneMin, stockCode, CandleType.ONE_MINUTE);
 
 			// 2. 상위 분봉 동적 순회 (3, 5, 10, 30, 60 등)
 			for (CandleType candleType : CandleType.values()) {
@@ -154,6 +171,7 @@ public class CandleSchedulerService {
 
 				// 캐시 전체를 해당 분봉 기준으로 한번만 그룹핑
 				Map<LocalDateTime, List<CandleMinute>> grouped = oneMinCache.stream().map(CandleWithMA::getCandle)
+						.map(c -> (CandleMinute) c) // 내재 집계 연산을 위해 구체 클래스로 바인딩
 						.collect(Collectors.groupingBy(c -> floorTime(c.getTime(), candleMinute)));
 
 				List<LocalDateTime> targetLocalDateTime = newCandles.stream()
@@ -165,7 +183,10 @@ public class CandleSchedulerService {
 					if (livePieces == null || livePieces.isEmpty()) {
 						continue;
 					}
+					// [버그 수정] 내부에 정의된 toGroupedCandleMinute(List, LocalDateTime) 순서에 맞춰 파라미터 전달 정정
 					CandleMinute combinedCandle = toGroupedCandleMinute(livePieces, localDateTime);
+
+					// 상위 분봉 캐시 업서트 및 웹소켓 발행
 					CandleWithMA<Candle> wrapped = candleCacheService.upsertCandle(candleType, stockCode,
 							combinedCandle);
 					if (wrapped != null) {
@@ -176,6 +197,9 @@ public class CandleSchedulerService {
 		});
 	}
 
+	/**
+	 * 외부 호출용 분봉 리스트 컨버터
+	 */
 	public List<CandleMinute> convertToMinute(List<CandleMinute> minutes, int minute) {
 		if (minutes == null || minutes.isEmpty()) {
 			return List.of();
@@ -185,20 +209,19 @@ public class CandleSchedulerService {
 				.collect(Collectors.groupingBy(c -> floorTime(c.getTime(), minute), TreeMap::new, Collectors.toList()));
 
 		return grouped.entrySet().stream()
-				.map(entry -> toGroupedCandleMinute(entry.getValue(), entry.getKey()
-		)).toList();
+				.map(entry -> toGroupedCandleMinute(entry.getValue(), entry.getKey())).toList();
 	}
 
 	private LocalDateTime floorTime(LocalDateTime time, int minute) {
 		int totalMinutes = time.getHour() * 60 + time.getMinute();
-
 		int flooredMinutes = (totalMinutes / minute) * minute;
-
 		return time.withHour(flooredMinutes / 60).withMinute(flooredMinutes % 60).withSecond(0).withNano(0);
 	}
 
+	/**
+	 * 순수 1분봉 조각 묶음을 상위 분봉 단위로 머지 연산
+	 */
 	private CandleMinute toGroupedCandleMinute(List<CandleMinute> group, LocalDateTime candleTime) {
-
 		List<CandleMinute> sortedGroup = new ArrayList<>(group);
 		sortedGroup.sort(Comparator.comparing(CandleMinute::getTime));
 
@@ -209,13 +232,10 @@ public class CandleSchedulerService {
 		int close = last.getClose();
 
 		int high = sortedGroup.stream().mapToInt(CandleMinute::getHigh).max().orElse(open);
-
 		int low = sortedGroup.stream().mapToInt(CandleMinute::getLow).min().orElse(open);
 
 		long buyQty = sortedGroup.stream().mapToLong(c -> c.getBuyQty() != null ? c.getBuyQty() : 0L).sum();
-
 		long sellQty = sortedGroup.stream().mapToLong(c -> c.getSellQty() != null ? c.getSellQty() : 0L).sum();
-
 		long tradeAmount = sortedGroup.stream().mapToLong(c -> c.getTradeAmount() != null ? c.getTradeAmount() : 0L)
 				.sum();
 
@@ -223,6 +243,9 @@ public class CandleSchedulerService {
 				open, high, low, close, buyQty, sellQty, buyQty + sellQty, tradeAmount);
 	}
 
+	/**
+	 * 스케줄러 - 60분 주기로 시간봉 집계 및 캐시 싱크 마감
+	 */
 	public void saveHourlyCandles(List<String> assignedCodes) {
 		LocalDateTime now = LocalDateTime.now().withMinute(0).withSecond(0).withNano(0);
 		LocalDateTime startTime = now.minusHours(1);
@@ -234,6 +257,8 @@ public class CandleSchedulerService {
 					continue;
 				CandleHour candleHour = toCandleHour(stockCode, startTime, minutes);
 				candleHourRepository.save(candleHour);
+
+				// Candle 상위 도메인 인터페이스 캐시 컴포넌트 호출 파이프라인 정형화
 				CandleWithMA<Candle> wrapped = candleCacheService.upsertCandle(CandleType.HOUR, stockCode, candleHour);
 				if (wrapped != null) {
 					webSocketService.sendCompleteCandle(wrapped, stockCode, CandleType.HOUR);
@@ -259,6 +284,9 @@ public class CandleSchedulerService {
 				tradeAmount);
 	}
 
+	/**
+	 * 스케줄러 - 장마감 후 일봉 정산 및 캐시 동기화 마감
+	 */
 	public void saveDailyCandles(List<String> assignedCodes) {
 		LocalDate today = LocalDate.now();
 		LocalDateTime startOfDay = today.atStartOfDay();
@@ -271,10 +299,11 @@ public class CandleSchedulerService {
 					continue;
 				CandleDay candleDay = toCandleDay(stockCode, today, dayMinutes);
 				candleDayRepository.save(candleDay);
+
+				// Candle 인터페이스 일치 매핑 수용
 				CandleWithMA<Candle> wrapped = candleCacheService.upsertCandle(CandleType.DAY, stockCode, candleDay);
 				if (wrapped != null) {
 					webSocketService.sendCompleteCandle(wrapped, stockCode, CandleType.DAY);
-
 				}
 			} catch (Exception e) {
 				log.error("일봉 마감 에러 - 종목: {} error: {}", stockCode, e.getMessage());
@@ -307,5 +336,4 @@ public class CandleSchedulerService {
 		return new CandleDay(null, stockCode, date, open, high, low, close, buyQty, sellQty, buyQty + sellQty,
 				tradeAmount, changeAmount, changeRate);
 	}
-
 }

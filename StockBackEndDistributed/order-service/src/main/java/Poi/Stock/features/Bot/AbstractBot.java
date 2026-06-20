@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Random;
 
 import Poi.Stock.features.Candle.CandleCacheService;
-import Poi.Stock.features.Candle.Entity.CandleMinute;
+import Poi.Stock.features.Candle.Entity.Candle;
 import Poi.Stock.features.Candle.Entity.CandleWithMA;
 import Poi.Stock.features.Stock.StockRealTimeSnapshot;
 import Poi.Stock.util.AssignedCodeHolder;
@@ -91,7 +91,7 @@ public abstract class AbstractBot {
 	}
 
 	protected Map<Integer, Double> getLatestMA(String stockCode) {
-		List<CandleWithMA<CandleMinute>> candles = candleCacheService.getCandles(CandleType.ONE_MINUTE, stockCode);
+		List<CandleWithMA<Candle>> candles = candleCacheService.getCandles(CandleType.ONE_MINUTE, stockCode);
 		if (candles == null || candles.isEmpty())
 			return Map.of();
 		Map<Integer, Double> ma = candles.get(candles.size() - 1).getMa();
