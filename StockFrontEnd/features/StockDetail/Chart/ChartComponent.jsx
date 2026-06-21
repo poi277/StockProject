@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType, CandlestickSeries, LineSeries, CrosshairMode } from 'lightweight-charts';
 import useCandle from './useChart';
+import useChartButtonStore from '../../../store/chartButtonStore';
 
 function getCssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -86,11 +87,49 @@ function toUnixTime(timeStr) {
   return Math.floor(new Date(timeStr).getTime() / 1000);
 }
 
-function toChartData(candles) {
-  return candles
+// 🎯 차트 타입별 봉 하나의 간격(초)
+const INTERVAL_SECONDS = {
+  ONE_MINUTE: 60,
+  THREE_MINUTE: 180,
+  FIVE_MINUTE: 300,
+  TEN_MINUTE: 600,
+  HOUR: 3600,
+  TWO_HOUR: 7200,
+  THREE_HOUR: 10800,
+  FOUR_HOUR: 14400,
+  DAY: 86400,
+  WEEK: 86400 * 7,
+  MONTH: 86400 * 30,
+  YEAR: 86400 * 365,
+};
+
+function getIntervalSeconds(type) {
+  return INTERVAL_SECONDS[type] ?? 60;
+}
+
+// 🎯 lightweight-charts 공식 whitespace data 패턴
+// time만 있고 OHLC가 없는 포인트 - 빈 구간에도 시간축이 표시되게 함
+function buildWhitespace(lastTime, type, count = 100) {
+  const interval = getIntervalSeconds(type);
+  const whitespace = [];
+  for (let i = 1; i <= count; i++) {
+    whitespace.push({ time: lastTime + interval * i });
+  }
+  return whitespace;
+}
+
+function toChartData(candles, type) {
+  const realData = candles
     .map(c => ({ time: toUnixTime(c.time), open: c.open, high: c.high, low: c.low, close: c.close }))
     .sort((a, b) => a.time - b.time)
     .filter((c, i, arr) => i === 0 || c.time !== arr[i - 1].time);
+
+  if (realData.length === 0) return realData;
+
+  const last = realData[realData.length - 1];
+  const whitespace = buildWhitespace(last.time, type);
+
+  return [...realData, ...whitespace];
 }
 
 function toMAData(candles) {
@@ -114,6 +153,16 @@ export default function ChartComponent({ stockCode }) {
   const isReadyForLoadMore = useRef(false);
   const isLoadingRef = useRef(false);
   const currentMarginRef = useRef({ top: 0.15, bottom: 0.15 });
+
+  // 🎯 setData 호출마다 캡처해두는 전체 데이터 길이(whitespace 포함)
+  const totalDataLengthRef = useRef(0);
+
+  // 🎯 현재 선택된 차트 타입 - whitespace 간격을 정확히 계산하기 위해 필요
+  const type = useChartButtonStore((state) => state.selectedChartTime);
+  const typeRef = useRef(type);
+  useEffect(() => {
+    typeRef.current = type;
+  }, [type]);
 
   const { datafeedRef, loadMoreCandles, setOnCandleUpdate } = useCandle(stockCode);
   const loadMoreCandlesRef = useRef(loadMoreCandles);
@@ -158,69 +207,80 @@ export default function ChartComponent({ stockCode }) {
     }
 
     setOnCandleUpdate((event) => {
-  if (event.type === 'init') {
-    const chartData = toChartData(event.candles);
-    const maData = toMAData(event.candles);
-    candleSeries.setData(chartData);
-    maSeries.ma5.setData(maData.ma5);
-    maSeries.ma20.setData(maData.ma20);
-    maSeries.ma60.setData(maData.ma60);
-    chart.timeScale().fitContent();
-    setTimeout(() => {
-      isReadyForLoadMore.current = true;
-    }, 500);
+      if (event.type === 'init') {
+        const chartData = toChartData(event.candles, typeRef.current);
+        const maData = toMAData(event.candles);
+        candleSeries.setData(chartData);
+        maSeries.ma5.setData(maData.ma5);
+        maSeries.ma20.setData(maData.ma20);
+        maSeries.ma60.setData(maData.ma60);
+        totalDataLengthRef.current = chartData.length;
+        chart.timeScale().fitContent();
+        setTimeout(() => {
+          isReadyForLoadMore.current = true;
+        }, 500);
 
-  } else if (event.type === 'live') {
-    const c = event.candle;
-    candleSeries.update({
-      time: toUnixTime(c.time),
-      open: c.open,
-      high: c.high,
-      low: c.low,
-      close: c.close,
+      } else if (event.type === 'live') {
+        const c = event.candle;
+        candleSeries.update({
+          time: toUnixTime(c.time),
+          open: c.open,
+          high: c.high,
+          low: c.low,
+          close: c.close,
+        }, true);
+        if (c.movingAverages?.[5] != null) maSeries.ma5.update({ time: toUnixTime(c.time), value: c.movingAverages[5] }, true);
+        if (c.movingAverages?.[20] != null) maSeries.ma20.update({ time: toUnixTime(c.time), value: c.movingAverages[20] }, true);
+        if (c.movingAverages?.[60] != null) maSeries.ma60.update({ time: toUnixTime(c.time), value: c.movingAverages[60] }, true);
+
+      } else if (event.type === 'completed') {
+        const chartData = toChartData(event.candles, typeRef.current);
+        const maData = toMAData(event.candles);
+        candleSeries.setData(chartData);
+        maSeries.ma5.setData(maData.ma5);
+        maSeries.ma20.setData(maData.ma20);
+        maSeries.ma60.setData(maData.ma60);
+        totalDataLengthRef.current = chartData.length;
+
+      } else if (event.type === 'prepend') {
+        const chartData = toChartData(event.candles, typeRef.current);
+        const maData = toMAData(event.candles);
+        const timeScale = chart.timeScale();
+        const currentRange = timeScale.getVisibleLogicalRange();
+
+        candleSeries.setData(chartData);
+        maSeries.ma5.setData(maData.ma5);
+        maSeries.ma20.setData(maData.ma20);
+        maSeries.ma60.setData(maData.ma60);
+        totalDataLengthRef.current = chartData.length;
+
+        if (currentRange && event.addedCount > 0) {
+          timeScale.setVisibleLogicalRange({
+            from: currentRange.from + event.addedCount,
+            to: currentRange.to + event.addedCount,
+          });
+        }
+
+        setTimeout(() => {
+          isLoadingRef.current = false;
+        }, 300);
+      }
     });
-    if (c.movingAverages?.[5] != null) maSeries.ma5.update({ time: toUnixTime(c.time), value: c.movingAverages[5] });
-    if (c.movingAverages?.[20] != null) maSeries.ma20.update({ time: toUnixTime(c.time), value: c.movingAverages[20] });
-    if (c.movingAverages?.[60] != null) maSeries.ma60.update({ time: toUnixTime(c.time), value: c.movingAverages[60] });
-
-  } else if (event.type === 'completed') {
-    // 🎯 완성봉은 setData로 안전하게 전체 갱신 (update는 마지막 시점 이후만 가능해서 위험)
-    const chartData = toChartData(event.candles);
-    const maData = toMAData(event.candles);
-    candleSeries.setData(chartData);
-    maSeries.ma5.setData(maData.ma5);
-    maSeries.ma20.setData(maData.ma20);
-    maSeries.ma60.setData(maData.ma60);
-
-  } else if (event.type === 'prepend') {
-    const chartData = toChartData(event.candles);
-    const maData = toMAData(event.candles);
-    const timeScale = chart.timeScale();
-    const currentRange = timeScale.getVisibleLogicalRange();
-    const oldLength = candleSeries.data?.()?.length ?? 0;
-
-    candleSeries.setData(chartData);
-    maSeries.ma5.setData(maData.ma5);
-    maSeries.ma20.setData(maData.ma20);
-    maSeries.ma60.setData(maData.ma60);
-
-    const newLength = chartData.length;
-    const addedCount = newLength - oldLength;
-    if (currentRange && addedCount > 0) {
-      timeScale.setVisibleLogicalRange({
-        from: currentRange.from + addedCount,
-        to: currentRange.to + addedCount,
-      });
-    }
-
-    setTimeout(() => {
-      isLoadingRef.current = false;
-    }, 300);
-  }
-});
 
     chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
       if (!range) return;
+
+      // 🎯 오른쪽: whitespace 끝(totalDataLengthRef 기준)을 넘어가지 못하게 클램핑
+      const maxLogicalIndex = totalDataLengthRef.current - 1;
+      if (totalDataLengthRef.current > 0 && range.to > maxLogicalIndex) {
+        const overflow = range.to - maxLogicalIndex;
+        chart.timeScale().setVisibleLogicalRange({
+          from: range.from - overflow,
+          to: maxLogicalIndex,
+        });
+        return;
+      }
+
       if (!isReadyForLoadMore.current) return;
       if (isLoadingRef.current) return;
       if (range.from < 2) {

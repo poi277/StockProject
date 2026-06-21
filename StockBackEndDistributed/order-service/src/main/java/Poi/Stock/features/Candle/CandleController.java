@@ -35,10 +35,7 @@ public class CandleController {
 
 	@GetMapping("/{stockCode}/init")
 	public ResponseEntity<List<CandleDTO>> getCandleInit(@PathVariable("stockCode") String stockCode,
-			@RequestParam(name = "type", defaultValue = "ONE_MINUTE") CandleType type,
-			@RequestParam(name = "startTime", required = false) String startTime,
-			@RequestParam(name = "endTime", required = false) String endTime) {
-		// 초기화 전용 API는 true 전달
+			@RequestParam(name = "type", defaultValue = "ONE_MINUTE") CandleType type) {
 		List<CandleDTO> data = candleService.getCandleInit(type, stockCode);
 		return ResponseEntity.ok(data);
 	}

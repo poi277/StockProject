@@ -2,6 +2,7 @@ package Poi.Stock.features.Bot;
 
 import java.util.List;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import Poi.Stock.util.EnumUtil.BotType;
@@ -59,7 +60,7 @@ public class BotScheduler {
 	}
 
 	// 🎯 4. 시장 상태 업데이트 주기: 60초마다 실행
-	// @Scheduled(fixedDelay = 30000)
+	@Scheduled(fixedDelay = 30000)
 	public void updateMarketState() {
 		try {
 			marketStateHolder.updateAllStocks();

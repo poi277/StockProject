@@ -75,7 +75,7 @@ public class CandleService {
 	 * 초기 캔들 조회 (Top N 통합)
 	 */
 	public List<CandleDTO> getCandleInit(CandleType type, String stockCode) {
-		int targetSize = type.isMinuteType() ? 10 : 100;
+		int targetSize = 100;
 
 		List<CandleWithMA<Candle>> wrappedCache = candleCacheService.getCandles(type, stockCode);
 

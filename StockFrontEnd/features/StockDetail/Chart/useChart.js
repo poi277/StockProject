@@ -147,6 +147,7 @@ export default function useCandle(stockCode) {
         datafeedRef.current = new Datafeed();
         try {
             const res = await getCandleInitApi(stockCode, type);
+
             const enrichedCandles = enrichLastCandleMA(res.data);
             datafeedRef.current.setInitialData(enrichedCandles);
             onCandleUpdateRef.current?.({ type: 'init', candles: enrichedCandles });
@@ -173,8 +174,10 @@ export default function useCandle(stockCode) {
     }, [liveCandle]);
 
     const loadMoreCandles = useCallback(async () => {
+        const before = datafeedRef.current.getCandles().length; // 🎯 호출 전 순수 캔들 개수
         const allCandles = await datafeedRef.current.loadMore(stockCode, type, getCandleApi);
-        onCandleUpdateRef.current?.({ type: 'prepend', candles: allCandles });
+        const addedCount = allCandles.length - before; // 🎯 실제로 추가된 과거 캔들 개수
+        onCandleUpdateRef.current?.({ type: 'prepend', candles: allCandles, addedCount });
         return allCandles;
     }, [stockCode, type]);
 
