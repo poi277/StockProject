@@ -41,6 +41,51 @@ function enrichLastCandleMA(candles) {
     return [...confirmedCandles, enrichedLast];
 }
 
+function normalizeCandleTime(timeStr, candleType) {
+    const date = new Date(timeStr);
+
+    switch (candleType) {
+        case 'THREE_MINUTE':
+            date.setMinutes(Math.floor(date.getMinutes() / 3) * 3);
+            break;
+
+        case 'FIVE_MINUTE':
+            date.setMinutes(Math.floor(date.getMinutes() / 5) * 5);
+            break;
+
+        case 'TEN_MINUTE':
+            date.setMinutes(Math.floor(date.getMinutes() / 10) * 10);
+            break;
+
+        case 'HOUR':
+            date.setMinutes(0);
+            break;
+
+        case 'TWO_HOUR':
+            date.setHours(Math.floor(date.getHours() / 2) * 2);
+            date.setMinutes(0);
+            break;
+
+        case 'THREE_HOUR':
+            date.setHours(Math.floor(date.getHours() / 3) * 3);
+            date.setMinutes(0);
+            break;
+
+        case 'FOUR_HOUR':
+            date.setHours(Math.floor(date.getHours() / 4) * 4);
+            date.setMinutes(0);
+            break;
+
+        default:
+            break;
+    }
+
+    date.setSeconds(0);
+    date.setMilliseconds(0);
+
+    return date.toISOString();
+}
+
 class Datafeed {
     constructor() {
         this._candles = [];
@@ -104,17 +149,43 @@ class Datafeed {
         }
     }
 
-    addLiveCandle(liveCandle) {
+    addLiveCandle(liveCandle, candleType) {
+
+        const normalizedTime =
+            normalizeCandleTime(
+                liveCandle.time,
+                candleType
+            );
+
+        const normalizedCandle = {
+            ...liveCandle,
+            time: normalizedTime,
+        };
+
         const candles = this._candles;
-        const toUnix = (timeStr) => Math.floor(new Date(timeStr).getTime() / 1000);
 
-        const confirmedCandles = candles.length > 0 &&
-            toUnix(candles[candles.length - 1].time) === toUnix(liveCandle.time)
-            ? candles.slice(0, -1)
-            : candles;
+        const toUnix = (timeStr) =>
+            Math.floor(
+                new Date(timeStr).getTime() / 1000
+            );
 
-        const liveMA = calculateLiveMA(confirmedCandles, liveCandle);
-        const enrichedCandle = { ...liveCandle, movingAverages: liveMA };
+        const confirmedCandles =
+            candles.length > 0 &&
+                toUnix(candles[candles.length - 1].time)
+                === toUnix(normalizedCandle.time)
+                ? candles.slice(0, -1)
+                : candles;
+
+        const liveMA =
+            calculateLiveMA(
+                confirmedCandles,
+                normalizedCandle
+            );
+
+        const enrichedCandle = {
+            ...normalizedCandle,
+            movingAverages: liveMA,
+        };
 
         if (candles.length === 0) {
             this._candles = [enrichedCandle];
@@ -122,10 +193,20 @@ class Datafeed {
         }
 
         const last = candles[candles.length - 1];
-        if (toUnix(last.time) === toUnix(liveCandle.time)) {
-            this._candles = [...candles.slice(0, -1), enrichedCandle];
+
+        if (
+            toUnix(last.time)
+            === toUnix(normalizedCandle.time)
+        ) {
+            this._candles = [
+                ...candles.slice(0, -1),
+                enrichedCandle,
+            ];
         } else {
-            this._candles = [...candles, enrichedCandle];
+            this._candles = [
+                ...candles,
+                enrichedCandle,
+            ];
         }
     }
 }
@@ -147,7 +228,7 @@ export default function useCandle(stockCode) {
         datafeedRef.current = new Datafeed();
         try {
             const res = await getCandleInitApi(stockCode, type);
-
+            console.log("캔들 초기값",res)
             const enrichedCandles = enrichLastCandleMA(res.data);
             datafeedRef.current.setInitialData(enrichedCandles);
             onCandleUpdateRef.current?.({ type: 'init', candles: enrichedCandles });
@@ -168,10 +249,43 @@ export default function useCandle(stockCode) {
 
     useEffect(() => {
         if (!liveCandle) return;
-        datafeedRef.current.addLiveCandle(liveCandle);
-        const enriched = datafeedRef.current.getCandles().slice(-1)[0];
-        onCandleUpdateRef.current?.({ type: 'live', candle: enriched });
+
+        datafeedRef.current.addLiveCandle(
+            liveCandle,
+            type
+        );
+
+        const enriched =
+            datafeedRef.current.getCandles().slice(-1)[0];
+
+        onCandleUpdateRef.current?.({
+            type: 'live',
+            candle: enriched
+        });
+
+    }, [liveCandle, type]);
+
+
+    useEffect(() => {
+        if (!liveCandle) return;
+
+        console.log(
+            "LIVE",
+            type,
+            liveCandle.time
+        );
+
     }, [liveCandle]);
+    useEffect(() => {
+        if (!completedCandle) return;
+
+        console.log(
+            "COMPLETED",
+            type,
+            completedCandle.time
+        );
+
+    }, [completedCandle]);
 
     const loadMoreCandles = useCallback(async () => {
         const before = datafeedRef.current.getCandles().length; // 🎯 호출 전 순수 캔들 개수

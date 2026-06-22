@@ -34,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 public class CandleService {
 
 	private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
+	private static final DateTimeFormatter DAY_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
 	private static final int[] MA_PERIODS = { 5, 20, 60 };
 
 	private final CandleMinuteRepository candleMinuteRepository;
@@ -60,7 +61,9 @@ public class CandleService {
 		List<CandleDTO> result;
 		if (wrappedCache.isEmpty()) {
 			List<Candle> dbCandles = loadRawCandlesFromDb(type, stockCode, from, to);
-			List<CandleWithMA<Candle>> wrapped = wrapWithEmptyMA(dbCandles);
+			List<Candle> processedCandles = groupCandles(dbCandles, type);
+
+			List<CandleWithMA<Candle>> wrapped = wrapWithEmptyMA(processedCandles);
 			calculateMovingAveragesInPlace(wrapped);
 			result = toDTOList(wrapped);
 		} else {
@@ -68,12 +71,10 @@ public class CandleService {
 		}
 
 		appendLatestRealtimeCandle(type, result, stockCode);
+		mergeLiveCandle(type, result);
 		return result;
 	}
 
-	/**
-	 * 초기 캔들 조회 (Top N 통합)
-	 */
 	public List<CandleDTO> getCandleInit(CandleType type, String stockCode) {
 		int targetSize = 100;
 
@@ -82,7 +83,9 @@ public class CandleService {
 		if (wrappedCache.isEmpty()) {
 			log.info("{} 초기화 캐시 공백 - 종목: {}. DB에서 최신 데이터를 호출합니다.", type, stockCode);
 			List<Candle> dbCandles = loadTop100FromDb(type, stockCode);
-			wrappedCache = wrapWithEmptyMA(dbCandles);
+			List<Candle> processedCandles = groupCandles(dbCandles, type);
+
+			wrappedCache = wrapWithEmptyMA(processedCandles);
 			calculateMovingAveragesInPlace(wrappedCache);
 		} else {
 			int cacheSize = wrappedCache.size();
@@ -94,39 +97,34 @@ public class CandleService {
 
 		List<CandleDTO> result = toDTOList(wrappedCache);
 		appendLatestRealtimeCandle(type, result, stockCode);
+		mergeLiveCandle(type, result);
 		return result;
 	}
 
-
+	/**
+	 * DB에서 순수 원천 데이터(Raw Data)만 조회하는 전담 메서드
+	 */
 	private List<Candle> loadRawCandlesFromDb(CandleType type, String stockCode, LocalDateTime from, LocalDateTime to) {
 		if (type.isMinuteType()) {
-			List<CandleMinute> oneMinCandles = candleMinuteRepository
-					.findByStockCodeAndTimeBetweenOrderByTimeAsc(stockCode, from, to);
-
-			if (type.getMinute() == 1) {
-				return new ArrayList<>(oneMinCandles);
-			}
-			return new ArrayList<>(groupMinuteCandles(oneMinCandles, type.getMinute()));
+			return new ArrayList<>(
+					candleMinuteRepository.findByStockCodeAndTimeBetweenOrderByTimeAsc(stockCode, from, to));
 		}
 
 		if (type.isHourType()) {
-			List<CandleHour> oneHourCandles = candleHourRepository
-					.findByStockCodeAndTimeBetweenOrderByTimeAsc(stockCode, from, to);
-
-			if (type.getHourGroup() == 1) {
-				return new ArrayList<>(oneHourCandles);
-			}
-			return new ArrayList<>(groupHourCandles(oneHourCandles, type.getHourGroup()));
+			return new ArrayList<>(
+					candleHourRepository.findByStockCodeAndTimeBetweenOrderByTimeAsc(stockCode, from, to));
 		}
 
 		if (type == CandleType.DAY) {
-			List<CandleDay> days = candleDayRepository.findByStockCodeAndDateBetweenOrderByDateAsc(stockCode,
-					from.toLocalDate(), to.toLocalDate());
-			return new ArrayList<>(days);
+			return new ArrayList<>(candleDayRepository.findByStockCodeAndDateBetweenOrderByDateAsc(stockCode,
+					from.toLocalDate(), to.toLocalDate()));
 		}
 		throw new IllegalArgumentException("지원하지 않는 타입: " + type);
 	}
 
+	/**
+	 * DB에서 최신 Top 100 원천 데이터(Raw Data)만 조회하는 전담 메서드
+	 */
 	private List<Candle> loadTop100FromDb(CandleType type, String stockCode) {
 		if (type.isMinuteType()) {
 			List<CandleMinute> dbCandles = candleMinuteRepository.findTop100ByStockCodeOrderByTimeDesc(stockCode);
@@ -137,10 +135,7 @@ public class CandleService {
 		if (type.isHourType()) {
 			List<CandleHour> hours = candleHourRepository.findTop100ByStockCodeOrderByTimeDesc(stockCode);
 			hours.sort(Comparator.comparing(CandleHour::getTime));
-			if (type.getHourGroup() == 1) {
-				return new ArrayList<>(hours);
-			}
-			return new ArrayList<>(groupHourCandles(hours, type.getHourGroup()));
+			return new ArrayList<>(hours);
 		}
 
 		if (type == CandleType.DAY) {
@@ -155,71 +150,85 @@ public class CandleService {
 	 * 실시간 캐시 후속 병합 분기 전담 유틸
 	 */
 	private void appendLatestRealtimeCandle(CandleType type, List<CandleDTO> result, String stockCode) {
-		if (type.isMinuteType()) {
-			addCurrentCandleIfNewer(result, stockCode);
-		} else if (type.isHourType()) {
-			addCurrentCandleIfNewer(result, stockCode);
+		LocalDateTime now = LocalDateTime.now();
+
+		if (type.isMinuteType() || type.isHourType()) {
+			String timeStr = now.withSecond(0).withNano(0).format(FMT);
+			addCandleIfNewer(result, type, getCurrentCandleFromRedis("1m", stockCode, timeStr));
 		} else if (type == CandleType.DAY) {
-			addCandleIfNewer(result, getTodayCandle(stockCode));
+			String todayStr = now.format(DAY_FMT);
+			addCandleIfNewer(result, type, getCurrentCandleFromRedis("day", stockCode, todayStr));
 		}
 	}
 
-	// ===================== 📊 분봉 그룹화 연산 =====================
+	// ===================== 캔들 다형성 통합 그룹화 연산 레이어 =====================
 
-	private List<CandleMinute> groupMinuteCandles(List<CandleMinute> candles, int minute) {
-		return new ArrayList<>(candles.stream().collect(Collectors.groupingBy(c -> floorTime(c.getTime(), minute)))
-				.entrySet().stream().sorted(Map.Entry.comparingByKey())
-				.map(entry -> toGroupedCandleMinute(entry.getKey(), entry.getValue())).toList());
+	/**
+	 * 🎯 분봉/시봉 통합 그룹화 및 묶음 단위 검증 조건 파이프라인 (바깥 호출용)
+	 */
+	private List<Candle> groupCandles(List<Candle> rawCandles, CandleType type) {
+		if (rawCandles == null || rawCandles.isEmpty()) {
+			return List.of();
+		}
+
+		// 1분봉이나 1시간봉처럼 묶음 연산(그룹화)이 필요 없는 기본 규격은 굳이 연산하지 않고 무사통과(Pass)
+		if ((type.isMinuteType() && type.getMinute() == 1) || (type.isHourType() && type.getHourGroup() == 1)
+				|| type == CandleType.DAY) {
+			return rawCandles;
+		}
+
+		return new ArrayList<>(rawCandles.stream()
+				.<Candle>map(c -> c)
+				.collect(Collectors.groupingBy(c -> floorTime(c.getCandleTime(), type), Collectors.toList())).entrySet()
+				.stream().sorted(Map.Entry.comparingByKey())
+				.map(entry -> toGroupedCandle(entry.getKey(), entry.getValue())).toList());
 	}
 
-	private CandleMinute toGroupedCandleMinute(LocalDateTime time, List<CandleMinute> group) {
-		List<CandleMinute> sortedGroup = new ArrayList<>(group);
-		sortedGroup.sort(Comparator.comparing(CandleMinute::getTime));
-		CandleMinute first = sortedGroup.get(0);
-		CandleMinute last = sortedGroup.get(sortedGroup.size() - 1);
-		int high = sortedGroup.stream().mapToInt(CandleMinute::getHigh).max().orElse(first.getHigh());
-		int low = sortedGroup.stream().mapToInt(CandleMinute::getLow).min().orElse(first.getLow());
+	/**
+	 * 하위 캔들 세트를 단일 Candle 인터페이스 구현체로 축약 집계
+	 */
+	private Candle toGroupedCandle(String timeStr, List<? extends Candle> group) {
+		List<? extends Candle> sortedGroup = new ArrayList<>(group);
+		sortedGroup.sort(Comparator.comparing(Candle::getCandleTime));
+
+		Candle first = sortedGroup.get(0);
+		Candle last = sortedGroup.get(sortedGroup.size() - 1);
+
+		int open = first.getOpen();
+		int close = last.getClose();
+		int high = sortedGroup.stream().mapToInt(Candle::getHigh).max().orElse(first.getHigh());
+		int low = sortedGroup.stream().mapToInt(Candle::getLow).min().orElse(first.getLow());
+
 		long sellQty = sortedGroup.stream().mapToLong(c -> c.getSellQty() != null ? c.getSellQty() : 0L).sum();
 		long buyQty = sortedGroup.stream().mapToLong(c -> c.getBuyQty() != null ? c.getBuyQty() : 0L).sum();
 		long tradeAmount = sortedGroup.stream().mapToLong(c -> c.getTradeAmount() != null ? c.getTradeAmount() : 0L)
 				.sum();
-		return new CandleMinute(null, first.getStockCode(), time, first.getOpen(), high, low, last.getClose(), buyQty,
+
+		LocalDateTime time = LocalDateTime.parse(timeStr, FMT);
+
+		return new CandleMinute(null, first.getStockCode(), time, open, high, low, close, buyQty,
 				sellQty, buyQty + sellQty, tradeAmount);
 	}
 
-	private LocalDateTime floorTime(LocalDateTime time, int minute) {
-		return time.withMinute((time.getMinute() / minute) * minute).withSecond(0).withNano(0);
+	/**
+	 * CandleType 속성에 따라 시간 절삭 단위를 동적으로 계산
+	 */
+	private String floorTime(String candleTimeStr, CandleType type) {
+		LocalDateTime time = candleTimeStr.length() == 12 ? LocalDateTime.parse(candleTimeStr, FMT)
+				: LocalDateTime.parse(candleTimeStr);
+
+		if (type.isMinuteType()) {
+			int minute = type.getMinute();
+			time = time.withMinute((time.getMinute() / minute) * minute).withSecond(0).withNano(0);
+		} else if (type.isHourType()) {
+			int hourGroup = type.getHourGroup();
+			time = time.withHour((time.getHour() / hourGroup) * hourGroup).withMinute(0).withSecond(0).withNano(0);
+		}
+
+		return time.format(FMT);
 	}
 
-	// ===================== 📊 시봉 그룹화 연산 (분봉과 동일 패턴) =====================
-
-	private List<CandleHour> groupHourCandles(List<CandleHour> candles, int hourGroupSize) {
-		return new ArrayList<>(
-				candles.stream().collect(Collectors.groupingBy(c -> floorHour(c.getTime(), hourGroupSize))).entrySet()
-						.stream().sorted(Map.Entry.comparingByKey())
-						.map(entry -> toGroupedCandleHour(entry.getKey(), entry.getValue())).toList());
-	}
-
-	private CandleHour toGroupedCandleHour(LocalDateTime time, List<CandleHour> group) {
-		List<CandleHour> sortedGroup = new ArrayList<>(group);
-		sortedGroup.sort(Comparator.comparing(CandleHour::getTime));
-		CandleHour first = sortedGroup.get(0);
-		CandleHour last = sortedGroup.get(sortedGroup.size() - 1);
-		int high = sortedGroup.stream().mapToInt(CandleHour::getHigh).max().orElse(first.getHigh());
-		int low = sortedGroup.stream().mapToInt(CandleHour::getLow).min().orElse(first.getLow());
-		long sellQty = sortedGroup.stream().mapToLong(c -> c.getSellQty() != null ? c.getSellQty() : 0L).sum();
-		long buyQty = sortedGroup.stream().mapToLong(c -> c.getBuyQty() != null ? c.getBuyQty() : 0L).sum();
-		long tradeAmount = sortedGroup.stream().mapToLong(c -> c.getTradeAmount() != null ? c.getTradeAmount() : 0L)
-				.sum();
-		return new CandleHour(null, first.getStockCode(), time, first.getOpen(), high, low, last.getClose(), buyQty,
-				sellQty, buyQty + sellQty, tradeAmount);
-	}
-
-	private LocalDateTime floorHour(LocalDateTime time, int hourGroupSize) {
-		return time.withHour((time.getHour() / hourGroupSize) * hourGroupSize).withMinute(0).withSecond(0).withNano(0);
-	}
-
-	// ===================== 🧬 명시적 Candle 헬퍼 메서드군 =====================
+	// ===================== 명시적 Candle 헬퍼 메서드군 =====================
 
 	private List<CandleWithMA<Candle>> getCachedCandlesInRange(CandleType type, String stockCode, String fromStr,
 			Predicate<Candle> inRange) {
@@ -269,11 +278,7 @@ public class CandleService {
 
 	// ===================== ⏱️ 공통 유틸 및 실시간 Redis 바인딩 =====================
 
-	private void addCurrentCandleIfNewer(List<CandleDTO> result, String stockCode) {
-		addCandleIfNewer(result, getCurrentCandleFromRedis(stockCode));
-	}
-
-	private void addCandleIfNewer(List<CandleDTO> result, CandleDTO candle) {
+	private void addCandleIfNewer(List<CandleDTO> result, CandleType type, CandleDTO candle) {
 		if (candle == null)
 			return;
 		if (result.isEmpty()) {
@@ -291,36 +296,11 @@ public class CandleService {
 		return time.length() == 10 ? LocalDate.parse(time).atStartOfDay() : LocalDateTime.parse(time);
 	}
 
-	private CandleDTO getTodayCandle(String stockCode) {
-		LocalDate today = LocalDate.now();
-		List<CandleMinute> todayMinutes = candleMinuteRepository.findByStockCodeAndTimeBetweenOrderByTimeAsc(stockCode,
-				today.atStartOfDay(), today.plusDays(1).atStartOfDay());
-		CandleDTO currentCandle = getCurrentCandleFromRedis(stockCode);
-		if (todayMinutes.isEmpty() && currentCandle == null)
-			return null;
-
-		int open = !todayMinutes.isEmpty() ? todayMinutes.get(0).getOpen() : currentCandle.getOpen();
-		int high = todayMinutes.stream().mapToInt(CandleMinute::getHigh).max().orElse(open);
-		int low = todayMinutes.stream().mapToInt(CandleMinute::getLow).min().orElse(open);
-		int close = !todayMinutes.isEmpty() ? todayMinutes.get(todayMinutes.size() - 1).getClose() : open;
-		long sellQty = todayMinutes.stream().mapToLong(c -> c.getSellQty() != null ? c.getSellQty() : 0L).sum();
-		long buyQty = todayMinutes.stream().mapToLong(c -> c.getBuyQty() != null ? c.getBuyQty() : 0L).sum();
-
-		if (currentCandle != null) {
-			high = Math.max(high, currentCandle.getHigh());
-			low = Math.min(low, currentCandle.getLow());
-			close = currentCandle.getClose();
-			sellQty += currentCandle.getSellQty();
-			buyQty += currentCandle.getBuyQty();
-		}
-		return CandleDTO.today(today, open, high, low, close, sellQty, buyQty);
-	}
-
-	private CandleDTO getCurrentCandleFromRedis(String stockCode) {
-		LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
-		String key = "candle:1m:" + stockCode + ":" + now.format(FMT);
+	private CandleDTO getCurrentCandleFromRedis(String candleTypePrefix, String stockCode, String timeSuffix) {
+		String key = "candle:" + candleTypePrefix + ":" + stockCode + ":" + timeSuffix;
 		Map<Object, Object> current = redisTemplate.opsForHash().entries(key);
-		if (current.isEmpty())
+
+		if (current == null || current.isEmpty())
 			return null;
 		try {
 			Object open = current.get("open");
@@ -330,12 +310,22 @@ public class CandleService {
 			if (open == null || high == null || low == null || close == null)
 				return null;
 
-			return CandleDTO.current(now, Integer.parseInt(String.valueOf(open)),
-					Integer.parseInt(String.valueOf(high)), Integer.parseInt(String.valueOf(low)),
-					Integer.parseInt(String.valueOf(close)), parseLong(current.get("sellQty")),
-					parseLong(current.get("buyQty")));
+			if ("day".equals(candleTypePrefix)) {
+				LocalDate dayDate = LocalDate.parse(timeSuffix, DAY_FMT);
+				return CandleDTO.today(dayDate, Integer.parseInt(String.valueOf(open)),
+						Integer.parseInt(String.valueOf(high)), Integer.parseInt(String.valueOf(low)),
+						Integer.parseInt(String.valueOf(close)), parseLong(current.get("sellQty")),
+						parseLong(current.get("buyQty")));
+			} else {
+				LocalDateTime minuteTime = LocalDateTime.parse(timeSuffix, FMT);
+				return CandleDTO.current(minuteTime, Integer.parseInt(String.valueOf(open)),
+						Integer.parseInt(String.valueOf(high)), Integer.parseInt(String.valueOf(low)),
+						Integer.parseInt(String.valueOf(close)), parseLong(current.get("sellQty")),
+						parseLong(current.get("buyQty")));
+			}
 		} catch (Exception e) {
-			log.error("Redis 현재 캔들 조회 실패 - stockCode: {}, error: {}", stockCode, e.getMessage());
+			log.error("Redis 현재 캔들 파싱 실패 - Prefix: {}, stockCode: {}, error: {}", candleTypePrefix, stockCode,
+					e.getMessage());
 			return null;
 		}
 	}
@@ -357,5 +347,40 @@ public class CandleService {
 		CandleDTO candleDTO = candleSchedulerService.saveCurrentCandle(stockCode, currentPrice, buyQty, sellQty,
 				tradeAmount, lastExecutionTime);
 		webSocketService.sendCurrentCandle(candleDTO, stockCode);
+	}
+
+	private void mergeLiveCandle(CandleType type, List<CandleDTO> result) {
+		// 데이터가 없거나, 실시간 데이터 1개만 덜렁 있는 경우는 비교 대상이 없으므로 통과
+		// 일은 나중에 추가할테니 우선은 통과
+		if (result == null || result.size() < 2 || type == CandleType.DAY) {
+			return;
+		}
+		// 1. 맨 마지막에 붙은 실시간 캔들(Live)과 그 직전 확정 캔들(Last)을 꺼냅니다.
+		CandleDTO liveCandle = result.get(result.size() - 1);
+		CandleDTO lastCandle = result.get(result.size() - 2);
+
+		// 2. 두 캔들의 시간 포맷 정형화 (yyyyMMddHHmm 12자리 추출)
+		String liveTimeStr = liveCandle.getTime().replace("-", "").replace("T", "").replace(":", "").substring(0, 12);
+		String lastTimeStr = lastCandle.getTime().replace("-", "").replace("T", "").replace(":", "").substring(0, 12);
+
+		// 3. 실시간 1분봉 조각의 시간을 현재 차트 주기(예: 3분, 5분)에 맞게 올림/절삭(floorTime) 연산합니다.
+		String targetTimeStr = floorTime(liveTimeStr, type);
+
+		// 4. 시간 비교 세그먼트
+		if (targetTimeStr.equals(lastTimeStr)) {
+			// 🤝 Case A: 실시간 조각의 주기 시간이 직전 캔들 시간과 같다! (기존 캔들에 합산 후 실시간 단독 봉 제거)
+			lastCandle.setHigh(Math.max(lastCandle.getHigh(), liveCandle.getHigh()));
+			lastCandle.setLow(Math.min(lastCandle.getLow(), liveCandle.getLow()));
+			lastCandle.setClose(liveCandle.getClose()); // 종가는 실시간 최신 가격으로 동적 동기화
+			lastCandle.setTotalVolume(lastCandle.getTotalVolume() + liveCandle.getTotalVolume());
+
+			// 합산이 끝났으므로 맨 뒤에 붙었던 실시간 1분짜리 임시 봉은 제거합니다.
+			result.remove(result.size() - 1);
+		} else {
+			// ➕ Case B: 실시간 조각의 주기가 직전 캔들 시간보다 미래다! (새로운 n분봉 주기의 시작)
+			// 실시간 봉의 타임스탬프만 n분봉 기준 정렬된 시간(targetTimeStr)으로 교체하여 독립된 진행 중인 봉으로 유지합니다.
+			LocalDateTime targetLdt = LocalDateTime.parse(targetTimeStr, FMT);
+			liveCandle.setTime(targetLdt.toString());
+		}
 	}
 }

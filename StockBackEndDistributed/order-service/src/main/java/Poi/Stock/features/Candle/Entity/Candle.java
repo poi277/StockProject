@@ -18,4 +18,6 @@ public interface Candle {
 	Long getTradeAmount();
 
 	String getCandleTime();
+
+	String getStockCode();
 }
