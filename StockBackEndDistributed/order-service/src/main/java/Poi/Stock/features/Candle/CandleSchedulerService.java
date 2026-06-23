@@ -79,35 +79,37 @@ public class CandleSchedulerService {
 	/**
 	 * 실시간 체결 엔진 연동 - 미확정 캔들 Redis 적재 및 DTO 반환
 	 */
-	public CandleDTO saveCurrentCandle(String stockCode, int price, int buyQty, int sellQty, long tradeAmount,
-			LocalDateTime executionTime) {
-
-		// 1. 1분봉 처리 키 생성
+	public Map<CandleType, CandleDTO> saveCurrentCandle(String stockCode, int price, int buyQty, int sellQty,
+			long tradeAmount, LocalDateTime executionTime) {
 		LocalDateTime minuteTime = executionTime.withSecond(0).withNano(0);
 		String minuteCandleKey = "candle:1m:" + stockCode + ":" + minuteTime.format(FMT);
 
 		String todayStr = executionTime.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 		String dayCandleKey = "candle:day:" + stockCode + ":" + todayStr;
 
-		// 3. 1분봉 Redis 업데이트
 		List<String> minuteResult = redisTemplate.execute(new DefaultRedisScript<>(UPDATE_CANDLE_SCRIPT, List.class),
 				List.of(minuteCandleKey), String.valueOf(price), String.valueOf(buyQty), String.valueOf(sellQty),
 				String.valueOf(tradeAmount));
 
-		// 4. 일봉 Redis 업데이트
-		redisTemplate.execute(new DefaultRedisScript<>(UPDATE_CANDLE_SCRIPT, List.class), List.of(dayCandleKey),
-				String.valueOf(price), String.valueOf(buyQty), String.valueOf(sellQty),
+		List<String> dayResult = redisTemplate.execute(new DefaultRedisScript<>(UPDATE_CANDLE_SCRIPT, List.class),
+				List.of(dayCandleKey), String.valueOf(price), String.valueOf(buyQty), String.valueOf(sellQty),
 				String.valueOf(tradeAmount));
 
-		// 5. 🎯 [보안] 루아 스크립트 내부의 120초 expire 메커니즘이 일봉 키를 오염시키지 않도록 확실하게 24시간 지정
 		redisTemplate.expire(dayCandleKey, 24, TimeUnit.HOURS);
 
-		if (minuteResult == null || minuteResult.size() < 4)
-			return null;
+		if (minuteResult == null || minuteResult.size() < 4 || dayResult == null || dayResult.size() < 4) {
+			return Map.of();
+		}
 
-		return CandleDTO.current(minuteTime, Integer.parseInt(minuteResult.get(0)),
+		CandleDTO minuteCandle = CandleDTO.current(minuteTime, Integer.parseInt(minuteResult.get(0)),
 				Integer.parseInt(minuteResult.get(1)), Integer.parseInt(minuteResult.get(2)),
 				Integer.parseInt(minuteResult.get(3)), (long) sellQty, (long) buyQty);
+
+		CandleDTO dayCandle = CandleDTO.today(executionTime.toLocalDate(), Integer.parseInt(dayResult.get(0)),
+				Integer.parseInt(dayResult.get(1)), Integer.parseInt(dayResult.get(2)),
+				Integer.parseInt(dayResult.get(3)), (long) sellQty, (long) buyQty);
+
+		return Map.of(CandleType.ONE_MINUTE, minuteCandle, CandleType.DAY, dayCandle);
 	}
 
 	public void saveDailyCandles(List<String> assignedCodes) {

@@ -1,55 +1,61 @@
 import { useEffect, useState } from 'react';
 
+const MINUTE_BASED_TYPES = new Set([
+    'ONE_MINUTE',
+    'THREE_MINUTE',
+    'FIVE_MINUTE',
+    'TEN_MINUTE',
+    'HOUR',
+    'TWO_HOUR',
+    'THREE_HOUR',
+    'FOUR_HOUR',
+]);
+
+function getSubscribeType(type) {
+    if (MINUTE_BASED_TYPES.has(type)) return 'ONE_MINUTE';
+    if (type === 'DAY') return 'DAY';
+    return type;
+}
+
+function toCandlePayload(data) {
+    return {
+        open: data.open,
+        low: data.low,
+        high: data.high,
+        close: data.close,
+        buyQty: data.buyQty,
+        sellQty: data.sellQty,
+        time: data.time,
+        candleType: data.candleType,
+        movingAverages: data.movingAverages,
+    };
+}
+
 export function useCandleSocket(client, connected, stockCode, type) {
     const [liveCandle, setLiveCandle] = useState(null);
     const [completedCandle, setCompletedCandle] = useState(null);
 
-    useEffect(() => {
-        if (!client || !connected || !stockCode) return;
+    const subscribeType = getSubscribeType(type);
 
-        const subscription = client.subscribe(`/topic/candle/${stockCode}`, message => {
-            const data = JSON.parse(message.body);
-            setLiveCandle({
-                open: data.open,
-                low: data.low,
-                high: data.high,
-                close: data.close,
-                buyQty: data.buyQty,
-                sellQty: data.sellQty,
-                time: data.time,
-            });
+    useEffect(() => {
+        if (!client || !connected || !stockCode || !subscribeType) return;
+
+        const subscription = client.subscribe(`/topic/candle/${stockCode}/${subscribeType}`, message => {
+            setLiveCandle(toCandlePayload(JSON.parse(message.body)));
         });
 
         return () => subscription.unsubscribe();
-    }, [client, connected, stockCode]);
-
+    }, [client, connected, stockCode, subscribeType]);
 
     useEffect(() => {
-        if (!client || !connected || !stockCode) return;
+        if (!client || !connected || !stockCode || !subscribeType) return;
 
-        const subscription = client.subscribe(`/topic/candle/completed/${stockCode}`, message => {
-            const data = JSON.parse(message.body);
-            console.log("dddddddddd",data)
-            // 🎯 보고 있는 캔들 타입(ONE_MINUTE 등)과 다른 완성봉은 무시
-            if (data.candleType && data.candleType !== type) {
-                return;
-            }
-
-            setCompletedCandle({
-                open: data.open,
-                low: data.low,
-                high: data.high,
-                close: data.close,
-                buyQty: data.buyQty,
-                sellQty: data.sellQty,
-                time: data.time,
-                candleType: data.candleType,
-                movingAverages: data.movingAverages,
-            });
+        const subscription = client.subscribe(`/topic/candle/completed/${stockCode}/${subscribeType}`, message => {
+            setCompletedCandle(toCandlePayload(JSON.parse(message.body)));
         });
 
         return () => subscription.unsubscribe();
-    }, [client, connected, stockCode, type]);
+    }, [client, connected, stockCode, subscribeType]);
 
     return { liveCandle, completedCandle };
 }

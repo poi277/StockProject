@@ -42,17 +42,21 @@ public class WebSocketService {
 		payload.put("qty", qty);
 		messagingTemplate.convertAndSend("/topic/hoga/" + stockCode, payload);
 	}
-	public void sendCurrentCandle(CandleDTO candleDTO, String stockCode) {
-		Map<String, Object> payload = new HashMap<>();
-		payload.put("open", candleDTO.getOpen());
-		payload.put("low", candleDTO.getLow());
-		payload.put("high", candleDTO.getHigh());
-		payload.put("close", candleDTO.getClose());
-		payload.put("buyQty", candleDTO.getBuyQty());
-		payload.put("sellQty", candleDTO.getSellQty());
-		payload.put("time", candleDTO.getTime());
-		System.out.println(payload);
-		messagingTemplate.convertAndSend("/topic/candle/" + stockCode, payload);
+	public void sendCurrentCandle(CandleDTO candleDTO, String stockCode, CandleType candleType) {
+		if (candleDTO == null || candleType == null) {
+			return;
+		}
+	    Map<String, Object> payload = new HashMap<>();
+	    payload.put("open", candleDTO.getOpen());
+	    payload.put("low", candleDTO.getLow());
+	    payload.put("high", candleDTO.getHigh());
+	    payload.put("close", candleDTO.getClose());
+	    payload.put("buyQty", candleDTO.getBuyQty());
+	    payload.put("sellQty", candleDTO.getSellQty());
+	    payload.put("time", candleDTO.getTime());
+	    payload.put("candleType", candleType.name());
+
+		messagingTemplate.convertAndSend("/topic/candle/" + stockCode + "/" + candleType.name(), payload);
 	}
 
 	public void sendCompleteCandle(CandleWithMA<Candle> wrapped, String stockCode, CandleType candleType) {
@@ -69,7 +73,7 @@ public class WebSocketService {
 		payload.put("time", candle.getCandleTime() != null ? candle.getCandleTime().toString() : "");
 		payload.put("movingAverages", wrapped.getMa());
 		payload.put("candleType", candleType.name());
-		messagingTemplate.convertAndSend("/topic/candle/completed/" + stockCode, payload);
+		messagingTemplate.convertAndSend("/topic/candle/completed/" + stockCode + "/" + candleType.name(), payload);
 	}
 
 	public void sendOrderUpdate(MatchingResult result) {

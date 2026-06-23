@@ -40,50 +40,55 @@ function enrichLastCandleMA(candles) {
 
     return [...confirmedCandles, enrichedLast];
 }
-
 function normalizeCandleTime(timeStr, candleType) {
     const date = new Date(timeStr);
 
+    // KST(UTC+9) 기준으로 시/분 추출
+    const kstOffset = 9 * 60;
+    const kstDate = new Date(date.getTime() + kstOffset * 60 * 1000);
+
+    const y = kstDate.getUTCFullYear();
+    const m = String(kstDate.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(kstDate.getUTCDate()).padStart(2, '0');
+
+    let hours = kstDate.getUTCHours();
+    let minutes = kstDate.getUTCMinutes();
+
     switch (candleType) {
         case 'THREE_MINUTE':
-            date.setMinutes(Math.floor(date.getMinutes() / 3) * 3);
+            minutes = Math.floor(minutes / 3) * 3;
             break;
-
         case 'FIVE_MINUTE':
-            date.setMinutes(Math.floor(date.getMinutes() / 5) * 5);
+            minutes = Math.floor(minutes / 5) * 5;
             break;
-
         case 'TEN_MINUTE':
-            date.setMinutes(Math.floor(date.getMinutes() / 10) * 10);
+            minutes = Math.floor(minutes / 10) * 10;
             break;
-
         case 'HOUR':
-            date.setMinutes(0);
+            minutes = 0;
             break;
-
         case 'TWO_HOUR':
-            date.setHours(Math.floor(date.getHours() / 2) * 2);
-            date.setMinutes(0);
+            hours = Math.floor(hours / 2) * 2;
+            minutes = 0;
             break;
-
         case 'THREE_HOUR':
-            date.setHours(Math.floor(date.getHours() / 3) * 3);
-            date.setMinutes(0);
+            hours = Math.floor(hours / 3) * 3;
+            minutes = 0;
             break;
-
         case 'FOUR_HOUR':
-            date.setHours(Math.floor(date.getHours() / 4) * 4);
-            date.setMinutes(0);
+            hours = Math.floor(hours / 4) * 4;
+            minutes = 0;
             break;
-
+        case 'DAY':
+            return `${y}-${m}-${d}`;
         default:
             break;
     }
 
-    date.setSeconds(0);
-    date.setMilliseconds(0);
+    const h = String(hours).padStart(2, '0');
+    const min = String(minutes).padStart(2, '0');
 
-    return date.toISOString();
+    return `${y}-${m}-${d}T${h}:${min}`;
 }
 
 class Datafeed {
@@ -113,6 +118,7 @@ class Datafeed {
 
         try {
             const res = await fetchFn(stockCode, type, startTime, endTime);
+
             if (res.data?.length) {
                 const enrichedData = enrichLastCandleMA(res.data);
                 this._candles = [...enrichedData, ...this._candles];
@@ -131,22 +137,43 @@ class Datafeed {
         return this._candles;
     }
 
-    addCompletedCandle(completedCandle) {
+    addCompletedCandle(completedCandle, candleType) {
+        const normalizedTime = normalizeCandleTime(completedCandle.time, candleType);
+
+        const normalizedCandle = {
+            ...completedCandle,
+            time: normalizedTime,
+        };
+
         const candles = this._candles;
+
         const toUnix = (timeStr) => Math.floor(new Date(timeStr).getTime() / 1000);
-        const targetUnix = toUnix(completedCandle.time);
+        const targetUnix = toUnix(normalizedCandle.time);
 
         const idx = candles.findIndex(c => toUnix(c.time) === targetUnix);
 
         if (idx === -1) {
-            this._candles = [...candles, completedCandle];
-        } else {
-            this._candles = [
-                ...candles.slice(0, idx),
-                completedCandle,
-                ...candles.slice(idx + 1),
-            ];
+            this._candles = [...candles, normalizedCandle];
+            return;
         }
+
+        const prev = candles[idx];
+
+        const mergedCandle = {
+            ...prev,
+            high: Math.max(prev.high, normalizedCandle.high),
+            low: Math.min(prev.low, normalizedCandle.low),
+            close: normalizedCandle.close,
+            buyQty: (prev.buyQty ?? 0) + (normalizedCandle.buyQty ?? 0),
+            sellQty: (prev.sellQty ?? 0) + (normalizedCandle.sellQty ?? 0),
+            movingAverages: normalizedCandle.movingAverages ?? prev.movingAverages,
+        };
+
+        this._candles = [
+            ...candles.slice(0, idx),
+            mergedCandle,
+            ...candles.slice(idx + 1),
+        ];
     }
 
     addLiveCandle(liveCandle, candleType) {
@@ -228,7 +255,6 @@ export default function useCandle(stockCode) {
         datafeedRef.current = new Datafeed();
         try {
             const res = await getCandleInitApi(stockCode, type);
-            console.log("캔들 초기값",res)
             const enrichedCandles = enrichLastCandleMA(res.data);
             datafeedRef.current.setInitialData(enrichedCandles);
             onCandleUpdateRef.current?.({ type: 'init', candles: enrichedCandles });
@@ -243,49 +269,25 @@ export default function useCandle(stockCode) {
 
     useEffect(() => {
         if (!completedCandle) return;
-        datafeedRef.current.addCompletedCandle(completedCandle);
-        onCandleUpdateRef.current?.({ type: 'completed', candles: datafeedRef.current.getCandles() });
-    }, [completedCandle]);
+
+        datafeedRef.current.addCompletedCandle(completedCandle, type);
+
+        onCandleUpdateRef.current?.({
+            type: 'completed',
+            chartType: type,
+        });
+    }, [completedCandle, type]);
 
     useEffect(() => {
         if (!liveCandle) return;
 
-        datafeedRef.current.addLiveCandle(
-            liveCandle,
-            type
-        );
-
-        const enriched =
-            datafeedRef.current.getCandles().slice(-1)[0];
+        datafeedRef.current.addLiveCandle(liveCandle, type);
 
         onCandleUpdateRef.current?.({
             type: 'live',
-            candle: enriched
+            chartType: type,
         });
-
     }, [liveCandle, type]);
-
-
-    useEffect(() => {
-        if (!liveCandle) return;
-
-        console.log(
-            "LIVE",
-            type,
-            liveCandle.time
-        );
-
-    }, [liveCandle]);
-    useEffect(() => {
-        if (!completedCandle) return;
-
-        console.log(
-            "COMPLETED",
-            type,
-            completedCandle.time
-        );
-
-    }, [completedCandle]);
 
     const loadMoreCandles = useCallback(async () => {
         const before = datafeedRef.current.getCandles().length; // 🎯 호출 전 순수 캔들 개수

@@ -55,24 +55,21 @@ public class CandleService {
 		LocalDateTime to = parseEndTime(endTime);
 
 		String fromStr = from.toString();
-		List<CandleWithMA<Candle>> wrappedCache = getCachedCandlesInRange(type, stockCode, fromStr,
-				c -> isBetweenStr(c.getCandleTime(), fromStr, to.toString()));
+		String toStr = to.toString();
 
-		List<CandleDTO> result;
+		List<CandleWithMA<Candle>> wrappedCache = getCachedCandlesInRange(type, stockCode, fromStr, toStr,
+				c -> isBetweenStr(c.getCandleTime(), fromStr, toStr));
+
 		if (wrappedCache.isEmpty()) {
 			List<Candle> dbCandles = loadRawCandlesFromDb(type, stockCode, from, to);
 			List<Candle> processedCandles = groupCandles(dbCandles, type);
 
 			List<CandleWithMA<Candle>> wrapped = wrapWithEmptyMA(processedCandles);
 			calculateMovingAveragesInPlace(wrapped);
-			result = toDTOList(wrapped);
-		} else {
-			result = toDTOList(wrappedCache);
+			return toDTOList(wrapped);
 		}
 
-		appendLatestRealtimeCandle(type, result, stockCode);
-		mergeLiveCandle(type, result);
-		return result;
+		return toDTOList(wrappedCache);
 	}
 
 	public List<CandleDTO> getCandleInit(CandleType type, String stockCode) {
@@ -231,21 +228,25 @@ public class CandleService {
 	// ===================== 명시적 Candle 헬퍼 메서드군 =====================
 
 	private List<CandleWithMA<Candle>> getCachedCandlesInRange(CandleType type, String stockCode, String fromStr,
-			Predicate<Candle> inRange) {
+			String toStr, Predicate<Candle> inRange) {
 		List<CandleWithMA<Candle>> cache = candleCacheService.getCandles(type, stockCode);
-		if (!isCacheCoveringRangeStr(cache, fromStr)) {
-			log.info("캐시 범위 미달 혹은 비어있음");
+
+		if (!isCacheCoveringRangeStr(cache, fromStr, toStr)) {
 			return List.of();
 		}
+
 		return cache.stream().filter(c -> inRange.test(c.getCandle())).toList();
 	}
 
-	private boolean isCacheCoveringRangeStr(List<CandleWithMA<Candle>> cache, String fromStr) {
-		if (cache == null || cache.isEmpty())
+	private boolean isCacheCoveringRangeStr(List<CandleWithMA<Candle>> cache, String fromStr, String toStr) {
+		if (cache == null || cache.isEmpty()) {
 			return false;
+		}
+
 		String cacheStart = cache.get(0).getCandle().getCandleTime();
 		String cacheEnd = cache.get(cache.size() - 1).getCandle().getCandleTime();
-		return fromStr.compareTo(cacheStart) >= 0 && fromStr.compareTo(cacheEnd) <= 0;
+
+		return fromStr.compareTo(cacheStart) >= 0 && toStr.compareTo(cacheEnd) <= 0;
 	}
 
 	private boolean isBetweenStr(String time, String fromStr, String toStr) {
@@ -344,9 +345,10 @@ public class CandleService {
 
 	public void saveCandleOrder(String stockCode, Integer currentPrice, int buyQty, int sellQty, long tradeAmount,
 			LocalDateTime lastExecutionTime) {
-		CandleDTO candleDTO = candleSchedulerService.saveCurrentCandle(stockCode, currentPrice, buyQty, sellQty,
-				tradeAmount, lastExecutionTime);
-		webSocketService.sendCurrentCandle(candleDTO, stockCode);
+		Map<CandleType, CandleDTO> candles = candleSchedulerService.saveCurrentCandle(stockCode, currentPrice, buyQty,
+				sellQty, tradeAmount, lastExecutionTime);
+
+		candles.forEach((type, candleDTO) -> webSocketService.sendCurrentCandle(candleDTO, stockCode, type));
 	}
 
 	private void mergeLiveCandle(CandleType type, List<CandleDTO> result) {
