@@ -9,7 +9,10 @@ import Poi.Stock.features.Candle.Entity.Candle;
 import Poi.Stock.features.Candle.Entity.CandleDay;
 import Poi.Stock.features.Candle.Entity.CandleHour;
 import Poi.Stock.features.Candle.Entity.CandleMinute;
+import Poi.Stock.features.Candle.Entity.CandleMonth;
+import Poi.Stock.features.Candle.Entity.CandleWeek;
 import Poi.Stock.features.Candle.Entity.CandleWithMA;
+import Poi.Stock.features.Candle.Entity.CandleYear;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -67,11 +70,20 @@ public class CandleDTO {
 	private static <T extends Candle> String getCandidateTimeStr(T candle) {
 		if (candle instanceof CandleMinute) {
 			return ((CandleMinute) candle).getTime().toString();
-		} else if (candle instanceof Poi.Stock.features.Candle.Entity.CandleHour) {
-			return ((Poi.Stock.features.Candle.Entity.CandleHour) candle).getTime().toString();
+		} else if (candle instanceof CandleHour) {
+			return ((CandleHour) candle).getTime().toString();
 		} else if (candle instanceof CandleDay) {
 			return ((CandleDay) candle).getDate().toString();
 		}
+		// 🎯 [추가] 주봉, 월봉, 년봉도 getDate()를 가져와 문자열로 변환하도록 처리
+		else if (candle instanceof CandleWeek) {
+			return ((CandleWeek) candle).getDate().toString();
+		} else if (candle instanceof CandleMonth) {
+			return ((CandleMonth) candle).getDate().toString();
+		} else if (candle instanceof CandleYear) {
+			return ((CandleYear) candle).getDate().toString();
+		}
+
 		return "";
 	}
 	public static CandleDTO from(CandleMinute candle) {

@@ -79,7 +79,11 @@ function normalizeCandleTime(timeStr, candleType) {
             hours = Math.floor(hours / 4) * 4;
             minutes = 0;
             break;
+        // 🎯 [수정 부분] 일봉, 주봉, 월봉, 년봉은 모두 시/분 정보가 필요 없으므로 날짜 포맷만 반환합니다.
         case 'DAY':
+        case 'WEEK':
+        case 'MONTH':
+        case 'YEAR':
             return `${y}-${m}-${d}`;
         default:
             break;

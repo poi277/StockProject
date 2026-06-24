@@ -19,10 +19,16 @@ import Poi.Stock.features.Candle.Entity.Candle;
 import Poi.Stock.features.Candle.Entity.CandleDay;
 import Poi.Stock.features.Candle.Entity.CandleHour;
 import Poi.Stock.features.Candle.Entity.CandleMinute;
+import Poi.Stock.features.Candle.Entity.CandleMonth;
+import Poi.Stock.features.Candle.Entity.CandleWeek;
 import Poi.Stock.features.Candle.Entity.CandleWithMA;
+import Poi.Stock.features.Candle.Entity.CandleYear;
 import Poi.Stock.features.Candle.repository.CandleDayRepository;
 import Poi.Stock.features.Candle.repository.CandleHourRepository;
 import Poi.Stock.features.Candle.repository.CandleMinuteRepository;
+import Poi.Stock.features.Candle.repository.CandleMonthRepository;
+import Poi.Stock.features.Candle.repository.CandleWeekRepository;
+import Poi.Stock.features.Candle.repository.CandleYearRepository;
 import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.util.EnumUtil.CandleType;
 import lombok.RequiredArgsConstructor;
@@ -39,9 +45,13 @@ public class CandleService {
 
 	private final CandleMinuteRepository candleMinuteRepository;
 	private final CandleDayRepository candleDayRepository;
+
+	private final CandleHourRepository candleHourRepository;
+	private final CandleWeekRepository candleWeekRepository;
+	private final CandleMonthRepository candleMonthRepository;
+	private final CandleYearRepository candleYearRepository;
 	private final RedisTemplate<String, String> redisTemplate;
 	private final CandleSchedulerService candleSchedulerService;
-	private final CandleHourRepository candleHourRepository;
 	private final CandleCacheService candleCacheService;
 	private final WebSocketService webSocketService;
 
@@ -61,7 +71,7 @@ public class CandleService {
 				c -> isBetweenStr(c.getCandleTime(), fromStr, toStr));
 
 		if (wrappedCache.isEmpty()) {
-			List<Candle> dbCandles = loadRawCandlesFromDb(type, stockCode, from, to);
+			List<Candle> dbCandles = loadCandlesFromDb(type, stockCode, from, to);
 			List<Candle> processedCandles = groupCandles(dbCandles, type);
 
 			List<CandleWithMA<Candle>> wrapped = wrapWithEmptyMA(processedCandles);
@@ -76,7 +86,6 @@ public class CandleService {
 		int targetSize = 100;
 
 		List<CandleWithMA<Candle>> wrappedCache = candleCacheService.getCandles(type, stockCode);
-
 		if (wrappedCache.isEmpty()) {
 			log.info("{} 초기화 캐시 공백 - 종목: {}. DB에서 최신 데이터를 호출합니다.", type, stockCode);
 			List<Candle> dbCandles = loadTop100FromDb(type, stockCode);
@@ -91,56 +100,80 @@ public class CandleService {
 
 		if (wrappedCache.isEmpty())
 			return List.of();
-
 		List<CandleDTO> result = toDTOList(wrappedCache);
 		appendLatestRealtimeCandle(type, result, stockCode);
 		mergeLiveCandle(type, result);
 		return result;
 	}
 
-	/**
-	 * DB에서 순수 원천 데이터(Raw Data)만 조회하는 전담 메서드
-	 */
-	private List<Candle> loadRawCandlesFromDb(CandleType type, String stockCode, LocalDateTime from, LocalDateTime to) {
-		if (type.isMinuteType()) {
-			return new ArrayList<>(
-					candleMinuteRepository.findByStockCodeAndTimeBetweenOrderByTimeAsc(stockCode, from, to));
-		}
 
-		if (type.isHourType()) {
-			return new ArrayList<>(
-					candleHourRepository.findByStockCodeAndTimeBetweenOrderByTimeAsc(stockCode, from, to));
-		}
-
-		if (type == CandleType.DAY) {
-			return new ArrayList<>(candleDayRepository.findByStockCodeAndDateBetweenOrderByDateAsc(stockCode,
-					from.toLocalDate(), to.toLocalDate()));
-		}
-		throw new IllegalArgumentException("지원하지 않는 타입: " + type);
+	private List<Candle> loadCandlesFromDb(CandleType type, String stockCode, LocalDateTime from, LocalDateTime to) {
+		return switch (type) {
+		case ONE_MINUTE, THREE_MINUTE, FIVE_MINUTE, TEN_MINUTE ->
+			new ArrayList<>(candleMinuteRepository.findByStockCodeAndTimeBetweenOrderByTimeAsc(stockCode, from, to));
+		case HOUR, TWO_HOUR, THREE_HOUR, FOUR_HOUR ->
+			new ArrayList<>(candleHourRepository.findByStockCodeAndTimeBetweenOrderByTimeAsc(stockCode, from, to));
+		case DAY -> new ArrayList<>(candleDayRepository.findByStockCodeAndDateBetweenOrderByDateAsc(stockCode,
+				from.toLocalDate(), to.toLocalDate()));
+		case WEEK -> new ArrayList<>(candleWeekRepository.findByStockCodeAndDateBetweenOrderByDateAsc(stockCode,
+				from.toLocalDate(), to.toLocalDate()));
+		case MONTH -> new ArrayList<>(candleMonthRepository.findByStockCodeAndDateBetweenOrderByDateAsc(stockCode,
+				from.toLocalDate(), to.toLocalDate()));
+		case YEAR -> new ArrayList<>(candleYearRepository.findByStockCodeAndDateBetweenOrderByDateAsc(stockCode,
+				from.toLocalDate(), to.toLocalDate()));
+		default -> throw new IllegalArgumentException("지원하지 않는 타입: " + type);
+		};
 	}
 
 	/**
 	 * DB에서 최신 Top 100 원천 데이터(Raw Data)만 조회하는 전담 메서드
 	 */
 	private List<Candle> loadTop100FromDb(CandleType type, String stockCode) {
-		if (type.isMinuteType()) {
+		return switch (type) {
+		// 1. 분봉 계열 (Time 기준 정렬)
+		case ONE_MINUTE, THREE_MINUTE, FIVE_MINUTE, TEN_MINUTE -> {
 			List<CandleMinute> dbCandles = candleMinuteRepository.findTop100ByStockCodeOrderByTimeDesc(stockCode);
 			dbCandles.sort(Comparator.comparing(CandleMinute::getTime));
-			return new ArrayList<>(dbCandles);
+			yield new ArrayList<>(dbCandles);
 		}
 
-		if (type.isHourType()) {
+		// 2. 시간봉 계열 (Time 기준 정렬)
+		case HOUR, TWO_HOUR, THREE_HOUR, FOUR_HOUR -> {
 			List<CandleHour> hours = candleHourRepository.findTop100ByStockCodeOrderByTimeDesc(stockCode);
 			hours.sort(Comparator.comparing(CandleHour::getTime));
-			return new ArrayList<>(hours);
+			yield new ArrayList<>(hours);
 		}
 
-		if (type == CandleType.DAY) {
+		// 3. 일봉 (Date 기준 정렬)
+		case DAY -> {
 			List<CandleDay> days = candleDayRepository.findTop100ByStockCodeOrderByDateDesc(stockCode);
 			days.sort(Comparator.comparing(CandleDay::getDate));
-			return new ArrayList<>(days);
+			yield new ArrayList<>(days);
 		}
-		throw new IllegalArgumentException("지원하지 않는 타입: " + type);
+
+		// 4. 주봉 (Date 기준 정렬)
+		case WEEK -> {
+			List<CandleWeek> weeks = candleWeekRepository.findTop100ByStockCodeOrderByDateDesc(stockCode);
+			weeks.sort(Comparator.comparing(CandleWeek::getDate));
+			yield new ArrayList<>(weeks);
+		}
+
+		// 5. 월봉 (Date 기준 정렬)
+		case MONTH -> {
+			List<CandleMonth> months = candleMonthRepository.findTop100ByStockCodeOrderByDateDesc(stockCode);
+			months.sort(Comparator.comparing(CandleMonth::getDate));
+			yield new ArrayList<>(months);
+		}
+
+		// 6. 년봉 (Date 기준 정렬)
+		case YEAR -> {
+			List<CandleYear> years = candleYearRepository.findTop100ByStockCodeOrderByDateDesc(stockCode);
+			years.sort(Comparator.comparing(CandleYear::getDate));
+			yield new ArrayList<>(years);
+		}
+
+		default -> throw new IllegalArgumentException("지원하지 않는 타입: " + type);
+		};
 	}
 
 	/**
@@ -170,7 +203,8 @@ public class CandleService {
 
 		// 1분봉이나 1시간봉처럼 묶음 연산(그룹화)이 필요 없는 기본 규격은 굳이 연산하지 않고 무사통과(Pass)
 		if ((type.isMinuteType() && type.getMinute() == 1) || (type.isHourType() && type.getHourGroup() == 1)
-				|| type == CandleType.DAY) {
+				|| type == CandleType.DAY || type == CandleType.WEEK || type == CandleType.MONTH
+				|| type == CandleType.YEAR) {
 			return rawCandles;
 		}
 

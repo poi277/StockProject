@@ -3,6 +3,7 @@ package Poi.Stock.features.Candle.repository;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -21,4 +22,6 @@ public interface CandleHourRepository extends JpaRepository<CandleHour, Long> {
 	List<String> findDistinctStockCodes();
 
 	List<CandleHour> findTop100ByStockCodeOrderByTimeDesc(String stockCode);
+
+	List<CandleHour> findByStockCodeOrderByTimeDesc(String stockCode, PageRequest of);
 }

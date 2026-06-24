@@ -14,6 +14,9 @@ const MINUTE_BASED_TYPES = new Set([
 function getSubscribeType(type) {
     if (MINUTE_BASED_TYPES.has(type)) return 'ONE_MINUTE';
     if (type === 'DAY') return 'DAY';
+    if (type === 'WEEK') return 'DAY';
+    if (type === 'MONTH') return 'DAY';
+    if (type === 'YEAR') return 'DAY';
     return type;
 }
 
@@ -25,7 +28,7 @@ function toCandlePayload(data) {
         close: data.close,
         buyQty: data.buyQty,
         sellQty: data.sellQty,
-        time: data.time,
+        time: data.time || data.date, 
         candleType: data.candleType,
         movingAverages: data.movingAverages,
     };

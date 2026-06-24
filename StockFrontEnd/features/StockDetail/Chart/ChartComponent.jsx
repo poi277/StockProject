@@ -220,7 +220,7 @@ export default function ChartComponent({ stockCode }) {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const chart = initChart(containerRef.current);
+    const chart = initChart(containerRef.current); 
     const candleSeries = createCandleSeries(chart);
     const maSeries = createMASeries(chart);
     const priceAxisElement = containerRef.current.querySelector('td:last-child');

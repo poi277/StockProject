@@ -1,6 +1,6 @@
 package Poi.Stock.features.Candle.Entity;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -9,32 +9,33 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "candle_minute", indexes = { @Index(name = "idx_candle_stock_time", columnList = "stockCode, time") })
-public class CandleMinute implements Candle {
+@Table(name = "candle_week", indexes = { @Index(name = "idx_candle_week_stock_date", columnList = "stockCode, date") })
+public class CandleWeek implements Candle {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 	private String stockCode;
-	private LocalDateTime time;
+	private LocalDate date;
 	private Integer open;
 	private Integer high;
 	private Integer low;
 	private Integer close;
-
 	private Long buyQty;
 	private Long sellQty;
-	private Long totalVolume; // buyQty + sellQty 집계 및 60분봉 변환을 위해 추가
+	private Long totalVolume;
 	private Long tradeAmount;
 
 	@Override
 	public String getCandleTime() {
-		return this.time.toString();
+		return this.date.toString();
 	}
 }

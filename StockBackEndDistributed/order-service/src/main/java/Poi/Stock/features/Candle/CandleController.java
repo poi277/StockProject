@@ -36,6 +36,7 @@ public class CandleController {
 	@GetMapping("/{stockCode}/init")
 	public ResponseEntity<List<CandleDTO>> getCandleInit(@PathVariable("stockCode") String stockCode,
 			@RequestParam(name = "type", defaultValue = "ONE_MINUTE") CandleType type) {
+		log.info("처음 들어온 type {} ", type);
 		List<CandleDTO> data = candleService.getCandleInit(type, stockCode);
 		return ResponseEntity.ok(data);
 	}

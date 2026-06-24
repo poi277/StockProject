@@ -151,9 +151,6 @@ public class CandleCacheService {
 		});
 	}
 
-	/**
-	 * [리팩토링] 와일드카드와 T를 지우고 무조건 명확한 Candle 기반 리스트로 반환
-	 */
 	public List<CandleWithMA<Candle>> getCandles(CandleType type, String stockCode) {
 		Map<String, Deque<CandleWithMA<Candle>>> cacheMap = candleCache.getTypedStore(type);
 		if (cacheMap == null)

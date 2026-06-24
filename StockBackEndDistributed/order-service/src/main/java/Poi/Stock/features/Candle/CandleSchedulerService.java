@@ -1,8 +1,10 @@
 package Poi.Stock.features.Candle;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -22,10 +24,16 @@ import Poi.Stock.features.Candle.Entity.Candle;
 import Poi.Stock.features.Candle.Entity.CandleDay;
 import Poi.Stock.features.Candle.Entity.CandleHour;
 import Poi.Stock.features.Candle.Entity.CandleMinute;
+import Poi.Stock.features.Candle.Entity.CandleMonth;
+import Poi.Stock.features.Candle.Entity.CandleWeek;
 import Poi.Stock.features.Candle.Entity.CandleWithMA;
+import Poi.Stock.features.Candle.Entity.CandleYear;
 import Poi.Stock.features.Candle.repository.CandleDayRepository;
 import Poi.Stock.features.Candle.repository.CandleHourRepository;
 import Poi.Stock.features.Candle.repository.CandleMinuteRepository;
+import Poi.Stock.features.Candle.repository.CandleMonthRepository;
+import Poi.Stock.features.Candle.repository.CandleWeekRepository;
+import Poi.Stock.features.Candle.repository.CandleYearRepository;
 import Poi.Stock.features.Websocket.WebSocketService;
 import Poi.Stock.util.EnumUtil.CandleType;
 import lombok.RequiredArgsConstructor;
@@ -41,9 +49,15 @@ public class CandleSchedulerService {
 	private final RedisTemplate<String, String> redisTemplate;
 	private final CandleMinuteRepository candleMinuteRepository;
 	private final CandleHourRepository candleHourRepository;
+
+	private final CandleWeekRepository candleWeekRepository;
+	private final CandleMonthRepository candleMonthRepository;
+	private final CandleYearRepository candleYearRepository;
+
 	private final CandleDayRepository candleDayRepository;
 	private final CandleCacheService candleCacheService;
 	private final WebSocketService webSocketService;
+	private final CandleCommonService candleCommonService;
 
 	private static final String UPDATE_CANDLE_SCRIPT = """
 			local candleKey   = KEYS[1]
@@ -112,110 +126,147 @@ public class CandleSchedulerService {
 		return Map.of(CandleType.ONE_MINUTE, minuteCandle, CandleType.DAY, dayCandle);
 	}
 
-	public void saveDailyCandles(List<String> assignedCodes) {
-		LocalDate today = LocalDate.now();
-		String todayStr = today.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-
-		log.info("장마감 일봉 정산 시작 (Redis 캐시 기반 고속 이관): {}", todayStr);
-
-		for (String stockCode : assignedCodes) {
-			try {
-				String dayKey = "candle:day:" + stockCode + ":" + todayStr;
-
-				// 1. 레디스에서 오늘 실시간으로 완벽하게 적재된 일봉 해시 가져오기
-				Map<Object, Object> redisDayFields = redisTemplate.opsForHash().entries(dayKey);
-
-				// 만약 오늘 거래가 전혀 없어서 레디스 키가 없다면 패스
-				if (redisDayFields == null || redisDayFields.isEmpty()) {
-					log.warn("종목 [{}] 의 금일 일봉 캐시가 Redis에 존재하지 않아 정산을 건너뜁니다.", stockCode);
-					continue;
-				}
-
-				// 2. 파싱 및 전날 종가 기반 등락폭/등락률 계산
-				int open = Integer.parseInt((String) redisDayFields.get("open"));
-				int high = Integer.parseInt((String) redisDayFields.get("high"));
-				int low = Integer.parseInt((String) redisDayFields.get("low"));
-				int close = Integer.parseInt((String) redisDayFields.get("close"));
-				long buyQty = Long.parseLong((String) redisDayFields.get("buyQty"));
-				long sellQty = Long.parseLong((String) redisDayFields.get("sellQty"));
-				long tradeAmount = Long.parseLong((String) redisDayFields.get("tradeAmount"));
-
-				int changeAmount = 0;
-				double changeRate = 0.0;
-
-				// 어제 종가 정보 가져와서 등락 계산 (이 부분은 유지)
-				Optional<CandleDay> yesterdayCandle = candleDayRepository.findByStockCodeAndDate(stockCode,
-						today.minusDays(1));
-				if (yesterdayCandle.isPresent()) {
-					int yesterdayClose = yesterdayCandle.get().getClose();
-					changeAmount = close - yesterdayClose;
-					changeRate = yesterdayClose != 0 ? ((double) changeAmount / yesterdayClose) * 100.0 : 0.0;
-				} else {
-					changeAmount = close - open;
-					changeRate = open != 0 ? ((double) changeAmount / open) * 100.0 : 0.0;
-				}
-
-				// 3. 엔티티 생성 및 DB 저장
-				CandleDay candleDay = new CandleDay(null, stockCode, today, open, high, low, close, buyQty, sellQty,
-						buyQty + sellQty, tradeAmount, changeAmount, changeRate);
-
-				candleDayRepository.save(candleDay);
-
-				// 4. 다음 날 깨끗한 시가로 출발할 수 있도록 오늘 자 일봉 캐시 삭제
-				redisTemplate.delete(dayKey);
-
-				// 5. 메모리 내 로컬 캐시 컴포넌트 싱크업
-				CandleWithMA<Candle> wrapped = candleCacheService.upsertCandle(CandleType.DAY, stockCode, candleDay);
-				if (wrapped != null) {
-					webSocketService.sendCompleteCandle(wrapped, stockCode, CandleType.DAY);
-				}
-
-				log.info("종목 [{}] 장마감 일봉 정산 완료 (Redis -> DB 이관 완료)", stockCode);
-			} catch (Exception e) {
-				log.error("일봉 마감 에러 - 종목: {} error: {}", stockCode, e.getMessage());
-			}
-		}
-	}
-
-	/**
-	 * 스케줄러 - Redis 미확정 캔들 1분 주기로 DB 벌크 이관
-	 */
 	public List<CandleMinute> save1MinCandle(List<String> assignedCodes, LocalDateTime now) {
 		List<CandleMinute> savedCandles = new ArrayList<>();
+
+		// 1. 분봉 정산 스케줄러 중복 방지를 위한 분산 락 획득
 		Boolean lock = redisTemplate.opsForValue().setIfAbsent("lock:candle", "1", 10, TimeUnit.SECONDS);
-		if (!Boolean.TRUE.equals(lock))
+		if (!Boolean.TRUE.equals(lock)) {
 			return savedCandles;
+		}
 
 		try {
 			for (String stockCode : assignedCodes) {
 				Set<String> keys = redisTemplate.keys("candle:1m:" + stockCode + ":*");
-				if (keys == null || keys.isEmpty())
+				if (keys == null || keys.isEmpty()) {
 					continue;
+				}
 				for (String key : keys) {
 					try {
 						String timeStr = key.substring(key.lastIndexOf(":") + 1);
 						LocalDateTime candleTime = LocalDateTime.parse(timeStr, FMT);
-						if (!candleTime.isBefore(now.minusMinutes(1)))
+						if (!candleTime.isBefore(now.minusMinutes(1))) {
 							continue;
-
-						Map<Object, Object> candle = redisTemplate.opsForHash().entries(key);
-						if (candle.isEmpty())
+						}
+						Map<Object, Object> candleHash = redisTemplate.opsForHash().entries(key);
+						if (candleHash == null || candleHash.isEmpty()) {
 							continue;
-
-						CandleMinute candleMinute = CandleMinute.setCandleRedis(stockCode, candleTime, candle);
+						}
+						CandleMinute candleMinute = Candle.fromRedisMap(candleHash,
+								(open, high, low, close, bQty, sQty, vol, amt) -> new CandleMinute(null, stockCode,
+										candleTime, open, high, low, close, bQty, sQty, vol, amt));
 						candleMinuteRepository.save(candleMinute);
 						savedCandles.add(candleMinute);
 						redisTemplate.delete(key);
+
 					} catch (Exception e) {
-						log.error("1분봉 파일 유도 에러 - key: {} error: {}", key, e.getMessage());
+						log.error("1분봉 파일 유도 에러 - key: {} error: {}", key, e.getMessage(), e);
 					}
 				}
 			}
 		} finally {
+			// 무조건 분산 락 해제
 			redisTemplate.delete("lock:candle");
 		}
 		return savedCandles;
 	}
+
+	public void saveDailyCandles(List<String> assignedCodes) {
+        LocalDate today = LocalDate.now();
+        String todayStr = today.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+		log.info("📢 장마감 전체 캔들(일/주/월/년) 통합 정산 시작 (빌더 패턴 적용): {}", todayStr);
+
+        for (String stockCode : assignedCodes) {
+            try {
+                String dayKey = "candle:day:" + stockCode + ":" + todayStr;
+
+                Map<Object, Object> redisDayFields = redisTemplate.opsForHash().entries(dayKey);
+
+                if (redisDayFields == null || redisDayFields.isEmpty()) {
+                    log.warn("종목 [{}] 의 금일 일봉 캐시가 Redis에 존재하지 않아 정산을 건너뜁니다.", stockCode);
+                    continue;
+                }
+
+				CandleDay candleDay = Candle.fromRedisMap(redisDayFields,
+						(open, high, low, close, bQty, sQty, vol, amt) -> new CandleDay(null, stockCode, today, open,
+								high, low, close, bQty, sQty, vol, amt, 0, 0.0));
+
+
+                // 전날 종가 기반 등락폭/등락률 계산
+                int changeAmount = 0;
+                double changeRate = 0.0;
+                Optional<CandleDay> yesterdayCandle = candleDayRepository.findByStockCodeAndDate(stockCode, today.minusDays(1));
+                
+                if (yesterdayCandle.isPresent()) {
+                    int yesterdayClose = yesterdayCandle.get().getClose();
+                    changeAmount = candleDay.getClose() - yesterdayClose;
+                    changeRate = yesterdayClose != 0 ? ((double) changeAmount / yesterdayClose) * 100.0 : 0.0;
+                } else {
+                    changeAmount = candleDay.getClose() - candleDay.getOpen();
+                    changeRate = candleDay.getOpen() != 0 ? ((double) changeAmount / candleDay.getOpen()) * 100.0 : 0.0;
+                }
+
+                // 등락 계산 결과 셋팅
+                candleDay.setChangeAmount(changeAmount);
+                candleDay.setChangeRate(changeRate);
+
+                // 일봉 DB 저장
+                candleDayRepository.save(candleDay);
+
+				// 3. 🎯 [빌더 버전] 주 / 월 / 년봉 상위 주기 캔들 통합 정산
+                
+                // 3-1. 주봉 (해당 주의 월요일 기준)
+                LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                Optional<CandleWeek> existingWeek = candleWeekRepository.findByStockCodeAndDate(stockCode, monday);
+
+				CandleWeek newWeek = CandleWeek.builder().stockCode(stockCode).date(monday) // ⚠️ 만약 엔티티 내부 필드명이 time이면
+																							// .time(monday)로 변경하세요.
+						.open(candleDay.getOpen()).high(candleDay.getHigh()).low(candleDay.getLow())
+						.close(candleDay.getClose()).buyQty(candleDay.getBuyQty()).sellQty(candleDay.getSellQty())
+						.totalVolume(candleDay.getTotalVolume()).tradeAmount(candleDay.getTradeAmount())
+						// 등락폭/등락률 정보가 생성자에 정수/실수로 묶여있더라도 빌더에서는 불필요 시 생략이 가능합니다.
+						.build();
+                        
+                candleCommonService.upsertUpperPeriodCandle(CandleType.WEEK, stockCode, monday, existingWeek, newWeek);
+
+                // 3-2. 월봉 (해당 월의 1일 기준)
+                LocalDate firstDayOfMonth = today.with(TemporalAdjusters.firstDayOfMonth());
+                Optional<CandleMonth> existingMonth = candleMonthRepository.findByStockCodeAndDate(stockCode, firstDayOfMonth);
+
+				CandleMonth newMonth = CandleMonth.builder().stockCode(stockCode).date(firstDayOfMonth)
+						.open(candleDay.getOpen()).high(candleDay.getHigh()).low(candleDay.getLow())
+						.close(candleDay.getClose()).buyQty(candleDay.getBuyQty()).sellQty(candleDay.getSellQty())
+						.totalVolume(candleDay.getTotalVolume()).tradeAmount(candleDay.getTradeAmount()).build();
+                        
+                candleCommonService.upsertUpperPeriodCandle(CandleType.MONTH, stockCode, firstDayOfMonth, existingMonth, newMonth);
+
+                // 3-3. 년봉 (해당 년도의 1월 1일 기준)
+                LocalDate firstDayOfYear = today.with(TemporalAdjusters.firstDayOfYear());
+                Optional<CandleYear> existingYear = candleYearRepository.findByStockCodeAndDate(stockCode, firstDayOfYear);
+
+				CandleYear newYear = CandleYear.builder().stockCode(stockCode).date(firstDayOfYear)
+						.open(candleDay.getOpen()).high(candleDay.getHigh()).low(candleDay.getLow())
+						.close(candleDay.getClose()).buyQty(candleDay.getBuyQty()).sellQty(candleDay.getSellQty())
+						.totalVolume(candleDay.getTotalVolume()).tradeAmount(candleDay.getTradeAmount()).build();
+
+                candleCommonService.upsertUpperPeriodCandle(CandleType.YEAR, stockCode, firstDayOfYear, existingYear, newYear);
+
+                // 4. 다음 날 깨끗한 시가로 출발할 수 있도록 오늘 자 일봉 캐시 삭제
+                redisTemplate.delete(dayKey);
+
+                // 5. 메모리 내 로컬 캐시 컴포넌트 싱크업 및 실시간 웹소켓 발행
+                CandleWithMA<Candle> wrapped = candleCacheService.upsertCandle(CandleType.DAY, stockCode, candleDay);
+                if (wrapped != null) {
+                    webSocketService.sendCompleteCandle(wrapped, stockCode, CandleType.DAY);
+                }
+
+                log.info("종목 [{}] 장마감 전체 통합 정산 완료 (Redis 이관 -> 주/월/년 반영 완료)", stockCode);
+            } catch (Exception e) {
+                log.error("💥 통합 마감 에러 - 종목: {} error: {}", stockCode, e.getMessage(), e);
+            }
+        }
+    }
 
 	/**
 	 * 스케줄러 후처리 - 1분봉 기반 상위 멀티 분봉 캐시 동적 빌드 파이프라인
@@ -325,9 +376,7 @@ public class CandleSchedulerService {
 				open, high, low, close, buyQty, sellQty, buyQty + sellQty, tradeAmount);
 	}
 
-	/**
-	 * 스케줄러 - 60분 주기로 시간봉 집계 및 캐시 싱크 마감
-	 */
+
 	public void saveHourlyCandles(List<String> assignedCodes) {
 		LocalDateTime now = LocalDateTime.now().withMinute(0).withSecond(0).withNano(0);
 		LocalDateTime startTime = now.minusHours(1);
@@ -366,37 +415,4 @@ public class CandleSchedulerService {
 				tradeAmount);
 	}
 
-	/**
-	 * 스케줄러 - 장마감 후 일봉 정산 및 캐시 동기화 마감
-	 */
-	/**
-	 * 스케줄러 - 장마감 후 일봉 정산 및 캐시 동기화 마감 (Redis 데이터 다이렉트 이관)
-	 */
-
-
-	private CandleDay toCandleDay(String stockCode, LocalDate date, List<CandleMinute> minutes) {
-		CandleMinute first = minutes.get(0);
-		CandleMinute last = minutes.get(minutes.size() - 1);
-		int open = first.getOpen();
-		int close = last.getClose();
-		int high = minutes.stream().mapToInt(CandleMinute::getHigh).max().orElse(open);
-		int low = minutes.stream().mapToInt(CandleMinute::getLow).min().orElse(open);
-		long buyQty = minutes.stream().mapToLong(c -> c.getBuyQty() != null ? c.getBuyQty() : 0L).sum();
-		long sellQty = minutes.stream().mapToLong(c -> c.getSellQty() != null ? c.getSellQty() : 0L).sum();
-		long tradeAmount = minutes.stream()
-				.mapToLong(c -> c.getTradeAmount() != null ? c.getTradeAmount().longValue() : 0L).sum();
-		int changeAmount;
-		double changeRate;
-		Optional<CandleDay> yesterdayCandle = candleDayRepository.findByStockCodeAndDate(stockCode, date.minusDays(1));
-		if (yesterdayCandle.isPresent()) {
-			int yesterdayClose = yesterdayCandle.get().getClose();
-			changeAmount = close - yesterdayClose;
-			changeRate = yesterdayClose != 0 ? ((double) changeAmount / yesterdayClose) * 100.0 : 0.0;
-		} else {
-			changeAmount = close - open;
-			changeRate = open != 0 ? ((double) changeAmount / open) * 100.0 : 0.0;
-		}
-		return new CandleDay(null, stockCode, date, open, high, low, close, buyQty, sellQty, buyQty + sellQty,
-				tradeAmount, changeAmount, changeRate);
-	}
 }
