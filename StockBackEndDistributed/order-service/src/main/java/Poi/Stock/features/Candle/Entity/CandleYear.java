@@ -1,6 +1,8 @@
 package Poi.Stock.features.Candle.Entity;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -12,13 +14,18 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Builder
 @Entity
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "candle_year", indexes = { @Index(name = "idx_candle_year_stock_date", columnList = "stockCode, date") })
 public class CandleYear implements Candle {
+	// 일봉 시간 파싱을 위한 포맷터 정의 (예: 20260625)
+	private static final DateTimeFormatter DAY_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -36,5 +43,24 @@ public class CandleYear implements Candle {
 	@Override
 	public String getCandleTime() {
 		return this.date.toString();
+	}
+
+	@Override
+	public void setCandleTime(String string) {
+		if (string == null || string.isBlank()) {
+			return;
+		}
+		try {
+			if (string.contains("T")) {
+				this.date = LocalDateTime.parse(string).toLocalDate();
+			} else if (string.contains("-")) {
+				this.date = LocalDate.parse(string);
+			} else {
+				String pureDateStr = string.substring(0, 8);
+				this.date = LocalDate.parse(pureDateStr, DAY_FMT);
+			}
+		} catch (Exception e) {
+			log.error("CandleDay - CandleTime 파싱 실패: {}, 에러: {}", string, e.getMessage());
+		}
 	}
 }

@@ -24,19 +24,31 @@ import lombok.NoArgsConstructor;
 @Builder // 💡 객체 조립 편의성을 위해 빌더 패턴 추가
 @NoArgsConstructor
 @AllArgsConstructor
-public class CandleDTO {
+public class CandleDTO implements Candle {
 
+	private String stockCode;
 	private String time;
-	private int open;
-	private int high;
-	private int low;
-	private int close;
+	// 🎯 int 대신 Integer로 타입을 맞춰줍니다. (필요 시 open, high, low도 인터페이스 규격에 맞게 함께 변경)
+	private Integer open;
+	private Integer high;
+	private Integer low;
+	private Integer close;
 	private Long sellQty;
 	private Long buyQty;
 	private Long totalVolume;
 	private Long tradeAmount;
 
 	private Map<String, Double> movingAverages;
+
+	@Override
+	public String getCandleTime() {
+		return this.time;
+	}
+
+	@Override
+	public void setCandleTime(String string) {
+		this.time = string;
+	}
 
 	// 기본 공통 생성 팩토리 메서드
 	public static CandleDTO of(String time, int open, int high, int low, int close, Long sellQty, Long buyQty,
@@ -50,7 +62,8 @@ public class CandleDTO {
 					Map.Entry::getValue));
 		}
 
-		return new CandleDTO(time, open, high, low, close, sellQty != null ? sellQty : 0L, buyQty != null ? buyQty : 0L,
+		return new CandleDTO("", time, open, high, low, close, sellQty != null ? sellQty : 0L,
+				buyQty != null ? buyQty : 0L,
 				totalVolume != null ? totalVolume : 0L, tradeAmount != null ? tradeAmount : 0L, stringKeyMa);
 	}
 

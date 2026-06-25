@@ -9,8 +9,75 @@ function getCssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
-function initChart(container) {
+function getTimeScaleOptions(type) {
+  if (type === 'YEAR') {
+    return {
+      tickMarkFormatter: (time) => {
+        const date = new Date(time * 1000);
+        return String(date.getFullYear());
+      },
+      timeFormatter: (time) => {
+        const date = new Date(time * 1000);
+        return String(date.getFullYear());
+      },
+    };
+  }
+  if (type === 'MONTH') {
+    return {
+      tickMarkFormatter: (time) => {
+        const date = new Date(time * 1000);
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        return `${y}-${m}`;
+      },
+      timeFormatter: (time) => {
+        const date = new Date(time * 1000);
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        return `${y}-${m}`;
+      },
+    };
+  }
+  if (type === 'DAY' || type === 'WEEK') {
+    return {
+      tickMarkFormatter: (time) => {
+        const date = new Date(time * 1000);
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      },
+      timeFormatter: (time) => {
+        const date = new Date(time * 1000);
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      },
+    };
+  }
+  return {
+    tickMarkFormatter: (time) => {
+      const date = new Date(time * 1000);
+      const h = String(date.getHours()).padStart(2, '0');
+      const min = String(date.getMinutes()).padStart(2, '0');
+      return `${h}:${min}`;
+    },
+    timeFormatter: (time) => {
+      const date = new Date(time * 1000);
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      const h = String(date.getHours()).padStart(2, '0');
+      const min = String(date.getMinutes()).padStart(2, '0');
+      return `${y}-${m}-${d} ${h}:${min}`;
+    },
+  };
+}
+
+function initChart(container, type) {
   const bgColor = getCssVar('--wts-adaptive-background');
+  const { tickMarkFormatter, timeFormatter } = getTimeScaleOptions(type);
 
   return createChart(container, {
     layout: {
@@ -42,28 +109,13 @@ function initChart(container) {
     },
     localization: {
       priceFormatter: (price) => Math.round(price).toLocaleString(),
-      timeFormatter: (time) => {
-        const date = new Date(time * 1000);
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        const h = String(date.getHours()).padStart(2, '0');
-        const min = String(date.getMinutes()).padStart(2, '0');
-
-        return `${y}-${m}-${d} ${h}:${min}`;
-      },
+      timeFormatter,
     },
     timeScale: {
       borderColor: 'rgba(255,255,255,0.05)',
       timeVisible: true,
       secondsVisible: false,
-      tickMarkFormatter: (time) => {
-        const date = new Date(time * 1000);
-        const h = String(date.getHours()).padStart(2, '0');
-        const min = String(date.getMinutes()).padStart(2, '0');
-
-        return `${h}:${min}`;
-      },
+      tickMarkFormatter,
     },
     width: container.clientWidth,
     height: container.clientHeight,
@@ -196,6 +248,7 @@ function applyCandles(candles, chartType, candleSeries, maSeries, totalDataLengt
 
 export default function ChartComponent({ stockCode }) {
   const containerRef = useRef(null);
+  const chartRef = useRef(null);
   const [ohlc, setOhlc] = useState(null);
   const [maValues, setMaValues] = useState(null);
   const isReadyForLoadMore = useRef(false);
@@ -203,11 +256,25 @@ export default function ChartComponent({ stockCode }) {
   const currentMarginRef = useRef({ top: 0.15, bottom: 0.15 });
   const totalDataLengthRef = useRef(0);
 
+  // 🎯 전역 스토어에서 줌 상태값 및 업데이트 액션 가져오기
   const type = useChartButtonStore((state) => state.selectedChartTime);
+  const visibleBarsCount = useChartButtonStore((state) => state.visibleBarsCount);
+  const rightOffset = useChartButtonStore((state) => state.rightOffset);
+  const setChartViewport = useChartButtonStore((state) => state.setChartViewport);
+
   const typeRef = useRef(type);
 
   useEffect(() => {
     typeRef.current = type;
+  }, [type]);
+
+  useEffect(() => {
+    if (!chartRef.current) return;
+    const { tickMarkFormatter, timeFormatter } = getTimeScaleOptions(type);
+    chartRef.current.applyOptions({
+      timeScale: { tickMarkFormatter },
+      localization: { timeFormatter },
+    });
   }, [type]);
 
   const { datafeedRef, loadMoreCandles, setOnCandleUpdate } = useCandle(stockCode);
@@ -220,7 +287,9 @@ export default function ChartComponent({ stockCode }) {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const chart = initChart(containerRef.current); 
+    const chart = initChart(containerRef.current, typeRef.current);
+    chartRef.current = chart;
+
     const candleSeries = createCandleSeries(chart);
     const maSeries = createMASeries(chart);
     const priceAxisElement = containerRef.current.querySelector('td:last-child');
@@ -261,8 +330,23 @@ export default function ChartComponent({ stockCode }) {
       if (event.chartType && event.chartType !== typeRef.current) return;
 
       if (event.type === 'init') {
-        applyCandles(event.candles, typeRef.current, candleSeries, maSeries, totalDataLengthRef);
-        chart.timeScale().fitContent();
+        const chartData = applyCandles(event.candles, typeRef.current, candleSeries, maSeries, totalDataLengthRef);
+
+        if (chartData.length > 0) {
+          const timeScale = chart.timeScale();
+          const totalLength = totalDataLengthRef.current; 
+
+          // 🎯 하드코딩 대신 스토어에 보존되어 있던 사용자의 줌 설정을 가져옵니다.
+          const savedBarsCount = useChartButtonStore.getState().visibleBarsCount;
+          const savedRightOffset = useChartButtonStore.getState().rightOffset;
+
+          const lastRealCandleIndex = totalLength - 100 - 1; 
+
+          timeScale.setVisibleLogicalRange({
+            from: lastRealCandleIndex - savedBarsCount + savedRightOffset,
+            to: lastRealCandleIndex + savedRightOffset,
+          });
+        }
 
         setTimeout(() => {
           isReadyForLoadMore.current = true;
@@ -281,7 +365,6 @@ export default function ChartComponent({ stockCode }) {
         );
         return;
       }
-
       if (event.type === 'prepend') {
         const timeScale = chart.timeScale();
         const currentRange = timeScale.getVisibleLogicalRange();
@@ -301,11 +384,13 @@ export default function ChartComponent({ stockCode }) {
       }
     });
 
+    // 🎯 사용자가 마우스 드래그나 휠로 차트 크기를 바꿀 때 실시간으로 스토어에 기록
     chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
       if (!range) return;
 
       const maxLogicalIndex = totalDataLengthRef.current - 1;
 
+      // 우측 여백 한계 제한 보정 로직
       if (totalDataLengthRef.current > 0 && range.to > maxLogicalIndex) {
         const overflow = range.to - maxLogicalIndex;
 
@@ -315,6 +400,18 @@ export default function ChartComponent({ stockCode }) {
         });
 
         return;
+      }
+
+      // 🎯 사용자가 움직인 실제 범위 크기를 추적하여 실시간 전역 상태값 업데이트
+      if (isReadyForLoadMore.current && totalDataLengthRef.current > 0) {
+        const currentBarsCount = Math.round(range.to - range.from);
+        
+        // 최신 데이터 기준선(BuildWhitespace 시작 지점)에서 현재 화면 스크롤 끝이 얼마나 떨어져 있는지 여백 계산
+        const lastRealCandleIndex = totalDataLengthRef.current - 100 - 1;
+        const currentRightOffset = Math.round(range.to - lastRealCandleIndex);
+
+        // 스토어 상태 갱신 함수 호출
+        setChartViewport(currentBarsCount, currentRightOffset);
       }
 
       if (!isReadyForLoadMore.current) return;
@@ -365,6 +462,7 @@ export default function ChartComponent({ stockCode }) {
 
       resizeObserver.disconnect();
       chart.remove();
+      chartRef.current = null;
       isReadyForLoadMore.current = false;
       isLoadingRef.current = false;
       setOnCandleUpdate(null);

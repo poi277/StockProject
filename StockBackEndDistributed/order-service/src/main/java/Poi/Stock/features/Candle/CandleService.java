@@ -103,9 +103,42 @@ public class CandleService {
 		List<CandleDTO> result = toDTOList(wrappedCache);
 		appendLatestRealtimeCandle(type, result, stockCode);
 		mergeLiveCandle(type, result);
+		calculateMovingAveragesLiveCandle(result);
 		return result;
 	}
 
+
+	private void calculateMovingAveragesLiveCandle(List<CandleDTO> result) {
+		if (result == null || result.isEmpty()) {
+			return;
+		}
+		int i = result.size() - 1;
+		CandleDTO lastCandle = result.get(i);
+		Map<String, Double> maMap = lastCandle.getMovingAverages();
+		if (maMap == null) {
+			maMap = new HashMap<>();
+			lastCandle.setMovingAverages(maMap);
+		}
+
+		for (int period : MA_PERIODS) {
+			int windowStart = Math.max(0, i - period + 1);
+			double sum = 0;
+
+			for (int j = windowStart; j <= i; j++) {
+				sum += result.get(j).getClose();
+			}
+
+			double avg = sum / (i - windowStart + 1);
+			double roundAvg = Math.round(avg * 100.0) / 100.0;
+			try {
+				maMap.put(String.valueOf(period), roundAvg);
+			} catch (UnsupportedOperationException e) {
+				maMap = new HashMap<>(maMap);
+				maMap.put(String.valueOf(period), roundAvg);
+				lastCandle.setMovingAverages(maMap);
+			}
+		}
+	}
 
 	private List<Candle> loadCandlesFromDb(CandleType type, String stockCode, LocalDateTime from, LocalDateTime to) {
 		return switch (type) {
@@ -185,7 +218,8 @@ public class CandleService {
 		if (type.isMinuteType() || type.isHourType()) {
 			String timeStr = now.withSecond(0).withNano(0).format(FMT);
 			addCandleIfNewer(result, type, getCurrentCandleFromRedis("1m", stockCode, timeStr));
-		} else if (type == CandleType.DAY) {
+		} else if (type == CandleType.DAY || type == CandleType.WEEK || type == CandleType.MONTH
+				|| type == CandleType.YEAR) {
 			String todayStr = now.format(DAY_FMT);
 			addCandleIfNewer(result, type, getCurrentCandleFromRedis("day", stockCode, todayStr));
 		}
@@ -387,34 +421,42 @@ public class CandleService {
 
 	private void mergeLiveCandle(CandleType type, List<CandleDTO> result) {
 		// 데이터가 없거나, 실시간 데이터 1개만 덜렁 있는 경우는 비교 대상이 없으므로 통과
-		// 일은 나중에 추가할테니 우선은 통과
 		if (result == null || result.size() < 2 || type == CandleType.DAY) {
 			return;
 		}
-		// 1. 맨 마지막에 붙은 실시간 캔들(Live)과 그 직전 확정 캔들(Last)을 꺼냅니다.
+
 		CandleDTO liveCandle = result.get(result.size() - 1);
 		CandleDTO lastCandle = result.get(result.size() - 2);
 
-		// 2. 두 캔들의 시간 포맷 정형화 (yyyyMMddHHmm 12자리 추출)
+		// 🎯 1. 주봉, 월봉, 년봉은 고민할 필요 없이 무조건 직전 대형 봉에 오늘 자 조각을 병합하고 끝냅니다.
+		if (type == CandleType.WEEK || type == CandleType.MONTH || type == CandleType.YEAR) {
+			lastCandle.setHigh(Math.max(lastCandle.getHigh(), liveCandle.getHigh()));
+			lastCandle.setLow(Math.min(lastCandle.getLow(), liveCandle.getLow()));
+			lastCandle.setClose(liveCandle.getClose()); // 종가는 오늘 자 최신 종가로 갱신
+			lastCandle.setTotalVolume(lastCandle.getTotalVolume() + liveCandle.getTotalVolume());
+			lastCandle.setTradeAmount(lastCandle.getTradeAmount() + liveCandle.getTradeAmount());
+
+			// 병합이 끝났으므로 뒤에 임시로 붙였던 오늘 자 일봉 조각은 리스트에서 제거
+			result.remove(result.size() - 1);
+			return;
+		}
+
+		// 🎯 2. 기존 분봉/시봉 전용 정형화 및 올림/절삭(floorTime) 연산 진행
 		String liveTimeStr = liveCandle.getTime().replace("-", "").replace("T", "").replace(":", "").substring(0, 12);
 		String lastTimeStr = lastCandle.getTime().replace("-", "").replace("T", "").replace(":", "").substring(0, 12);
 
-		// 3. 실시간 1분봉 조각의 시간을 현재 차트 주기(예: 3분, 5분)에 맞게 올림/절삭(floorTime) 연산합니다.
 		String targetTimeStr = floorTime(liveTimeStr, type);
 
-		// 4. 시간 비교 세그먼트
+		// 분봉/시봉 시간 비교 세그먼트
 		if (targetTimeStr.equals(lastTimeStr)) {
-			// 🤝 Case A: 실시간 조각의 주기 시간이 직전 캔들 시간과 같다! (기존 캔들에 합산 후 실시간 단독 봉 제거)
 			lastCandle.setHigh(Math.max(lastCandle.getHigh(), liveCandle.getHigh()));
 			lastCandle.setLow(Math.min(lastCandle.getLow(), liveCandle.getLow()));
-			lastCandle.setClose(liveCandle.getClose()); // 종가는 실시간 최신 가격으로 동적 동기화
+			lastCandle.setClose(liveCandle.getClose());
 			lastCandle.setTotalVolume(lastCandle.getTotalVolume() + liveCandle.getTotalVolume());
+			lastCandle.setTradeAmount(lastCandle.getTradeAmount() + liveCandle.getTradeAmount());
 
-			// 합산이 끝났으므로 맨 뒤에 붙었던 실시간 1분짜리 임시 봉은 제거합니다.
 			result.remove(result.size() - 1);
 		} else {
-			// ➕ Case B: 실시간 조각의 주기가 직전 캔들 시간보다 미래다! (새로운 n분봉 주기의 시작)
-			// 실시간 봉의 타임스탬프만 n분봉 기준 정렬된 시간(targetTimeStr)으로 교체하여 독립된 진행 중인 봉으로 유지합니다.
 			LocalDateTime targetLdt = LocalDateTime.parse(targetTimeStr, FMT);
 			liveCandle.setTime(targetLdt.toString());
 		}

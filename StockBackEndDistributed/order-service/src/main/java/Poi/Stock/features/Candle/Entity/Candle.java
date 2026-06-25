@@ -8,9 +8,11 @@ public interface Candle {
 
 	String getCandleTime();
 
+	void setCandleTime(String string);
+
 	Integer getOpen();
 
-	void setOpen(Integer open); // 🎯 void 반환 및 매개변수 추가
+	void setOpen(Integer open);
 
 	Integer getHigh();
 
@@ -77,4 +79,5 @@ public interface Candle {
 	interface CandleFactory<T> {
 		T create(int open, int high, int low, int close, long buyQty, long sellQty, long totalVolume, long tradeAmount);
 	}
+
 }

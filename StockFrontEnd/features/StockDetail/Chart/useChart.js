@@ -79,12 +79,28 @@ function normalizeCandleTime(timeStr, candleType) {
             hours = Math.floor(hours / 4) * 4;
             minutes = 0;
             break;
-        // 🎯 [수정 부분] 일봉, 주봉, 월봉, 년봉은 모두 시/분 정보가 필요 없으므로 날짜 포맷만 반환합니다.
+
+        // 🎯 [여기만 직관적으로 명확하게 수정]
         case 'DAY':
+            return `${y}-${m}-${d}`; // 일봉은 오늘 날짜 그대로 (예: 2026-06-25)
+            
         case 'WEEK':
+            // 💡 월요일로 강제 매핑 (0:일, 1:월, 2:화, 3:수, 4:목, 5:금, 6:토)
+            const dayIdx = kstDate.getUTCDay();
+            const diffToMonday = dayIdx === 0 ? -6 : 1 - dayIdx; // 일요일이면 6일 전, 평지면 월요일과의 차이 계산
+            
+            const monday = new Date(kstDate.getTime() + diffToMonday * 24 * 60 * 60 * 1000);
+            const wy = monday.getUTCFullYear();
+            const wm = String(monday.getUTCMonth() + 1).padStart(2, '0');
+            const wd = String(monday.getUTCDate()).padStart(2, '0');
+            return `${wy}-${wm}-${wd}`; // 주봉은 해당 주의 월요일 날짜 반환
+            
         case 'MONTH':
+            return `${y}-${m}-01`;   // 월봉은 무조건 해당 월의 1일로 매핑 (예: 2026-06-01)
+            
         case 'YEAR':
-            return `${y}-${m}-${d}`;
+            return `${y}-01-01`;     // 년봉은 무조건 해당 년의 1월 1일로 매핑 (예: 2026-01-01)
+
         default:
             break;
     }
@@ -114,10 +130,47 @@ class Datafeed {
         if (this._isLoading) return this._candles;
 
         this._isLoading = true;
+
+        // 🎯 기존 가장 오래된 캔들 시점을 기준으로 새로운 종료(endTime)와 시작(startTime)을 계산합니다.
         const endTime = new Date(this._earliestTime);
         const startTime = new Date(this._earliestTime);
 
-        startTime.setMinutes(startTime.getMinutes() - 120);
+        // ==========================================
+        // 1️⃣ endTime 차감 로직 (중복 데이터 방지용 -1칸 절삭)
+        // ==========================================
+        if (['ONE_MINUTE', 'THREE_MINUTE', 'FIVE_MINUTE', 'TEN_MINUTE'].includes(type)) {
+            endTime.setMinutes(endTime.getMinutes() - 1); // 현재 분봉에서 -1분
+        } 
+        else if (['HOUR', 'TWO_HOUR', 'THREE_HOUR', 'FOUR_HOUR'].includes(type)) {
+            endTime.setMinutes(endTime.getMinutes() - 60); // 시봉 계열은 -60분 (1시간)
+        } 
+        else if (type === 'DAY' || type === 'WEEK') {
+            endTime.setDate(endTime.getDate() - 1); // 일봉, 주봉은 -1일
+        } 
+        else if (type === 'MONTH') {
+            endTime.setMonth(endTime.getMonth() - 1); // 월봉은 -1달
+        } 
+        else if (type === 'YEAR') {
+            endTime.setFullYear(endTime.getFullYear() - 1); // 년봉은 -1년
+        }
+
+        // ==========================================
+        // 2️⃣ startTime 차감 로직 (과거 데이터 호출 범위 지정)
+        // ==========================================
+        // 감소된 endTime을 기준점으로 삼아 과거 범위를 잡아야 기간이 꼬이지 않습니다.
+        startTime.setTime(endTime.getTime()); 
+
+        if (type === 'DAY' || type === 'WEEK') {
+            startTime.setDate(startTime.getDate() - 30);      // 일/주봉은 과거 30일치씩
+        } else if (type === 'MONTH') {
+            startTime.setMonth(startTime.getMonth() - 12);    // 월봉은 과거 1년(12달)치씩
+        } else if (type === 'YEAR') {
+            startTime.setFullYear(startTime.getFullYear() - 10); // 년봉은 과거 10년치씩
+        } else {
+            startTime.setMinutes(startTime.getMinutes() - 120); // 분/시봉은 과거 120분치씩
+        }
+        
+        // 다음 스크롤을 위해 차트의 가장 최과거 시점을 업데이트
         this._earliestTime = startTime;
 
         try {
@@ -129,7 +182,8 @@ class Datafeed {
             }
         } catch (err) {
             console.error(err);
-            this._earliestTime = endTime;
+            // 에러 발생 시 원래 시점으로 롤백하여 재시도할 수 있도록 처리
+            this._earliestTime = endTime; 
         } finally {
             this._isLoading = false;
         }
