@@ -12,8 +12,11 @@ function getCssVar(name) {
 function getTimeScaleOptions(type) {
   if (type === 'YEAR') {
     return {
-      tickMarkFormatter: (time) => {
+      tickMarkFormatter: (time, tickMarkType) => {
         const date = new Date(time * 1000);
+        // TickMarkType: Year=0, Month=1, DayOfMonth=2
+        if (tickMarkType === 0) return String(date.getFullYear()); // 연도 경계
+        if (tickMarkType === 1) return `${date.getMonth() + 1}월`;
         return String(date.getFullYear());
       },
       timeFormatter: (time) => {
@@ -22,13 +25,14 @@ function getTimeScaleOptions(type) {
       },
     };
   }
+
   if (type === 'MONTH') {
     return {
-      tickMarkFormatter: (time) => {
+      tickMarkFormatter: (time, tickMarkType) => {
         const date = new Date(time * 1000);
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        return `${y}-${m}`;
+        if (tickMarkType === 0) return String(date.getFullYear()); // 연도 경계 → "2026"
+        if (tickMarkType === 1) return `${date.getMonth() + 1}월`; // 월 경계 → "6월"
+        return `${date.getMonth() + 1}월`;
       },
       timeFormatter: (time) => {
         const date = new Date(time * 1000);
@@ -38,14 +42,15 @@ function getTimeScaleOptions(type) {
       },
     };
   }
+
   if (type === 'DAY' || type === 'WEEK') {
     return {
-      tickMarkFormatter: (time) => {
+      tickMarkFormatter: (time, tickMarkType) => {
         const date = new Date(time * 1000);
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
+        if (tickMarkType === 0) return String(date.getFullYear()); // 연도 경계 → "2026"
+        if (tickMarkType === 1) return `${date.getMonth() + 1}월`; // 월 경계 → "7월"
+        // 일 경계 → "16일"
+        return `${date.getDate()}일`;
       },
       timeFormatter: (time) => {
         const date = new Date(time * 1000);
@@ -56,9 +61,22 @@ function getTimeScaleOptions(type) {
       },
     };
   }
+
+  // 분봉/시봉 기본값
   return {
-    tickMarkFormatter: (time) => {
+    tickMarkFormatter: (time, tickMarkType) => {
       const date = new Date(time * 1000);
+      if (tickMarkType === 0) return String(date.getFullYear());
+      if (tickMarkType === 1) {
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        return `${date.getFullYear()}-${m}`;
+      }
+      if (tickMarkType === 2) {
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${m}-${d}`;
+      }
+      // Time → "HH:mm"
       const h = String(date.getHours()).padStart(2, '0');
       const min = String(date.getMinutes()).padStart(2, '0');
       return `${h}:${min}`;
@@ -196,19 +214,18 @@ function buildWhitespace(lastTime, type, count = 100) {
 
 function toChartData(candles, type) {
   const realData = candles
-    .map(c => ({
-      time: toUnixTime(c.time),
-      open: c.open,
-      high: c.high,
-      low: c.low,
-      close: c.close,
-    }))
+    .map(c => {
+      const t = toUnixTime(c.time);
+      if (isNaN(t)) console.error('🚨 NaN 캔들:', c);
+      return { time: t, open: c.open, high: c.high, low: c.low, close: c.close };
+    })
     .sort((a, b) => a.time - b.time)
     .filter((c, i, arr) => i === 0 || c.time !== arr[i - 1].time);
 
   if (realData.length === 0) return realData;
 
   const last = realData[realData.length - 1];
+  console.log('🔍 last.time:', last.time, 'type:', type, 'isNaN:', isNaN(last.time));
   const whitespace = buildWhitespace(last.time, type);
 
   return [...realData, ...whitespace];
@@ -255,11 +272,10 @@ export default function ChartComponent({ stockCode }) {
   const isLoadingRef = useRef(false);
   const currentMarginRef = useRef({ top: 0.15, bottom: 0.15 });
   const totalDataLengthRef = useRef(0);
+  const isFirstLoad = useRef(true);
 
   // 🎯 전역 스토어에서 줌 상태값 및 업데이트 액션 가져오기
   const type = useChartButtonStore((state) => state.selectedChartTime);
-  const visibleBarsCount = useChartButtonStore((state) => state.visibleBarsCount);
-  const rightOffset = useChartButtonStore((state) => state.rightOffset);
   const setChartViewport = useChartButtonStore((state) => state.setChartViewport);
 
   const typeRef = useRef(type);
@@ -330,22 +346,23 @@ export default function ChartComponent({ stockCode }) {
       if (event.chartType && event.chartType !== typeRef.current) return;
 
       if (event.type === 'init') {
+        // 1. 차트에 캔들 및 이동평균선 데이터 세팅
         const chartData = applyCandles(event.candles, typeRef.current, candleSeries, maSeries, totalDataLengthRef);
 
-        if (chartData.length > 0) {
+        if (isFirstLoad.current && chartData.length > 0) {
           const timeScale = chart.timeScale();
-          const totalLength = totalDataLengthRef.current; 
-
-          // 🎯 하드코딩 대신 스토어에 보존되어 있던 사용자의 줌 설정을 가져옵니다.
-          const savedBarsCount = useChartButtonStore.getState().visibleBarsCount;
-          const savedRightOffset = useChartButtonStore.getState().rightOffset;
-
-          const lastRealCandleIndex = totalLength - 100 - 1; 
+          const lastRealCandleIndex = chartData.length - 100 - 1;
+          const logicalTo = lastRealCandleIndex + 15;
+          const logicalFrom = logicalTo - 60;
+          isReadyForLoadMore.current = false;
 
           timeScale.setVisibleLogicalRange({
-            from: lastRealCandleIndex - savedBarsCount + savedRightOffset,
-            to: lastRealCandleIndex + savedRightOffset,
+            from: logicalFrom,
+            to: logicalTo,
           });
+          setChartViewport(60, 15);
+
+          isFirstLoad.current = false;
         }
 
         setTimeout(() => {
@@ -405,7 +422,7 @@ export default function ChartComponent({ stockCode }) {
       // 🎯 사용자가 움직인 실제 범위 크기를 추적하여 실시간 전역 상태값 업데이트
       if (isReadyForLoadMore.current && totalDataLengthRef.current > 0) {
         const currentBarsCount = Math.round(range.to - range.from);
-        
+
         // 최신 데이터 기준선(BuildWhitespace 시작 지점)에서 현재 화면 스크롤 끝이 얼마나 떨어져 있는지 여백 계산
         const lastRealCandleIndex = totalDataLengthRef.current - 100 - 1;
         const currentRightOffset = Math.round(range.to - lastRealCandleIndex);

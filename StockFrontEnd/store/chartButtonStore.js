@@ -34,10 +34,6 @@ const useChartButtonStore = create((set, get) => ({
         });
     },
 
-    // 🎯 [추가] 차트 줌 레벨 및 우측 스크롤 여백 유지를 위한 전역 상태 관리
-    visibleBarsCount: 60, // 최초 및 유지할 화면 내 캔들 개수 (줌 레벨) 기본값
-    rightOffset: 15,      // 최초 및 유지할 최신 캔들 우측 여백 칸 수 기본값
-
     // 🎯 [추가] 사용자가 차트를 확대/축소하거나 스크롤할 때 실시간으로 상태를 동기화할 함수
     setChartViewport: (visibleBarsCount, rightOffset) => set({ 
         visibleBarsCount, 
