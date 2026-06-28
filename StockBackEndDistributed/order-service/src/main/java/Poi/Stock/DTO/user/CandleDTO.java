@@ -1,14 +1,9 @@
 package Poi.Stock.DTO.user;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import Poi.Stock.features.Candle.Entity.Candle;
-import Poi.Stock.features.Candle.Entity.CandleDay;
-import Poi.Stock.features.Candle.Entity.CandleHour;
-import Poi.Stock.features.Candle.Entity.CandleMinute;
 import Poi.Stock.features.Candle.Entity.CandleWithMA;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,20 +13,20 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Data
-@Builder // 💡 객체 조립 편의성을 위해 빌더 패턴 추가
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class CandleDTO implements Candle {
 
+	// 🎯 CandleMinute과 동일한 필드 순서
 	private String stockCode;
 	private String time;
-	// 🎯 int 대신 Integer로 타입을 맞춰줍니다. (필요 시 open, high, low도 인터페이스 규격에 맞게 함께 변경)
 	private Integer open;
 	private Integer high;
 	private Integer low;
 	private Integer close;
-	private Long sellQty;
 	private Long buyQty;
+	private Long sellQty;
 	private Long totalVolume;
 	private Long tradeAmount;
 
@@ -47,56 +42,28 @@ public class CandleDTO implements Candle {
 		this.time = string;
 	}
 
-	// 기본 공통 생성 팩토리 메서드
-	public static CandleDTO of(String time, int open, int high, int low, int close, Long sellQty, Long buyQty,
+	public static CandleDTO of(String time, int open, int high, int low, int close, Long buyQty, Long sellQty,
 			Long totalVolume, Long tradeAmount, Map<Integer, Double> movingAverages) {
 
-		// Integer Key 형태의 이평선 맵을 String Key 형태로 안전하게 스트림 변환
 		Map<String, Double> stringKeyMa = Map.of();
 		if (movingAverages != null && !movingAverages.isEmpty()) {
 			stringKeyMa = movingAverages.entrySet().stream()
-					.collect(Collectors.toMap(e -> String.valueOf(e.getKey()), 
-					Map.Entry::getValue));
+					.collect(Collectors.toMap(e -> String.valueOf(e.getKey()), Map.Entry::getValue));
 		}
-
-		return new CandleDTO("", time, open, high, low, close, sellQty != null ? sellQty : 0L,
-				buyQty != null ? buyQty : 0L,
-				totalVolume != null ? totalVolume : 0L, tradeAmount != null ? tradeAmount : 0L, stringKeyMa);
+		return new CandleDTO("", time, open, high, low, close, buyQty != null ? buyQty : 0L,
+				sellQty != null ? sellQty : 0L, totalVolume != null ? totalVolume : 0L,
+				tradeAmount != null ? tradeAmount : 0L, stringKeyMa);
 	}
 
-	public static <T extends Candle> CandleDTO from(CandleWithMA<T> wrapped) {
-		T candle = wrapped.getCandle();
-
-		return of(getCandidateTimeStr(candle),
-				candle.getOpen(), candle.getHigh(), candle.getLow(), candle.getClose(), candle.getBuyQty(),
-				candle.getSellQty(), candle.getTotalVolume(), candle.getTradeAmount(), wrapped.getMa());
+	public static CandleDTO from(CandleWithMA<Candle> wrapped) {
+		Candle candle = wrapped.getCandle();
+		return of(candle.getCandleTime(), candle.getOpen(), candle.getHigh(), candle.getLow(), candle.getClose(),
+				candle.getBuyQty(), candle.getSellQty(), candle.getTotalVolume(), candle.getTradeAmount(),
+				wrapped.getMa());
 	}
 
-	public static CandleDTO from(CandleHour candle) {
-		return of(candle.getTime().toString(), candle.getOpen(), candle.getHigh(), candle.getLow(), candle.getClose(),
-				candle.getSellQty(), candle.getBuyQty(), candle.getTotalVolume(), candle.getTradeAmount(), Map.of());
-	}
-
-	private static <T extends Candle> String getCandidateTimeStr(T candle) {
-		return candle.getCandleTime();
-	}
-	public static CandleDTO from(CandleMinute candle) {
-		return of(candle.getTime().toString(), candle.getOpen(), candle.getHigh(), candle.getLow(), candle.getClose(),
-				candle.getSellQty(), candle.getBuyQty(), candle.getTotalVolume(), candle.getTradeAmount(), Map.of());
-	}
-
-	public static CandleDTO from(CandleDay candle) {
-		return of(candle.getDate().toString(), candle.getOpen(), candle.getHigh(), candle.getLow(), candle.getClose(),
-				candle.getSellQty(), candle.getBuyQty(), candle.getTotalVolume(), candle.getTradeAmount(), Map.of());
-	}
-
-	public static CandleDTO current(LocalDateTime time, int open, int high, int low, int close, Long sellQty,
+	public static CandleDTO current(String date, int open, int high, int low, int close, Long sellQty,
 			Long buyQty) {
-		return of(time.toString(), open, high, low, close, sellQty, buyQty, sellQty + buyQty, 0L, Map.of());
+		return of(date, open, high, low, close, sellQty, buyQty, sellQty + buyQty, 0L, Map.of());
 	}
-
-	public static CandleDTO today(LocalDate date, int open, int high, int low, int close, Long sellQty, Long buyQty) {
-		return of(date.toString(), open, high, low, close, sellQty, buyQty, sellQty + buyQty, 0L, Map.of());
-	}
-
 }

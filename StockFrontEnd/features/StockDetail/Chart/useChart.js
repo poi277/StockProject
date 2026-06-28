@@ -83,21 +83,21 @@ function normalizeCandleTime(timeStr, candleType) {
         // 🎯 [여기만 직관적으로 명확하게 수정]
         case 'DAY':
             return `${y}-${m}-${d}`; // 일봉은 오늘 날짜 그대로 (예: 2026-06-25)
-            
+
         case 'WEEK':
             // 💡 월요일로 강제 매핑 (0:일, 1:월, 2:화, 3:수, 4:목, 5:금, 6:토)
             const dayIdx = kstDate.getUTCDay();
             const diffToMonday = dayIdx === 0 ? -6 : 1 - dayIdx; // 일요일이면 6일 전, 평지면 월요일과의 차이 계산
-            
+
             const monday = new Date(kstDate.getTime() + diffToMonday * 24 * 60 * 60 * 1000);
             const wy = monday.getUTCFullYear();
             const wm = String(monday.getUTCMonth() + 1).padStart(2, '0');
             const wd = String(monday.getUTCDate()).padStart(2, '0');
             return `${wy}-${wm}-${wd}`; // 주봉은 해당 주의 월요일 날짜 반환
-            
+
         case 'MONTH':
             return `${y}-${m}-01`;   // 월봉은 무조건 해당 월의 1일로 매핑 (예: 2026-06-01)
-            
+
         case 'YEAR':
             return `${y}-01-01`;     // 년봉은 무조건 해당 년의 1월 1일로 매핑 (예: 2026-01-01)
 
@@ -140,16 +140,16 @@ class Datafeed {
         // ==========================================
         if (['ONE_MINUTE', 'THREE_MINUTE', 'FIVE_MINUTE', 'TEN_MINUTE'].includes(type)) {
             endTime.setMinutes(endTime.getMinutes() - 1); // 현재 분봉에서 -1분
-        } 
+        }
         else if (['HOUR', 'TWO_HOUR', 'THREE_HOUR', 'FOUR_HOUR'].includes(type)) {
             endTime.setMinutes(endTime.getMinutes() - 60); // 시봉 계열은 -60분 (1시간)
-        } 
+        }
         else if (type === 'DAY' || type === 'WEEK') {
             endTime.setDate(endTime.getDate() - 1); // 일봉, 주봉은 -1일
-        } 
+        }
         else if (type === 'MONTH') {
             endTime.setMonth(endTime.getMonth() - 1); // 월봉은 -1달
-        } 
+        }
         else if (type === 'YEAR') {
             endTime.setFullYear(endTime.getFullYear() - 1); // 년봉은 -1년
         }
@@ -158,7 +158,7 @@ class Datafeed {
         // 2️⃣ startTime 차감 로직 (과거 데이터 호출 범위 지정)
         // ==========================================
         // 감소된 endTime을 기준점으로 삼아 과거 범위를 잡아야 기간이 꼬이지 않습니다.
-        startTime.setTime(endTime.getTime()); 
+        startTime.setTime(endTime.getTime());
 
         if (type === 'DAY' || type === 'WEEK') {
             startTime.setDate(startTime.getDate() - 30);      // 일/주봉은 과거 30일치씩
@@ -169,7 +169,7 @@ class Datafeed {
         } else {
             startTime.setMinutes(startTime.getMinutes() - 120); // 분/시봉은 과거 120분치씩
         }
-        
+
         // 다음 스크롤을 위해 차트의 가장 최과거 시점을 업데이트
         this._earliestTime = startTime;
 
@@ -183,7 +183,7 @@ class Datafeed {
         } catch (err) {
             console.error(err);
             // 에러 발생 시 원래 시점으로 롤백하여 재시도할 수 있도록 처리
-            this._earliestTime = endTime; 
+            this._earliestTime = endTime;
         } finally {
             this._isLoading = false;
         }
@@ -235,63 +235,51 @@ class Datafeed {
     }
 
     addLiveCandle(liveCandle, candleType) {
-
-        const normalizedTime =
-            normalizeCandleTime(
-                liveCandle.time,
-                candleType
-            );
-
-        const normalizedCandle = {
-            ...liveCandle,
-            time: normalizedTime,
-        };
-
+        const normalizedTime = normalizeCandleTime(liveCandle.time, candleType);
         const candles = this._candles;
-
-        const toUnix = (timeStr) =>
-            Math.floor(
-                new Date(timeStr).getTime() / 1000
-            );
-
-        const confirmedCandles =
-            candles.length > 0 &&
-                toUnix(candles[candles.length - 1].time)
-                === toUnix(normalizedCandle.time)
-                ? candles.slice(0, -1)
-                : candles;
-
-        const liveMA =
-            calculateLiveMA(
-                confirmedCandles,
-                normalizedCandle
-            );
-
-        const enrichedCandle = {
-            ...normalizedCandle,
-            movingAverages: liveMA,
-        };
+        const toUnix = (timeStr) => Math.floor(new Date(timeStr).getTime() / 1000);
+        const normalizedUnix = toUnix(normalizedTime);
 
         if (candles.length === 0) {
-            this._candles = [enrichedCandle];
+            const newCandle = { ...liveCandle, time: normalizedTime };
+            const liveMA = calculateLiveMA([], newCandle);
+            this._candles = [{ ...newCandle, movingAverages: liveMA }];
             return;
         }
 
-        const last = candles[candles.length - 1];
+        const existingIdx = candles.findIndex(c => toUnix(c.time) === normalizedUnix);
 
-        if (
-            toUnix(last.time)
-            === toUnix(normalizedCandle.time)
-        ) {
+        let mergedCandle;
+        if (existingIdx !== -1) {
+            const existing = candles[existingIdx];
+            mergedCandle = {
+                ...existing,
+                high: Math.max(existing.high, liveCandle.high),
+                low: Math.min(existing.low, liveCandle.low),
+                close: liveCandle.close,
+                buyQty: (existing.buyQty ?? 0) + (liveCandle.buyQty ?? 0),
+                sellQty: (existing.sellQty ?? 0) + (liveCandle.sellQty ?? 0),
+                time: normalizedTime,
+            };
+        } else {
+            mergedCandle = { ...liveCandle, time: normalizedTime };
+        }
+
+        const confirmedCandles = existingIdx !== -1
+            ? candles.slice(0, existingIdx)
+            : candles;
+
+        const liveMA = calculateLiveMA(confirmedCandles, mergedCandle);
+        const enrichedCandle = { ...mergedCandle, movingAverages: liveMA };
+
+        if (existingIdx !== -1) {
             this._candles = [
-                ...candles.slice(0, -1),
+                ...candles.slice(0, existingIdx),
                 enrichedCandle,
+                ...candles.slice(existingIdx + 1),
             ];
         } else {
-            this._candles = [
-                ...candles,
-                enrichedCandle,
-            ];
+            this._candles = [...candles, enrichedCandle];
         }
     }
 }

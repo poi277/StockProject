@@ -55,15 +55,9 @@ public class CandleService {
 	private final CandleCacheService candleCacheService;
 	private final WebSocketService webSocketService;
 
-	// ===================== 통합 메인 엔트리포인트 =====================
-
-	/**
-	 * 기간별 캔들 조회 (통합 파이프라인)
-	 */
 	public List<CandleDTO> getCandle(CandleType type, String stockCode, String startTime, String endTime) {
 		LocalDateTime from = parseStartTime(startTime);
 		LocalDateTime to = parseEndTime(endTime);
-
 		String fromStr = from.toString();
 		String toStr = to.toString();
 
@@ -73,31 +67,25 @@ public class CandleService {
 		if (wrappedCache.isEmpty()) {
 			List<Candle> dbCandles = loadCandlesFromDb(type, stockCode, from, to);
 			List<Candle> processedCandles = groupCandles(dbCandles, type);
-
 			List<CandleWithMA<Candle>> wrapped = wrapWithEmptyMA(processedCandles);
 			calculateMovingAveragesInPlace(wrapped);
 			return toDTOList(wrapped);
 		}
-
 		return toDTOList(wrappedCache);
 	}
 
 	public List<CandleDTO> getCandleInit(CandleType type, String stockCode) {
 		int targetSize = 100;
-
-		List<CandleWithMA<Candle>> wrappedCache = candleCacheService.getCandles(type, stockCode);
+		List<CandleWithMA<Candle>> wrappedCache = candleCacheService.getCacheCandles(type, stockCode);
 		if (wrappedCache.isEmpty()) {
-			log.info("{} 초기화 캐시 공백 - 종목: {}. DB에서 최신 데이터를 호출합니다.", type, stockCode);
 			List<Candle> dbCandles = loadTop100FromDb(type, stockCode);
 			List<Candle> processedCandles = groupCandles(dbCandles, type);
-
 			wrappedCache = wrapWithEmptyMA(processedCandles);
 			calculateMovingAveragesInPlace(wrappedCache);
 		} else {
 			int cacheSize = wrappedCache.size();
 			wrappedCache = wrappedCache.subList(Math.max(0, cacheSize - targetSize), cacheSize);
 		}
-
 		if (wrappedCache.isEmpty())
 			return List.of();
 		appendLatestRealtimeCandle(type, wrappedCache, stockCode);
@@ -112,10 +100,7 @@ public class CandleService {
 		if (wrappedCache == null || wrappedCache.isEmpty()) {
 			return;
 		}
-
 		int i = wrappedCache.size() - 1;
-
-		// 🎯 1. 리스트에서 CandleWithMA<Candle> 래퍼 객체를 꺼냅니다.
 		CandleWithMA<Candle> lastWrapped = wrappedCache.get(i);
 		Map<Integer, Double> maMap = lastWrapped.getMa();
 		if (maMap == null) {
@@ -162,42 +147,31 @@ public class CandleService {
 	 */
 	private List<Candle> loadTop100FromDb(CandleType type, String stockCode) {
 		return switch (type) {
-		// 1. 분봉 계열 (Time 기준 정렬)
 		case ONE_MINUTE, THREE_MINUTE, FIVE_MINUTE, TEN_MINUTE -> {
 			List<CandleMinute> dbCandles = candleMinuteRepository.findTop100ByStockCodeOrderByTimeDesc(stockCode);
 			dbCandles.sort(Comparator.comparing(CandleMinute::getTime));
 			yield new ArrayList<>(dbCandles);
 		}
-
-		// 2. 시간봉 계열 (Time 기준 정렬)
 		case HOUR, TWO_HOUR, THREE_HOUR, FOUR_HOUR -> {
 			List<CandleHour> hours = candleHourRepository.findTop100ByStockCodeOrderByTimeDesc(stockCode);
 			hours.sort(Comparator.comparing(CandleHour::getTime));
 			yield new ArrayList<>(hours);
 		}
-
-		// 3. 일봉 (Date 기준 정렬)
 		case DAY -> {
 			List<CandleDay> days = candleDayRepository.findTop100ByStockCodeOrderByDateDesc(stockCode);
 			days.sort(Comparator.comparing(CandleDay::getDate));
 			yield new ArrayList<>(days);
 		}
-
-		// 4. 주봉 (Date 기준 정렬)
 		case WEEK -> {
 			List<CandleWeek> weeks = candleWeekRepository.findTop100ByStockCodeOrderByDateDesc(stockCode);
 			weeks.sort(Comparator.comparing(CandleWeek::getDate));
 			yield new ArrayList<>(weeks);
 		}
-
-		// 5. 월봉 (Date 기준 정렬)
 		case MONTH -> {
 			List<CandleMonth> months = candleMonthRepository.findTop100ByStockCodeOrderByDateDesc(stockCode);
 			months.sort(Comparator.comparing(CandleMonth::getDate));
 			yield new ArrayList<>(months);
 		}
-
-		// 6. 년봉 (Date 기준 정렬)
 		case YEAR -> {
 			List<CandleYear> years = candleYearRepository.findTop100ByStockCodeOrderByDateDesc(stockCode);
 			years.sort(Comparator.comparing(CandleYear::getDate));
@@ -208,9 +182,6 @@ public class CandleService {
 		};
 	}
 
-	/**
-	 * 실시간 캐시 후속 병합 분기 전담 유틸
-	 */
 	private void appendLatestRealtimeCandle(CandleType type, List<CandleWithMA<Candle>> wrappedCache,
 			String stockCode) {
 		LocalDateTime now = LocalDateTime.now();
@@ -225,23 +196,15 @@ public class CandleService {
 		}
 	}
 
-	// ===================== 캔들 다형성 통합 그룹화 연산 레이어 =====================
-
-	/**
-	 * 🎯 분봉/시봉 통합 그룹화 및 묶음 단위 검증 조건 파이프라인 (바깥 호출용)
-	 */
 	private List<Candle> groupCandles(List<Candle> rawCandles, CandleType type) {
 		if (rawCandles == null || rawCandles.isEmpty()) {
 			return List.of();
 		}
-
-		// 1분봉이나 1시간봉처럼 묶음 연산(그룹화)이 필요 없는 기본 규격은 굳이 연산하지 않고 무사통과(Pass)
 		if ((type.isMinuteType() && type.getMinute() == 1) || (type.isHourType() && type.getHourGroup() == 1)
 				|| type == CandleType.DAY || type == CandleType.WEEK || type == CandleType.MONTH
 				|| type == CandleType.YEAR) {
 			return rawCandles;
 		}
-
 		return new ArrayList<>(rawCandles.stream()
 				.<Candle>map(c -> c)
 				.collect(Collectors.groupingBy(c -> floorTime(c.getCandleTime(), type), Collectors.toList())).entrySet()
@@ -249,11 +212,8 @@ public class CandleService {
 				.map(entry -> toGroupedCandle(entry.getKey(), entry.getValue())).toList());
 	}
 
-	/**
-	 * 하위 캔들 세트를 단일 Candle 인터페이스 구현체로 축약 집계
-	 */
-	private Candle toGroupedCandle(String timeStr, List<? extends Candle> group) {
-		List<? extends Candle> sortedGroup = new ArrayList<>(group);
+	private Candle toGroupedCandle(String timeStr, List<Candle> group) {
+		List<Candle> sortedGroup = new ArrayList<>(group);
 		sortedGroup.sort(Comparator.comparing(Candle::getCandleTime));
 
 		Candle first = sortedGroup.get(0);
@@ -263,7 +223,6 @@ public class CandleService {
 		int close = last.getClose();
 		int high = sortedGroup.stream().mapToInt(Candle::getHigh).max().orElse(first.getHigh());
 		int low = sortedGroup.stream().mapToInt(Candle::getLow).min().orElse(first.getLow());
-
 		long sellQty = sortedGroup.stream().mapToLong(c -> c.getSellQty() != null ? c.getSellQty() : 0L).sum();
 		long buyQty = sortedGroup.stream().mapToLong(c -> c.getBuyQty() != null ? c.getBuyQty() : 0L).sum();
 		long tradeAmount = sortedGroup.stream().mapToLong(c -> c.getTradeAmount() != null ? c.getTradeAmount() : 0L)
@@ -271,38 +230,38 @@ public class CandleService {
 
 		LocalDateTime time = LocalDateTime.parse(timeStr, FMT);
 
-		return new CandleMinute(null, first.getStockCode(), time, open, high, low, close, buyQty,
-				sellQty, buyQty + sellQty, tradeAmount);
+		return CandleDTO.of(time.toString(), open, high, low, close, buyQty, sellQty, buyQty + sellQty, tradeAmount,
+				Map.of());
 	}
 
-	/**
-	 * CandleType 속성에 따라 시간 절삭 단위를 동적으로 계산
-	 */
 	private String floorTime(String candleTimeStr, CandleType type) {
-		LocalDateTime time = candleTimeStr.length() == 12 ? LocalDateTime.parse(candleTimeStr, FMT)
-				: LocalDateTime.parse(candleTimeStr);
+	    LocalDateTime time = candleTimeStr.length() == 12 ? LocalDateTime.parse(candleTimeStr, FMT)
+	            : LocalDateTime.parse(candleTimeStr);
 
-		if (type.isMinuteType()) {
-			int minute = type.getMinute();
-			time = time.withMinute((time.getMinute() / minute) * minute).withSecond(0).withNano(0);
-		} else if (type.isHourType()) {
-			int hourGroup = type.getHourGroup();
-			time = time.withHour((time.getHour() / hourGroup) * hourGroup).withMinute(0).withSecond(0).withNano(0);
-		}
+	    if (type.isMinuteType()) {
+	        int minute = type.getMinute();
+	        time = time.withMinute((time.getMinute() / minute) * minute).withSecond(0).withNano(0);
+	    } else if (type.isHourType()) {
+	        int hourGroup = type.getHourGroup();
+	        time = time.withHour((time.getHour() / hourGroup) * hourGroup).withMinute(0).withSecond(0).withNano(0);
+	    } else if (type == CandleType.WEEK) {
+			int dayOfWeek = time.getDayOfWeek().getValue();
+	        time = time.minusDays(dayOfWeek - 1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+	    } else if (type == CandleType.MONTH) {
+	        time = time.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+	    } else if (type == CandleType.YEAR) {
+	        time = time.withMonth(1).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+	    }
 
-		return time.format(FMT);
+	    return time.format(FMT);
 	}
-
-	// ===================== 명시적 Candle 헬퍼 메서드군 =====================
 
 	private List<CandleWithMA<Candle>> getCachedCandlesInRange(CandleType type, String stockCode, String fromStr,
 			String toStr, Predicate<Candle> inRange) {
-		List<CandleWithMA<Candle>> cache = candleCacheService.getCandles(type, stockCode);
-
+		List<CandleWithMA<Candle>> cache = candleCacheService.getCacheCandles(type, stockCode);
 		if (!isCacheCoveringRangeStr(cache, fromStr, toStr)) {
 			return List.of();
 		}
-
 		return cache.stream().filter(c -> inRange.test(c.getCandle())).toList();
 	}
 
@@ -344,8 +303,6 @@ public class CandleService {
 			}
 		}
 	}
-
-	// ===================== ⏱️ 공통 유틸 및 실시간 Redis 바인딩 =====================
 
 	private void addCandleIfNewer(List<CandleWithMA<Candle>> wrappedCache, CandleType type,
 			CandleWithMA<Candle> candle) {
@@ -390,18 +347,15 @@ public class CandleService {
 
 			if ("day".equals(candleTypePrefix)) {
 				LocalDate dayDate = LocalDate.parse(timeSuffix, DAY_FMT);
-				candleCore = CandleDTO.today(dayDate, Integer.parseInt(String.valueOf(open)),
+				candleCore = CandleDTO.current(dayDate.toString(), Integer.parseInt(String.valueOf(open)),
 						Integer.parseInt(String.valueOf(high)), Integer.parseInt(String.valueOf(low)),
-						Integer.parseInt(String.valueOf(close)), sellQty, buyQty);
+						Integer.parseInt(String.valueOf(close)), buyQty, sellQty);
 			} else {
 				LocalDateTime minuteTime = LocalDateTime.parse(timeSuffix, FMT);
-				candleCore = CandleDTO.current(minuteTime, Integer.parseInt(String.valueOf(open)),
+				candleCore = CandleDTO.current(minuteTime.toString(), Integer.parseInt(String.valueOf(open)),
 						Integer.parseInt(String.valueOf(high)), Integer.parseInt(String.valueOf(low)),
-						Integer.parseInt(String.valueOf(close)), sellQty, buyQty);
+						Integer.parseInt(String.valueOf(close)), buyQty, sellQty);
 			}
-
-			// 🎯 이평선 데이터가 없으므로 자바 표준 빈 불변 맵(Map.of())을 주입합니다.
-			// CandleWithMA가 Map<Integer, Double>을 받든 Map<String, Double>을 받든 유연하게 캐스팅됩니다.
 			return new CandleWithMA<>(candleCore, Map.of());
 
 		} catch (Exception e) {
@@ -425,61 +379,44 @@ public class CandleService {
 
 	public void saveCandleOrder(String stockCode, Integer currentPrice, int buyQty, int sellQty, long tradeAmount,
 			LocalDateTime lastExecutionTime) {
-		Map<CandleType, CandleDTO> candles = candleSchedulerService.saveCurrentCandle(stockCode, currentPrice, buyQty,
+		Map<CandleType, Candle> candles = candleSchedulerService.saveCurrentCandle(stockCode, currentPrice, buyQty,
 				sellQty, tradeAmount, lastExecutionTime);
 
-		candles.forEach((type, candleDTO) -> webSocketService.sendCurrentCandle(candleDTO, stockCode, type));
+		candles.forEach((type, candle) -> webSocketService.sendCurrentCandle(candle, stockCode, type));
 	}
 
 	private void mergeLiveCandle(CandleType type, List<CandleWithMA<Candle>> wrappedCache) {
 		if (wrappedCache == null || wrappedCache.size() < 2 || type == CandleType.DAY) {
 			return;
 		}
-
-		// 🎯 1. wrappedCache에서 CandleWithMA<Candle> 래퍼 객체를 먼저 꺼냅니다.
 		CandleWithMA<Candle> liveWrapped = wrappedCache.get(wrappedCache.size() - 1);
 		CandleWithMA<Candle> lastWrapped = wrappedCache.get(wrappedCache.size() - 2);
-
-		// 🎯 2. 래퍼 객체 내부에서 실제 Candle 본체(CandleDTO 또는 구현체)를 꺼냅니다.
 		Candle liveCandle = liveWrapped.getCandle();
 		Candle lastCandle = lastWrapped.getCandle();
-
 		if (type == CandleType.WEEK || type == CandleType.MONTH || type == CandleType.YEAR) {
 			lastCandle.setHigh(Math.max(lastCandle.getHigh(), liveCandle.getHigh()));
 			lastCandle.setLow(Math.min(lastCandle.getLow(), liveCandle.getLow()));
 			lastCandle.setClose(liveCandle.getClose());
 			lastCandle.setTotalVolume(lastCandle.getTotalVolume() + liveCandle.getTotalVolume());
 			lastCandle.setTradeAmount(lastCandle.getTradeAmount() + liveCandle.getTradeAmount());
-
-			// 병합 완료 후 마지막 중복 요소 제거
 			wrappedCache.remove(wrappedCache.size() - 1);
 			return;
 		}
-
-		// 시간 문자열 파싱 및 내림(Floor) 계산
 		String liveTimeStr = liveCandle.getCandleTime().replace("-", "").replace("T", "").replace(":", "").substring(0,
 				12);
 		String lastTimeStr = lastCandle.getCandleTime().replace("-", "").replace("T", "").replace(":", "").substring(0,
 				12);
-
 		String targetTimeStr = floorTime(liveTimeStr, type);
-
 		if (targetTimeStr.equals(lastTimeStr)) {
-			// 기존 캔들의 범위 내에 있는 실시간 데이터라면 값 누적 병합
 			lastCandle.setHigh(Math.max(lastCandle.getHigh(), liveCandle.getHigh()));
 			lastCandle.setLow(Math.min(lastCandle.getLow(), liveCandle.getLow()));
 			lastCandle.setClose(liveCandle.getClose());
 			lastCandle.setTotalVolume(lastCandle.getTotalVolume() + liveCandle.getTotalVolume());
 			lastCandle.setTradeAmount(lastCandle.getTradeAmount() + liveCandle.getTradeAmount());
-
 			wrappedCache.remove(wrappedCache.size() - 1);
 		} else {
-			// 🎯 3. 새로운 분봉 시간대로 진입한 경우 (새 캔들이 생성되어 유지되어야 함)
 			LocalDateTime targetLdt = LocalDateTime.parse(targetTimeStr, FMT);
 			liveCandle.setCandleTime(targetLdt.toString());
-
-			// 만약 기존 liveWrapped가 내부적으로 깨끗한 상태가 보장되지 않거나 이평선 맵 초기화가 필요하다면,
-			// 아래처럼 새 래퍼 객체를 만들어 리스트의 해당 위치를 갈아끼워 주는 것이 안전합니다.
 			wrappedCache.set(wrappedCache.size() - 1, new CandleWithMA<>(liveCandle, Map.of()));
 		}
 	}

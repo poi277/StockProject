@@ -91,7 +91,7 @@ public abstract class AbstractBot {
 	}
 
 	protected Map<Integer, Double> getLatestMA(String stockCode) {
-		List<CandleWithMA<Candle>> candles = candleCacheService.getCandles(CandleType.ONE_MINUTE, stockCode);
+		List<CandleWithMA<Candle>> candles = candleCacheService.getCacheCandles(CandleType.ONE_MINUTE, stockCode);
 		if (candles == null || candles.isEmpty())
 			return Map.of();
 		Map<Integer, Double> ma = candles.get(candles.size() - 1).getMa();

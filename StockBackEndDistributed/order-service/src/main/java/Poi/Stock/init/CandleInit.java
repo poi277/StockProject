@@ -11,6 +11,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import Poi.Stock.features.Candle.CandleCacheService;
+import Poi.Stock.features.Candle.CandleCommonService;
 import Poi.Stock.features.Candle.CandleRestoreService;
 import Poi.Stock.features.Candle.CandleSchedulerService;
 import Poi.Stock.features.Candle.Entity.Candle;
@@ -48,6 +49,7 @@ public class CandleInit {
 	private final CandleSchedulerService candleSchedulerService;
 	private final AssignedCodeHolder assignedCodeHolder;
 	private final CandleRestoreService candleRestoreService;
+	private final CandleCommonService candleCommonService;
 	int MAX_CACHE_SIZE = 100;
 	PageRequest pageRequest = PageRequest.of(0, MAX_CACHE_SIZE);
 
@@ -64,28 +66,22 @@ public class CandleInit {
 
 			List<CandleMinute> rawMinutes = candleMinuteRepository.findByStockCodeOrderByTimeDesc(stockCode,
 					pageRequest);
-
-			List<CandleMinute> mutableRawMinutes = new ArrayList<>(rawMinutes);
-			Collections.reverse(mutableRawMinutes);
-
-			if (mutableRawMinutes.isEmpty()) {
+			if (rawMinutes.isEmpty()) {
 				log.warn("[{}] 초기화할 1분봉 데이터가 영구히 없습니다.", stockCode);
 				return;
 			}
-
+			Collections.reverse(rawMinutes);
 			// 분봉 계열 로컬 메모리 캐시 웜업
 			for (CandleType type : CandleType.values()) {
 				if (!type.isMinuteType()) {
 					continue;
 				}
-
-				List<CandleMinute> processedMinutes;
-				if (type == CandleType.ONE_MINUTE) {
-					processedMinutes = mutableRawMinutes;
+				List<Candle> genericMinutes;
+				if (type != CandleType.ONE_MINUTE) {
+					genericMinutes = candleSchedulerService.convertToMinute(rawMinutes, type);
 				} else {
-					processedMinutes = candleSchedulerService.convertToMinute(mutableRawMinutes, type.getMinute());
+					genericMinutes = candleCommonService.convertGeneric(rawMinutes);
 				}
-				List<Candle> genericMinutes = new ArrayList<>(processedMinutes);
 				candleCacheService.putCandles(type, stockCode, genericMinutes);
 			}
 
@@ -110,11 +106,8 @@ public class CandleInit {
 	}
 
 	private <T extends Candle> List<Candle> processAndConvertToGeneric(List<T> rawCandles) {
-		// 굳이 복잡하게 복사본을 만들어서 .sort()를 돌리는 것보다
-		// 가변 리스트(ArrayList)로 감싼 뒤 한 방에 뒤집는(Reverse) 게 성능과 가독성 모두 최선입니다.
 		List<T> mutableList = new ArrayList<>(rawCandles);
-		Collections.reverse(mutableList); // Desc -> Asc 변환
-
-		return new ArrayList<>(mutableList); // List<T>를 List<Candle> 타입으로 안전하게 캐스팅하여 반환
+		Collections.reverse(mutableList);
+		return new ArrayList<>(mutableList); 
 	}
 }

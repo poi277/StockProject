@@ -22,15 +22,9 @@ import lombok.extern.slf4j.Slf4j;
 public class CandleCacheService {
 
 	private static final int MAX_CACHE_SIZE = 100;
-
-	// 🎯 차트에 기본적으로 그려질 이동평균선 기간 설정 (5선, 20선, 60선)
 	private static final List<Integer> MA_PERIODS = List.of(5, 20, 60);
-
 	private final CandleCache candleCache;
 
-	/**
-	 * 캐시 일괄 생성 및 적재
-	 */
 	public void putCandles(CandleType type, String stockCode, List<Candle> candles) {
 		if (candles == null || candles.isEmpty())
 			return;
@@ -41,19 +35,13 @@ public class CandleCacheService {
 		log.info("========== [putCandles 시작] 종목: {}, 타입: {}, 입력 캔들 개수: {} ==========", stockCode, type, candles.size());
 
 		for (Candle candle : candles) {
-			// 동일 시간 데이터가 이미 있으면 마지막 칸 초기화
 			if (!deque.isEmpty() && deque.getLast().getCandle().getCandleTime().equals(candle.getCandleTime())) {
 				deque.removeLast();
 			}
-
-			// 1. 실시간 이평선 계산 및 랩핑
 			CandleWithMA<Candle> wrapped = calculateLiveMA(deque, candle);
-
 			log.info("[캐시 적재 중] 시간: {}, 종가: {}, 계산된 이평선(MA): {}", candle.getCandleTime(), candle.getClose(),
 					wrapped.getMa());
-
 			deque.addLast(wrapped);
-
 			if (deque.size() > MAX_CACHE_SIZE) {
 				deque.removeFirst();
 			}
@@ -68,10 +56,6 @@ public class CandleCacheService {
 
 		cacheMap.put(stockCode, deque);
 	}
-
-	/**
-	 * 복수 캔들 업서트 (캐시 갱신)
-	 */
 	public void upsertCandles(CandleType type, String stockCode, List<Candle> newCandles) {
 		if (newCandles == null || newCandles.isEmpty())
 			return;
@@ -103,10 +87,6 @@ public class CandleCacheService {
 			return deque;
 		});
 	}
-
-	/**
-	 * 단일 캔들 업서트 후 최신 갱신 본 반환
-	 */
 	public CandleWithMA<Candle> upsertCandle(CandleType type, String stockCode, Candle candle) {
 		if (candle == null)
 			return null;
@@ -131,10 +111,6 @@ public class CandleCacheService {
 
 		return finalDeque != null ? finalDeque.getLast() : null;
 	}
-
-	/**
-	 * 미확정 봉 실시간 업데이트 (마지막 칸 리프레시용)
-	 */
 	public void updateLastCandle(CandleType type, String stockCode, Candle candle) {
 		if (candle == null)
 			return;
@@ -151,21 +127,17 @@ public class CandleCacheService {
 		});
 	}
 
-	public List<CandleWithMA<Candle>> getCandles(CandleType type, String stockCode) {
+	public List<CandleWithMA<Candle>> getCacheCandles(CandleType type, String stockCode) {
 		Map<String, Deque<CandleWithMA<Candle>>> cacheMap = candleCache.getTypedStore(type);
 		if (cacheMap == null)
 			return List.of();
-
 		Deque<CandleWithMA<Candle>> deque = cacheMap.get(stockCode);
 		if (deque == null || deque.isEmpty())
 			return List.of();
-
 		return new ArrayList<>(deque);
 	}
 
-	/**
-	 * 실시간 이동평균선(MA) 계산 연산 로직 (기존 내부 인자 정리)
-	 */
+
 	private CandleWithMA<Candle> calculateLiveMA(Deque<CandleWithMA<Candle>> deque, Candle newCandle) {
 		Map<Integer, Double> maMap = new HashMap<>();
 		List<Integer> prices = new ArrayList<>(deque.stream().map(c -> c.getCandle().getClose()).toList());
@@ -175,8 +147,6 @@ public class CandleCacheService {
 
 		for (int period : MA_PERIODS) {
 			double avg;
-
-			// 데이터가 충분히 쌓였을 때
 			if (totalSize >= period) {
 				long sum = 0;
 				for (int i = totalSize - period; i < totalSize; i++) {
@@ -184,7 +154,6 @@ public class CandleCacheService {
 				}
 				avg = (double) sum / period;
 			}
-			// 데이터가 아직 부족할 때 (누적 평균 처리)
 			else {
 				long sum = 0;
 				for (int price : prices) {

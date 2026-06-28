@@ -6,7 +6,6 @@ import java.util.Map;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
-import Poi.Stock.DTO.user.CandleDTO;
 import Poi.Stock.features.Bot.Bot;
 import Poi.Stock.features.Bot.BotCache;
 import Poi.Stock.features.Candle.Entity.Candle;
@@ -42,7 +41,8 @@ public class WebSocketService {
 		payload.put("qty", qty);
 		messagingTemplate.convertAndSend("/topic/hoga/" + stockCode, payload);
 	}
-	public void sendCurrentCandle(CandleDTO candleDTO, String stockCode, CandleType candleType) {
+
+	public void sendCurrentCandle(Candle candleDTO, String stockCode, CandleType candleType) {
 		if (candleDTO == null || candleType == null) {
 			return;
 		}
@@ -53,7 +53,7 @@ public class WebSocketService {
 	    payload.put("close", candleDTO.getClose());
 	    payload.put("buyQty", candleDTO.getBuyQty());
 	    payload.put("sellQty", candleDTO.getSellQty());
-	    payload.put("time", candleDTO.getTime());
+		payload.put("time", candleDTO.getCandleTime());
 	    payload.put("candleType", candleType.name());
 
 		messagingTemplate.convertAndSend("/topic/candle/" + stockCode + "/" + candleType.name(), payload);

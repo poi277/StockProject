@@ -44,6 +44,7 @@ public class CandleMinute implements Candle {
 	public String getCandleTime() {
 		return this.time != null ? this.time.toString() : "";
 	}
+
 	@Override
 	public void setCandleTime(String string) {
 		if (string == null || string.isBlank()) {
@@ -53,11 +54,9 @@ public class CandleMinute implements Candle {
 		try {
 			if (string.contains("T")) {
 				this.time = LocalDateTime.parse(string);
-			}
-			else if (string.contains("-") && string.contains(" ")) {
+			} else if (string.contains("-") && string.contains(" ")) {
 				this.time = LocalDateTime.parse(string.replace(" ", "T"));
-			}
-			else {
+			} else {
 				String pureTimeStr = string.replaceAll("[^0-9]", "");
 				if (pureTimeStr.length() >= 12) {
 					pureTimeStr = pureTimeStr.substring(0, 12);

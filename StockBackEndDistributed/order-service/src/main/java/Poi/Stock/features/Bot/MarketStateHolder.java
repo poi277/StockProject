@@ -44,7 +44,7 @@ public class MarketStateHolder {
 	}
 
 	public void updateMarketState(String stockCode) {
-		List<CandleWithMA<Candle>> candles = candleCacheService.getCandles(CandleType.ONE_MINUTE, stockCode);
+		List<CandleWithMA<Candle>> candles = candleCacheService.getCacheCandles(CandleType.ONE_MINUTE, stockCode);
 
 		if (candles == null || candles.isEmpty()) {
 			stateMap.put(stockCode, MarketState.FLAT);

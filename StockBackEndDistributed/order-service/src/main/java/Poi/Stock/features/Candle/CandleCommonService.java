@@ -1,6 +1,8 @@
 package Poi.Stock.features.Candle;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.redis.core.RedisTemplate;
@@ -58,6 +60,13 @@ public class CandleCommonService {
 			saveToRepository(type, newCandle);
 			candleCacheService.upsertCandle(type, stockCode, newCandle);
 		}
+	}
+
+	public <T extends Candle> List<Candle> convertGeneric(List<T> candles) {
+		if (candles == null || candles.isEmpty()) {
+			return List.of();
+		}
+		return new ArrayList<>(candles);
 	}
 
 	private void saveToRepository(CandleType type, Candle candle) {
