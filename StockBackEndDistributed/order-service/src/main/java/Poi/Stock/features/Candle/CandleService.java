@@ -385,6 +385,38 @@ public class CandleService {
 		candles.forEach((type, candle) -> webSocketService.sendCurrentCandle(candle, stockCode, type));
 	}
 
+//	private void mergeLiveCandle(CandleType type, List<CandleWithMA<Candle>> wrappedCache) {
+//	    if (wrappedCache == null || wrappedCache.size() < 2 || type == CandleType.DAY) {
+//	        return;
+//	    }
+//
+//	    Candle liveCandle = wrappedCache.get(wrappedCache.size() - 1).getCandle();
+//	    Candle lastCandle = wrappedCache.get(wrappedCache.size() - 2).getCandle();
+//
+//	    String liveTimeStr = liveCandle.getCandleTime().replace("-", "").replace("T", "").replace(":", "").substring(0, 12);
+//	    String lastTimeStr = lastCandle.getCandleTime().replace("-", "").replace("T", "").replace(":", "").substring(0, 12);
+//	    String targetTimeStr = floorTime(liveTimeStr, type);
+//
+//	    if (targetTimeStr.equals(lastTimeStr)) {
+//	        // 🎯 같은 봉 구간 → 분봉/시봉/주봉/월봉/년봉 모두 병합 후 제거
+//	        mergeInto(lastCandle, liveCandle);
+//	        wrappedCache.remove(wrappedCache.size() - 1);
+//	    } else {
+//	        // 🎯 새 봉 구간 → 시간만 정규화해서 새 봉으로 유지
+//	        LocalDateTime targetLdt = LocalDateTime.parse(targetTimeStr, FMT);
+//	        liveCandle.setCandleTime(targetLdt.toString());
+//	        wrappedCache.set(wrappedCache.size() - 1, new CandleWithMA<>(liveCandle, Map.of()));
+//	    }
+//	}
+//
+//	private void mergeInto(Candle base, Candle incoming) {
+//	    base.setHigh(Math.max(base.getHigh(), incoming.getHigh()));
+//	    base.setLow(Math.min(base.getLow(), incoming.getLow()));
+//	    base.setClose(incoming.getClose());
+//	    base.setTotalVolume(base.getTotalVolume() + incoming.getTotalVolume());
+//	    base.setTradeAmount(base.getTradeAmount() + incoming.getTradeAmount());
+//	}
+
 	private void mergeLiveCandle(CandleType type, List<CandleWithMA<Candle>> wrappedCache) {
 		if (wrappedCache == null || wrappedCache.size() < 2 || type == CandleType.DAY) {
 			return;
