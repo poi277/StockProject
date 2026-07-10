@@ -41,6 +41,7 @@ public class CandleService {
 
 	private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
 	private static final DateTimeFormatter DAY_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
+
 	private static final int[] MA_PERIODS = { 5, 20, 60 };
 
 	private final CandleMinuteRepository candleMinuteRepository;
@@ -142,9 +143,6 @@ public class CandleService {
 		};
 	}
 
-	/**
-	 * DB에서 최신 Top 100 원천 데이터(Raw Data)만 조회하는 전담 메서드
-	 */
 	private List<Candle> loadTop100FromDb(CandleType type, String stockCode) {
 		return switch (type) {
 		case ONE_MINUTE, THREE_MINUTE, FIVE_MINUTE, TEN_MINUTE -> {
@@ -209,10 +207,10 @@ public class CandleService {
 				.<Candle>map(c -> c)
 				.collect(Collectors.groupingBy(c -> floorTime(c.getCandleTime(), type), Collectors.toList())).entrySet()
 				.stream().sorted(Map.Entry.comparingByKey())
-				.map(entry -> toGroupedCandle(entry.getKey(), entry.getValue())).toList());
+				.map(entry -> toGroupedCandle(entry.getKey(), entry.getValue(), type)).toList());
 	}
 
-	private Candle toGroupedCandle(String timeStr, List<Candle> group) {
+	private Candle toGroupedCandle(String timeStr, List<Candle> group, CandleType type) {
 		List<Candle> sortedGroup = new ArrayList<>(group);
 		sortedGroup.sort(Comparator.comparing(Candle::getCandleTime));
 
@@ -320,9 +318,6 @@ public class CandleService {
 		}
 	}
 
-	private LocalDateTime parseCandleTime(String time) {
-		return time.length() == 10 ? LocalDate.parse(time).atStartOfDay() : LocalDateTime.parse(time);
-	}
 
 	private CandleWithMA<Candle> getCurrentCandleFromRedis(String candleTypePrefix, String stockCode,
 			String timeSuffix) {
@@ -342,20 +337,18 @@ public class CandleService {
 				return null;
 
 			Candle candleCore;
+			String time;
 			long sellQty = parseLong(current.get("sellQty"));
 			long buyQty = parseLong(current.get("buyQty"));
 
 			if ("day".equals(candleTypePrefix)) {
-				LocalDate dayDate = LocalDate.parse(timeSuffix, DAY_FMT);
-				candleCore = CandleDTO.current(dayDate.toString(), Integer.parseInt(String.valueOf(open)),
-						Integer.parseInt(String.valueOf(high)), Integer.parseInt(String.valueOf(low)),
-						Integer.parseInt(String.valueOf(close)), buyQty, sellQty);
+				time = LocalDate.parse(timeSuffix, DAY_FMT).toString();
 			} else {
-				LocalDateTime minuteTime = LocalDateTime.parse(timeSuffix, FMT);
-				candleCore = CandleDTO.current(minuteTime.toString(), Integer.parseInt(String.valueOf(open)),
+				time = LocalDateTime.parse(timeSuffix, FMT).toString();
+			}
+			candleCore = CandleDTO.current(time.toString(), Integer.parseInt(String.valueOf(open)),
 						Integer.parseInt(String.valueOf(high)), Integer.parseInt(String.valueOf(low)),
 						Integer.parseInt(String.valueOf(close)), buyQty, sellQty);
-			}
 			return new CandleWithMA<>(candleCore, Map.of());
 
 		} catch (Exception e) {
@@ -363,6 +356,57 @@ public class CandleService {
 					e.getMessage());
 			return null;
 		}
+	}
+
+	public void saveCandleOrder(String stockCode, Integer currentPrice, int buyQty, int sellQty, long tradeAmount,
+			LocalDateTime lastExecutionTime) {
+		Map<CandleType, Candle> candles = candleSchedulerService.saveCurrentCandle(stockCode, currentPrice, buyQty,
+				sellQty, tradeAmount, lastExecutionTime);
+
+		candles.forEach((type, candle) -> webSocketService.sendCurrentCandle(candle, stockCode, type));
+	}
+	private void mergeLiveCandle(CandleType type, List<CandleWithMA<Candle>> wrappedCache) {
+		if (wrappedCache == null || wrappedCache.size() < 2 || type == CandleType.DAY) {
+			return;
+		}
+
+		CandleWithMA<Candle> liveWrapped = wrappedCache.get(wrappedCache.size() - 1);
+		CandleWithMA<Candle> lastWrapped = wrappedCache.get(wrappedCache.size() - 2);
+		Candle liveCandle = liveWrapped.getCandle();
+		Candle lastCandle = lastWrapped.getCandle();
+
+
+		if (type == CandleType.WEEK || type == CandleType.MONTH || type == CandleType.YEAR) {
+			mergeInto(lastCandle, liveCandle);
+			wrappedCache.remove(wrappedCache.size() - 1);
+			return;
+		}
+		String liveTimeStr = liveCandle.getCandleTime().replace("-", "").replace("T", "").replace(":", "").substring(0,
+				12);
+		String lastTimeStr = lastCandle.getCandleTime().replace("-", "").replace("T", "").replace(":", "").substring(0,
+				12);
+		String targetTimeStr = floorTime(liveTimeStr, type);
+
+		if (targetTimeStr.equals(lastTimeStr)) {
+			mergeInto(lastCandle, liveCandle);
+			wrappedCache.remove(wrappedCache.size() - 1);
+		} else {
+			LocalDateTime targetLdt = LocalDateTime.parse(targetTimeStr, FMT);
+			liveCandle.setCandleTime(targetLdt.toString());
+			wrappedCache.set(wrappedCache.size() - 1, new CandleWithMA<>(liveCandle, Map.of()));
+		}
+	}
+
+	private void mergeInto(Candle base, Candle incoming) {
+		base.setHigh(Math.max(base.getHigh(), incoming.getHigh()));
+		base.setLow(Math.min(base.getLow(), incoming.getLow()));
+		base.setClose(incoming.getClose());
+		base.setTotalVolume(base.getTotalVolume() + incoming.getTotalVolume());
+		base.setTradeAmount(base.getTradeAmount() + incoming.getTradeAmount());
+	}
+
+	private LocalDateTime parseCandleTime(String time) {
+		return time.length() == 10 ? LocalDate.parse(time).atStartOfDay() : LocalDateTime.parse(time);
 	}
 
 	private long parseLong(Object value) {
@@ -375,81 +419,5 @@ public class CandleService {
 
 	private LocalDateTime parseEndTime(String endTime) {
 		return endTime != null ? LocalDateTime.parse(endTime) : LocalDateTime.now();
-	}
-
-	public void saveCandleOrder(String stockCode, Integer currentPrice, int buyQty, int sellQty, long tradeAmount,
-			LocalDateTime lastExecutionTime) {
-		Map<CandleType, Candle> candles = candleSchedulerService.saveCurrentCandle(stockCode, currentPrice, buyQty,
-				sellQty, tradeAmount, lastExecutionTime);
-
-		candles.forEach((type, candle) -> webSocketService.sendCurrentCandle(candle, stockCode, type));
-	}
-
-//	private void mergeLiveCandle(CandleType type, List<CandleWithMA<Candle>> wrappedCache) {
-//	    if (wrappedCache == null || wrappedCache.size() < 2 || type == CandleType.DAY) {
-//	        return;
-//	    }
-//
-//	    Candle liveCandle = wrappedCache.get(wrappedCache.size() - 1).getCandle();
-//	    Candle lastCandle = wrappedCache.get(wrappedCache.size() - 2).getCandle();
-//
-//	    String liveTimeStr = liveCandle.getCandleTime().replace("-", "").replace("T", "").replace(":", "").substring(0, 12);
-//	    String lastTimeStr = lastCandle.getCandleTime().replace("-", "").replace("T", "").replace(":", "").substring(0, 12);
-//	    String targetTimeStr = floorTime(liveTimeStr, type);
-//
-//	    if (targetTimeStr.equals(lastTimeStr)) {
-//	        // 🎯 같은 봉 구간 → 분봉/시봉/주봉/월봉/년봉 모두 병합 후 제거
-//	        mergeInto(lastCandle, liveCandle);
-//	        wrappedCache.remove(wrappedCache.size() - 1);
-//	    } else {
-//	        // 🎯 새 봉 구간 → 시간만 정규화해서 새 봉으로 유지
-//	        LocalDateTime targetLdt = LocalDateTime.parse(targetTimeStr, FMT);
-//	        liveCandle.setCandleTime(targetLdt.toString());
-//	        wrappedCache.set(wrappedCache.size() - 1, new CandleWithMA<>(liveCandle, Map.of()));
-//	    }
-//	}
-//
-//	private void mergeInto(Candle base, Candle incoming) {
-//	    base.setHigh(Math.max(base.getHigh(), incoming.getHigh()));
-//	    base.setLow(Math.min(base.getLow(), incoming.getLow()));
-//	    base.setClose(incoming.getClose());
-//	    base.setTotalVolume(base.getTotalVolume() + incoming.getTotalVolume());
-//	    base.setTradeAmount(base.getTradeAmount() + incoming.getTradeAmount());
-//	}
-
-	private void mergeLiveCandle(CandleType type, List<CandleWithMA<Candle>> wrappedCache) {
-		if (wrappedCache == null || wrappedCache.size() < 2 || type == CandleType.DAY) {
-			return;
-		}
-		CandleWithMA<Candle> liveWrapped = wrappedCache.get(wrappedCache.size() - 1);
-		CandleWithMA<Candle> lastWrapped = wrappedCache.get(wrappedCache.size() - 2);
-		Candle liveCandle = liveWrapped.getCandle();
-		Candle lastCandle = lastWrapped.getCandle();
-		if (type == CandleType.WEEK || type == CandleType.MONTH || type == CandleType.YEAR) {
-			lastCandle.setHigh(Math.max(lastCandle.getHigh(), liveCandle.getHigh()));
-			lastCandle.setLow(Math.min(lastCandle.getLow(), liveCandle.getLow()));
-			lastCandle.setClose(liveCandle.getClose());
-			lastCandle.setTotalVolume(lastCandle.getTotalVolume() + liveCandle.getTotalVolume());
-			lastCandle.setTradeAmount(lastCandle.getTradeAmount() + liveCandle.getTradeAmount());
-			wrappedCache.remove(wrappedCache.size() - 1);
-			return;
-		}
-		String liveTimeStr = liveCandle.getCandleTime().replace("-", "").replace("T", "").replace(":", "").substring(0,
-				12);
-		String lastTimeStr = lastCandle.getCandleTime().replace("-", "").replace("T", "").replace(":", "").substring(0,
-				12);
-		String targetTimeStr = floorTime(liveTimeStr, type);
-		if (targetTimeStr.equals(lastTimeStr)) {
-			lastCandle.setHigh(Math.max(lastCandle.getHigh(), liveCandle.getHigh()));
-			lastCandle.setLow(Math.min(lastCandle.getLow(), liveCandle.getLow()));
-			lastCandle.setClose(liveCandle.getClose());
-			lastCandle.setTotalVolume(lastCandle.getTotalVolume() + liveCandle.getTotalVolume());
-			lastCandle.setTradeAmount(lastCandle.getTradeAmount() + liveCandle.getTradeAmount());
-			wrappedCache.remove(wrappedCache.size() - 1);
-		} else {
-			LocalDateTime targetLdt = LocalDateTime.parse(targetTimeStr, FMT);
-			liveCandle.setCandleTime(targetLdt.toString());
-			wrappedCache.set(wrappedCache.size() - 1, new CandleWithMA<>(liveCandle, Map.of()));
-		}
 	}
 }

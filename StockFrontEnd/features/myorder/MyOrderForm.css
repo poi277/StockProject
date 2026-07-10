@@ -1,0 +1,120 @@
+.my-order-page {
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  padding: 24px clamp(16px, 6.25vw - 48px, 32px);
+}
+
+.my-order-container {
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.my-order-header {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: 12px;
+}
+
+.my-order-header h2 {
+  margin: 0;
+  color: var(--wts-adaptive-grey900);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.my-order-empty {
+  margin: 0;
+  padding: 48px 0;
+  color: var(--wts-adaptive-greyOpacity600);
+  text-align: center;
+}
+
+.my-order-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.my-order-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  color: var(--wts-adaptive-grey800);
+  font-size: 14px;
+  table-layout: fixed;
+}
+
+.my-order-table th,
+.my-order-table td {
+  box-sizing: border-box;
+  padding: 12px;
+  border-bottom: 1px solid var(--wts-adaptive-greyOpacity100);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.my-order-table th:first-child,
+.my-order-table td:first-child {
+  text-align: left;
+}
+
+.my-order-table th {
+  color: var(--wts-adaptive-grey600);
+  font-weight: 500;
+}
+
+.my-order-stock {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.my-order-stock strong,
+.my-order-stock span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-order-stock strong {
+  color: var(--wts-adaptive-grey900);
+  font-weight: 600;
+}
+
+.my-order-stock span,
+.my-order-date {
+  color: var(--wts-adaptive-greyOpacity600);
+  font-size: 12px;
+}
+
+.buy {
+  color: var(--wts-adaptive-red600);
+  font-weight: 600;
+}
+
+.sell {
+  color: var(--wts-adaptive-blue600);
+  font-weight: 600;
+}
+
+.my-order-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--wts-adaptive-greyOpacity100);
+  color: var(--wts-adaptive-greyOpacity800);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+@media screen and (max-width: 1279px) {
+  .my-order-page {
+    padding-right: calc(clamp(16px, 6.25vw - 48px, 32px) + 56px);
+  }
+}

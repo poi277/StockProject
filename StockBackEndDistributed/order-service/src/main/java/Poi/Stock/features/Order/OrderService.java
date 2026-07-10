@@ -50,9 +50,6 @@ public class OrderService {
     @Value("${user.service.url}")
     private String userServiceUrl;
 
-    /**
-     * 자산/보유주식 검증 — user-service HTTP 호출
-     */
     public void validateOrder(String userId, TradeDTO tradeDTO, String accessToken) {
         String url = userServiceUrl + "/user/validate-order";
         HttpHeaders headers = new HttpHeaders();

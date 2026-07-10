@@ -44,7 +44,6 @@ public interface Candle {
 
 	static <T extends Candle> T fromRedisMap(Map<Object, Object> redisMap, CandleFactory<T> factory) {
 		try {
-			// 🎯 아래 내부 헬퍼 메서드(parseInt / parseLong)를 거치므로 Object 에러가 안 납니다.
 			int open = parseInt(redisMap.get("open"));
 			int high = parseInt(redisMap.get("high"));
 			int low = parseInt(redisMap.get("low"));
@@ -60,18 +59,17 @@ public interface Candle {
 		}
 	}
 
-	// 🎯 [핵심 수정] Object 타입을 문자열로 안전하게 바꾼 뒤 primitive type으로 파싱합니다.
 	private static int parseInt(Object val) {
 		if (val == null)
 			return 0;
-		String str = String.valueOf(val).trim(); // Object를 명시적으로 String 변환
+		String str = String.valueOf(val).trim();
 		return str.isEmpty() ? 0 : Integer.parseInt(str);
 	}
 
 	private static long parseLong(Object val) {
 		if (val == null)
 			return 0L;
-		String str = String.valueOf(val).trim(); // Object를 명시적으로 String 변환
+		String str = String.valueOf(val).trim();
 		return str.isEmpty() ? 0L : Long.parseLong(str);
 	}
 

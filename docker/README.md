@@ -1,6 +1,6 @@
 <a id="top"></a>
 
-# 주식 프론트엔드
+# StockFrontEnd
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.1.3-black?logo=nextdotjs)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.2.3-61DAFB?logo=react&logoColor=black)](https://react.dev/)
