@@ -24,7 +24,6 @@ public class SettlementProducer {
 
 	public void sendTradeExecutionStockService(List<TradeExecution> executions) {
 		TradeExecutionList list = new TradeExecutionList(executions);
-		log.info("전송 데이터: {}", list); // 추가
 		kafkaTemplate.send("trade-execution-topic", executions.get(0).getStockCode(), list);
 	}
 }

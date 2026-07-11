@@ -49,12 +49,12 @@ public class IndividualBot extends AbstractBot {
 
 	@Override
 	protected int getBuyRange() {
-		return 10;
+		return 3;
 	}
 
 	@Override
 	protected int getSellRange() {
-		return 10;
+		return 3;
 	}
 
 	@Override

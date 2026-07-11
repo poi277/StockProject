@@ -34,7 +34,11 @@ public class Order {
 
 	public void decreaseRemainingQuantity(int qty) {
 		if (qty <= 0)
+		{
+			this.remainingQuantity = 0;
+			this.status = OrderStatus.COMPLETED;
 			return;
+		}
 		if (this.remainingQuantity < qty) {
 			throw new IllegalArgumentException("감소 수량이 남은 수량보다 큽니다.");
 		}
@@ -47,6 +51,7 @@ public class Order {
 	}
 
 	public boolean isCompleted() {
-		return this.status == OrderStatus.COMPLETED;
+	    return this.remainingQuantity != null
+	            && this.remainingQuantity <= 0;
 	}
 }

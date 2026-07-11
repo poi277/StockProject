@@ -26,13 +26,14 @@ export default function OrderPendingForm({ tradeTypeTab, stockCode, selectedPric
                 <input type="hidden" value={editPriceType ? "00" : "03"} name="orderPriceType" />
                 <div className="xl0v5q2" id="trade-order-section">
                     {edit ?
-                        <OrderEditForm tradeTypeTab={tradeTypeTab}
+                        <OrderEditForm
+                            tradeTypeTab={tradeTypeTab}
                             editPriceType={editPriceType}
                             setEditPriceType={setEditPriceType}
                             editPrice={editPrice}
                             setEditPrice={setEditPrice}
                             editQuantity={editQuantity}
-                            setQuantity={setEditQuantity}
+                            setEditQuantity={setEditQuantity}
                             handleEditClose={handleEditClose}
                             editTarget={editTarget}
                         /> :

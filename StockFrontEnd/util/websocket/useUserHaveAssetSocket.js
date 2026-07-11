@@ -7,7 +7,7 @@ export function useUserHaveAssetSocket(userClient, userConnected) {
   const [haveStocks, setHaveStocks] = useState([]);
   const [asset, setAsset] = useState(0);
   const [availableAsset, setAvailableAsset] = useState(0);
-  const [initialStocks, setInitialStocks] = useState({});
+  const [initialStocks, setInitialStocks] = useState([]);
   const { user } = useAuth();
 
   const getHaveAsset = async () => {
@@ -23,18 +23,23 @@ export function useUserHaveAssetSocket(userClient, userConnected) {
   };
 
   useEffect(() => {
-    if (haveStocks.length === 0) return; 
+    if (haveStocks.length === 0) {
+      setInitialStocks([]);
+      return;
+    }
+
     const fetchStockInfo = async () => {
       try {
-        const stockCodes = haveStocks.map(s => s.stockCode); 
+        const stockCodes = haveStocks.map(s => s.stockCode);
         const res = await getStocksByCodesApi(stockCodes);
         const stockArray = Array.isArray(res.data) ? res.data : [];
-        console.log(res)
+
         setInitialStocks(stockArray);
       } catch (err) {
         console.error('종목 정보 조회 실패:', err.message);
       }
     };
+
     fetchStockInfo();
   }, [haveStocks]);
 
@@ -47,16 +52,34 @@ export function useUserHaveAssetSocket(userClient, userConnected) {
       console.log("havestock 웹소켓 수신", data)
       setHaveStocks(prev => {
         if (data.quantity === 0) {
-          return prev.filter(s => s.stockCode !== data.stockCode);
+          return prev.filter(stock => stock.stockCode !== data.stockCode);
         }
-        const exists = prev.find(s => s.stockCode === data.stockCode);
+
+        const exists = prev.some(
+          stock => stock.stockCode === data.stockCode
+        );
+
         if (exists) {
-          return prev.map(s =>
-            s.stockCode === data.stockCode ? { ...s, ...data } : s
+          return prev.map(stock =>
+            stock.stockCode === data.stockCode
+              ? { ...stock, ...data }
+              : stock
           );
         }
+
         return [...prev, data];
       });
+
+      if (data.quantity === 0) {
+        setInitialStocks(prev =>
+          prev.filter(stock => {
+            const stockCode =
+              stock?.snapshot?.stockCode ?? stock?.stockCode;
+
+            return stockCode !== data.stockCode;
+          })
+        );
+      }
     });
 
     const subAsset = userClient.subscribe('/user/queue/asset', message => {

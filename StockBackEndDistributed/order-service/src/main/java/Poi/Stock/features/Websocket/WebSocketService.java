@@ -13,6 +13,7 @@ import Poi.Stock.features.Candle.Entity.CandleWithMA;
 import Poi.Stock.features.Order.Order;
 import Poi.Stock.features.Order.OrderBookCache;
 import Poi.Stock.object.MatchingResult;
+import Poi.Stock.object.TradeExecution;
 import Poi.Stock.repository.OrderRepository;
 import Poi.Stock.repository.StockRepository;
 import Poi.Stock.util.EnumUtil.CandleType;
@@ -46,15 +47,15 @@ public class WebSocketService {
 		if (candleDTO == null || candleType == null) {
 			return;
 		}
-	    Map<String, Object> payload = new HashMap<>();
-	    payload.put("open", candleDTO.getOpen());
-	    payload.put("low", candleDTO.getLow());
-	    payload.put("high", candleDTO.getHigh());
-	    payload.put("close", candleDTO.getClose());
-	    payload.put("buyQty", candleDTO.getBuyQty());
-	    payload.put("sellQty", candleDTO.getSellQty());
+		Map<String, Object> payload = new HashMap<>();
+		payload.put("open", candleDTO.getOpen());
+		payload.put("low", candleDTO.getLow());
+		payload.put("high", candleDTO.getHigh());
+		payload.put("close", candleDTO.getClose());
+		payload.put("buyQty", candleDTO.getBuyQty());
+		payload.put("sellQty", candleDTO.getSellQty());
 		payload.put("time", candleDTO.getCandleTime());
-	    payload.put("candleType", candleType.name());
+		payload.put("candleType", candleType.name());
 
 		messagingTemplate.convertAndSend("/topic/candle/" + stockCode + "/" + candleType.name(), payload);
 	}
@@ -77,22 +78,38 @@ public class WebSocketService {
 	}
 
 	public void sendOrderUpdate(MatchingResult result) {
-	    for (Order order : result.getCompletedResting()) {
-	        if (isBot(order.getUserId())) continue;
-			sendToUser(order.getUserId(), order, order.getStatus());
-	    }
-	    for (Order order : result.getPartialResting()) {
-	        if (isBot(order.getUserId())) continue;
-			sendToUser(order.getUserId(), order, order.getStatus());
-	    }
-	    Order incoming = result.getIncomingOrder();
-	    if (incoming != null && !isBot(incoming.getUserId())) {
-			sendToUser(incoming.getUserId(), incoming, incoming.getStatus());
-	    }
+
+		for (Order order : result.getCompletedResting()) {
+			if (isBot(order.getUserId()))
+				continue;
+
+			int executedQuantity = getExecutedQuantity(result, order);
+
+			sendToUser(order.getUserId(), order, order.getStatus(), executedQuantity);
+		}
+
+		for (Order order : result.getPartialResting()) {
+			if (isBot(order.getUserId()))
+				continue;
+
+			int executedQuantity = getExecutedQuantity(result, order);
+
+			sendToUser(order.getUserId(), order, order.getStatus(), executedQuantity);
+		}
+
+		Order incoming = result.getIncomingOrder();
+
+		if (incoming != null && !isBot(incoming.getUserId())) {
+			int executedQuantity = getExecutedQuantity(result, incoming);
+
+			sendToUser(incoming.getUserId(), incoming, incoming.getStatus(), executedQuantity);
+		}
 	}
 
-	public void sendToUser(String userId, Order order, OrderStatus orderStatus) {
+	public void sendToUser(String userId, Order order, OrderStatus orderStatus, int executedQuantity) {
+
 		Map<String, Object> payload = new HashMap<>();
+
 		payload.put("orderId", order.getOrderId());
 		payload.put("stockCode", order.getStockCode());
 		payload.put("stockName", order.getStockName());
@@ -101,6 +118,10 @@ public class WebSocketService {
 		payload.put("remainingQuantity", order.getRemainingQuantity());
 		payload.put("tradePrice", order.getTradePrice());
 		payload.put("status", orderStatus);
+
+		// 이번 매칭에서 체결된 수량
+		payload.put("executedQuantity", executedQuantity);
+
 		messagingTemplate.convertAndSendToUser(userId, "/queue/orders", payload);
 	}
 
@@ -109,10 +130,20 @@ public class WebSocketService {
 		messagingTemplate.convertAndSend("/topic/error/" + userId, message);
 	}
 
-
 	private boolean isBot(String userId) {
 		Bot bot = botCache.get(userId);
 		return bot != null && bot.getBotType() != null;
+	}
+
+	private int getExecutedQuantity(MatchingResult result, Order order) {
+
+		return result.getExecutions().stream().filter(execution -> {
+			if (order.getTradeType() == tradeType.BUY) {
+				return order.getUserId().equals(execution.getBuyerId());
+			}
+
+			return order.getUserId().equals(execution.getSellerId());
+		}).mapToInt(TradeExecution::getQuantity).sum();
 	}
 
 }

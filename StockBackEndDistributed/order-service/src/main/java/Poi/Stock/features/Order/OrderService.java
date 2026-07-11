@@ -169,30 +169,32 @@ public class OrderService {
 		}).collect(Collectors.toList());
 	}
 
+	@Transactional
 	public void stockEdit(TradeDTO tradeDTO, Order order) {
-		// 문제점 kafka를 이용하지않음
 		Integer oldPrice = order.getTradePrice();
+
 	    OrderBook book = orderBookCache.get(order.getStockCode());
 	    book.removeOrder(order);
-	    int filledQty = order.getQuantity() - order.getRemainingQuantity();
+
+		int filledQty = order.getQuantity() - order.getRemainingQuantity();
+
+		if (tradeDTO.getQuantity() < filledQty) {
+			throw new RuntimeException("수정 수량이 이미 체결된 수량보다 작습니다");
+		}
+
 	    order.setTradePrice(tradeDTO.getTradePrice());
 	    order.setQuantity(tradeDTO.getQuantity());
+		order.setRemainingQuantity(tradeDTO.getQuantity() - filledQty);
 	    order.setPriority(System.nanoTime());
 
-	    if (order.getStatus() == OrderStatus.PENDING) {
-	        order.setRemainingQuantity(tradeDTO.getQuantity());
-	    } else {
-	        if (tradeDTO.getQuantity() <= filledQty) {
-	            throw new RuntimeException("수정 수량이 이미 체결된 수량보다 작습니다");
-	        }
-	        order.setRemainingQuantity(tradeDTO.getQuantity() - filledQty);
-	    }
-
 		MatchingResult result = orderTradeService.matchLoop(order, book);
-		// 수정된 값이 아닌 수정전 값을 갱신하기 위해 넣어야함
+
 		result.getMatchedPrices().add(oldPrice);
-	    orderTradeService.saveTradeHistories(result.getExecutions());
+
+		orderTradeService.saveTradeHistories(result.getExecutions());
+
 	    orderTradeService.saveEditOrders(result, order);
+
 	    orderTradeService.settlement(result);
 		orderTradeService.updateCurrentCandle(result);
 		orderTradeService.sendWebSocket(result, book);

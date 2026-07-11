@@ -145,20 +145,23 @@ public class UserAssetService {
 	}
 
 	public void applyStockChanges(SettlementEvent settlementevent, Map<String, StockUser> userMap,
-			Map<String, HaveStock> haveStockMap) {
+	        Map<String, HaveStock> haveStockMap) {
+
 		if (settlementevent.getStockChanges().isEmpty())
-			return;
+	        return;
 
 		for (haveStockChange change : settlementevent.getStockChanges()) {
-			StockUser user = userMap.get(change.getUserId());
-			if (user == null) {
-				log.warn("정산 대상 사용자 없음: {}", change.getUserId());
-				continue;
-			}
+	        StockUser user = userMap.get(change.getUserId());
+
+	        if (user == null) {
+	            log.warn("정산 대상 사용자 없음: {}", change.getUserId());
+	            continue;
+	        }
 
 			int tradeMoney = change.getTradePrice() * Math.abs(change.getTradeQuantity());
+
 			if (change.getTradeQuantity() > 0) {
-				user.setAsset(user.getAsset() - tradeMoney);
+	            user.setAsset(user.getAsset() - tradeMoney);
 			} else {
 				user.setAsset(user.getAsset() + tradeMoney);
 				user.setAvailableAsset(user.getAvailableAsset() + tradeMoney);
@@ -176,13 +179,25 @@ public class UserAssetService {
 
 			if (change.getTradeQuantity() > 0) {
 				hs.updateAveragePrice(change.getTradeQuantity(), change.getTradePrice());
-				hs.setAvailableQuantity(hs.getAvailableQuantity() + change.getTradeQuantity());
-			} else {
-				hs.setQuantity(hs.getQuantity() + change.getTradeQuantity());
-			}
-		}
+				hs.setAvailableQuantity(hs.getAvailableQuantity() + change.getTradeQuantity()
+	            );
+	        } else {
+				hs.setQuantity(hs.getQuantity() + change.getTradeQuantity()
+	            );
+	        }
+	    }
+
 		stockUserRepository.saveAll(userMap.values());
-		haveStockRepository.saveAll(haveStockMap.values());
+		List<HaveStock> deleteStocks = haveStockMap.values()
+	            .stream()
+				.filter(hs -> hs.getQuantity() == 0)
+	            .toList();
+
+		if (!deleteStocks.isEmpty()) {
+			haveStockRepository.deleteAll(deleteStocks);
+	    }
+
+		haveStockRepository.saveAll(haveStockMap.values().stream().filter(hs -> hs.getQuantity() != 0).toList());
 	}
 
 	public void sendUpdates(SettlementEvent event, Map<String, StockUser> userMap,

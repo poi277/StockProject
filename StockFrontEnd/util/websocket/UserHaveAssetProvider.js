@@ -14,23 +14,44 @@ export function UserHaveAssetProvider({ children }) {
     //구독은 여러개
     const { client, connected } = useOrderWebSocket();
     const { userClient, userConnected } = useUserWebSocket();
-    const {stockClient,stockConnected} = useStockWebSocket();
-    
-    const { orders, setOrders,notifications  } = useOrderSocket(client, connected);
+    const { stockClient, stockConnected } = useStockWebSocket();
+
+    const { orders, setOrders, notifications } = useOrderSocket(client, connected);
     const { haveStocks, setHaveStocks, asset, setAsset, availableAsset, setAvailableAsset, initialStocks } = useUserHaveAssetSocket(userClient, userConnected);
     //havestock->가지고있는 주식 수 만 알려줌
     //stocklist는 가지고있는 주식의 가격(info)를 알려줌
     //가지고 있는 주식 구독
-    const { stocklist } = useStocksSocket(stockClient, stockConnected,initialStocks);
+    const { stocklist } = useStocksSocket(stockClient, stockConnected, initialStocks);
 
 
     const stocksArray = (Array.isArray(stocklist) ? stocklist : []).map(stock => {
-        const matched = haveStocks?.find(h => h.stockCode === stock.stockCode);
+        const stockCode = stock?.snapshot?.stockCode ?? stock?.stockCode;
+        const currentPrice =
+            stock?.snapshot?.currentPrice ?? stock?.currentPrice ?? 0;
+
+        const matched = haveStocks?.find(
+            h => h.stockCode === stockCode
+        );
+
         const quantity = matched?.quantity ?? 0;
         const avgPrice = matched?.averagePrice ?? 0;
-        const diff = Math.floor((stock.currentPrice - avgPrice) * quantity);
-        const rate = avgPrice > 0 ? ((diff / (avgPrice * quantity)) * 100).toFixed(2) : 0;
-        return { ...stock, quantity, avgPrice, evaluatedAmount: stock.currentPrice * quantity, diff, rate };
+        const diff = Math.floor((currentPrice - avgPrice) * quantity);
+
+        const rate =
+            avgPrice > 0 && quantity > 0
+                ? ((diff / (avgPrice * quantity)) * 100).toFixed(2)
+                : 0;
+
+        return {
+            ...stock,
+            stockCode,
+            currentPrice,
+            quantity,
+            avgPrice,
+            evaluatedAmount: currentPrice * quantity,
+            diff,
+            rate,
+        };
     });
     // stocksArray 선언 이후로 옮기기
 
@@ -42,7 +63,7 @@ export function UserHaveAssetProvider({ children }) {
 
     return (
         <UserContext.Provider value={{
-            orders, setOrders,notifications,
+            orders, setOrders, notifications,
             asset, setAsset,
             haveStocks, setHaveStocks,
             availableAsset, setAvailableAsset,

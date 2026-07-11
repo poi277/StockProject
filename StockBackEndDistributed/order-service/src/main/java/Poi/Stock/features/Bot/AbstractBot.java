@@ -61,7 +61,8 @@ public abstract class AbstractBot {
 		Bot bot = botCache.get(botId);
 		if (bot == null)
 			return;
-		log.info("[주문 시작] 봇 ID: {} / 종류: {} / 현재 자산: {}", botId, type, bot.getAsset());
+		// log.info("[주문 시작] 봇 ID: {} / 종류: {} / 현재 자산: {}", botId, type,
+		// bot.getAsset());
 
 		assignedCodeHolder.getAssignedCodes().forEach(stockCode -> {
 			StockRealTimeSnapshot stock = botStockCache.get(stockCode);

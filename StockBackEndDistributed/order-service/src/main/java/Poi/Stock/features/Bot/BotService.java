@@ -138,8 +138,9 @@ public class BotService {
 			orderRepository.deleteAllInBatch(dbOrders);
 		}
 
-		log.info("[시장급변 미세취소] 봇: {} / 종목: {} / 장세: {} / 적용확률: {}% / {}건 취소 (DB 삭제: {}건)", botId, stockCode,
-				currentState, realProbability, toCancel.size(), dbOrders.size());
+		// log.info("[시장급변 미세취소] 봇: {} / 종목: {} / 장세: {} / 적용확률: {}% / {}건 취소 (DB 삭제:
+		// {}건)", botId, stockCode,currentState, realProbability, toCancel.size(),
+		// dbOrders.size());
 	}
 
 	public void cancelOutOfRange(String botId, String stockCode, int currentPrice, int tickSize, int hogaLevel) {
@@ -164,7 +165,7 @@ public class BotService {
 			orderRepository.deleteAllInBatch(dbOrders);
 		}
 
-		log.info("[호가이탈 취소] 봇: {} / 종목: {} / 현재가: {} / {}건 취소 완료 (DB 삭제: {}건)", botId, stockCode, currentPrice,
-				toCancel.size(), dbOrders.size());
+		// log.info("[호가이탈 취소] 봇: {} / 종목: {} / 현재가: {} / {}건 취소 완료 (DB 삭제: {}건)",
+		// botId, stockCode, currentPrice,toCancel.size(), dbOrders.size());
 	}
 }

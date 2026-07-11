@@ -91,8 +91,9 @@ public class MarketStateHolder {
 		stateMap.put(stockCode, state);
 		intensityMap.put(stockCode, intensity);
 
-		log.info("시장 상태 업데이트 - stockCode: {}, state: {},장 상태:{} intensity: {}, MA5: {}, MA20: {}, MA60: {}", stockCode,
-				state, stateMap.get(stockCode), intensity, ma5, ma20, ma60);
+		// log.info("시장 상태 업데이트 - stockCode: {}, state: {},장 상태:{} intensity: {}, MA5:
+		// {}, MA20: {}, MA60: {}", stockCode,state, stateMap.get(stockCode), intensity,
+		// ma5, ma20, ma60);
 	}
 
 	public MarketState getState(String stockCode) {

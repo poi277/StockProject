@@ -45,12 +45,15 @@ public class OrderCancelService {
 	@Transactional
 	public void cancelOrder(String userId, Long orderId, String accessToken) {
 		Order order = orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다"));
+
 		if (!order.getUserId().equals(userId)) {
 			throw new RuntimeException("본인의 주문만 취소할 수 있습니다");
 		}
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("Authorization", "Bearer " + accessToken);
 		headers.setContentType(MediaType.APPLICATION_JSON);
+
 		restTemplate.exchange(userServiceUrl + "/user/cancel-reserve", HttpMethod.POST,
 				new HttpEntity<>(Map.of("tradeType", order.getTradeType().name(), "stockCode", order.getStockCode(),
 						"price", order.getTradePrice(), "quantity", order.getRemainingQuantity()), headers),
@@ -59,14 +62,18 @@ public class OrderCancelService {
 		OrderBook book = orderBookCache.get(order.getStockCode());
 		book.removeOrder(order);
 
-		// 취소된 가격의 남은 수량 계산 후 웹소켓 전송
 		PriceLevel level = order.getTradeType() == tradeType.BUY ? book.getBuyBook().get(order.getTradePrice())
 				: book.getSellBook().get(order.getTradePrice());
+
 		int remainingQty = level == null ? 0 : level.getTotalQuantity();
+
 		webSocketService.sendHoga(order.getStockCode(), order.getTradeType(), order.getTradePrice(), remainingQty);
-		webSocketService.sendToUser(userId, order, OrderStatus.CANCELLED);
+
+		webSocketService.sendToUser(userId, order, OrderStatus.CANCELLED, 0);
+
 		CompletedOrder completedOrder = CompletedOrder.fromCancelledOrder(order);
 		completedOrderRepository.save(completedOrder);
+
 		orderRepository.delete(order);
 	}
 

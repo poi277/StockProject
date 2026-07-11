@@ -26,27 +26,20 @@ public class WebSocketService {
 		payload.put("totalVolume", snapshot.getTotalVolume());
 		payload.put("changeAmount", snapshot.getChangeAmount());
 		payload.put("changeRate", snapshot.getChangeRate());
-		log.info("현재가 전송 - stockCode: {}, payload: {}", snapshot.getStockCode(), payload);
+		// log.info("현재가 전송 - stockCode: {}, payload: {}", snapshot.getStockCode(),
+		// payload);
 		messagingTemplate.convertAndSend("/topic/stock/" + snapshot.getStockCode(), payload);
 	}
 
-	public void sendExecution(TradeExecution execution, StockRealTimeSnapshot snapshot) {
-		Map<String, Object> payload = new HashMap<>();
-		payload.put("tradeType", execution.getTradeType());
-		payload.put("price", execution.getPrice());
-		payload.put("quantity", execution.getQuantity());
-		payload.put("changeRate", snapshot.getChangeRate());
-		payload.put("totalVolume", snapshot.getTotalVolume());
-		payload.put("time", execution.getTime().toString());
-		log.info("체결 전송 - stockCode: {}, payload: {}", execution.getStockCode(), payload);
-		messagingTemplate.convertAndSend("/topic/execution/" + execution.getStockCode(), payload);
-	}
 
-	public void sendExecution(TradeExecution execution, Integer openPrice, Long totalVolume) {
+	public void sendExecution(TradeExecution execution, Integer yesterdayClosePrice, Long totalVolume) {
+
 		double changeRate = 0.0;
-		if (openPrice != null && openPrice != 0) {
-			changeRate = (double) (execution.getPrice() - openPrice) / openPrice * 100;
+
+		if (yesterdayClosePrice != null && yesterdayClosePrice != 0) {
+			changeRate = (double) (execution.getPrice() - yesterdayClosePrice) / yesterdayClosePrice * 100;
 		}
+
 		Map<String, Object> payload = new HashMap<>();
 		payload.put("tradeType", execution.getTradeType());
 		payload.put("price", execution.getPrice());
@@ -54,7 +47,10 @@ public class WebSocketService {
 		payload.put("changeRate", changeRate);
 		payload.put("totalVolume", totalVolume);
 		payload.put("time", execution.getTime().toString());
-		log.info("체결 전송 - stockCode: {}, payload: {}", execution.getStockCode(), payload);
+
+		// log.info("체결 전송 - stockCode: {}, payload: {}", execution.getStockCode(),
+		// payload);
+
 		messagingTemplate.convertAndSend("/topic/execution/" + execution.getStockCode(), payload);
 	}
 }

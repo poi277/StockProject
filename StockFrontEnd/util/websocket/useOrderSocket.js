@@ -35,11 +35,13 @@ export function useOrderSocket(client, connected) {
 
     const updateOrders = (data) => {
         const id = Date.now();
-
         const notificationText = {
             PENDING: `${data.tradeType === 'BUY' ? '구매' : '판매'} 주문 완료 (${data.stockName})`,
-            PARTIAL: `${data.tradeType === 'BUY' ? '구매' : '판매'} 체결 완료 (${data.quantity - data.remainingQuantity}주)`,
-            COMPLETED: `${data.tradeType === 'BUY' ? '구매' : '판매'} 체결 완료 (${data.quantity}주)`,
+
+            PARTIAL: `${data.tradeType === 'BUY' ? '구매' : '판매'} 체결 완료 (${data.executedQuantity}주)`,
+
+            COMPLETED: `${data.tradeType === 'BUY' ? '구매' : '판매'} 체결 완료 (${data.executedQuantity}주)`,
+
             CANCELLED: `${data.tradeType === 'BUY' ? '구매' : '판매'} 주문 취소 (${data.stockName})`,
         }[data.status];
 

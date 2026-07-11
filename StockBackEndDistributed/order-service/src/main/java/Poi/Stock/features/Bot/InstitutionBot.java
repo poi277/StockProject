@@ -47,12 +47,12 @@ public class InstitutionBot extends AbstractBot {
 
 	@Override
 	protected int getBuyRange() {
-		return 50;
+		return 10;
 	}
 
 	@Override
 	protected int getSellRange() {
-		return 50;
+		return 10;
 	}
 
 	@Override

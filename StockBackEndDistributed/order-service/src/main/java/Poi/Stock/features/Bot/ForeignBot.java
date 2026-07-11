@@ -33,22 +33,22 @@ public class ForeignBot extends AbstractBot {
 
 	@Override
 	protected int getBuyBase() {
-		return 3;
+		return 1;
 	}
 
 	@Override
 	protected int getSellBase() {
-		return 3;
+		return 1;
 	}
 
 	@Override
 	protected int getBuyRange() {
-		return 30;
+		return 3;
 	}
 
 	@Override
 	protected int getSellRange() {
-		return 30;
+		return 3;
 	}
 
 	@Override

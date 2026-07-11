@@ -97,7 +97,7 @@ public class StockService {
 		snapshot.setChangeRate(changeRate);
 
 		for (TradeExecution execution : executions) {
-			webSocketService.sendExecution(execution, snapshot.getHighPrice(), snapshot.getTotalVolume());
+			webSocketService.sendExecution(execution, snapshot.getYesterdayClosePrice(), snapshot.getTotalVolume());
 		}
 
 		// 5. 호가창이나 메인 화면 갱신을 위한 전체 Ticker 패킷 발행

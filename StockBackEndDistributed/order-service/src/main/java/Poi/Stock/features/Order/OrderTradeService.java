@@ -200,23 +200,43 @@ public class OrderTradeService {
 	}
 	public void saveEditOrders(MatchingResult result, Order incomingOrder) {
 		boolean incomingIsBot = isBot(incomingOrder.getUserId());
+
 		if (!result.getCompletedResting().isEmpty()) {
+
 			List<Order> completedToSave = result.getCompletedResting().stream()
-					.filter(o -> !isBot(o.getUserId()) || !incomingIsBot).toList();
+					.filter(order -> !isBot(order.getUserId())).toList();
+
 			if (!completedToSave.isEmpty()) {
 				completedOrderRepository
 						.saveAll(completedToSave.stream().map(CompletedOrder::setCompletedOrder).toList());
 			}
-			orderRepository.deleteAllInBatch(result.getCompletedResting());
+
+			List<Order> completedToDelete = result.getCompletedResting().stream()
+					.filter(order -> !isBot(order.getUserId())).filter(order -> order.getOrderId() != null)
+					.filter(order -> order.getOrderId() > 0).toList();
+
+			if (!completedToDelete.isEmpty()) {
+				orderRepository.deleteAllInBatch(completedToDelete);
+			}
 		}
+
 		if (!result.getPartialResting().isEmpty()) {
-			orderRepository.saveAll(result.getPartialResting());
+			List<Order> partialOrders = result.getPartialResting().stream().filter(order -> !isBot(order.getUserId()))
+					.toList();
+
+			if (!partialOrders.isEmpty()) {
+				orderRepository.saveAll(partialOrders);
+			}
 		}
-		if (incomingOrder.isCompleted()) {
-			completedOrderRepository.save(CompletedOrder.setCompletedOrder(incomingOrder));
-			orderRepository.delete(incomingOrder);
-		} else {
-			orderRepository.save(incomingOrder);
+
+		if (!incomingIsBot) {
+			if (incomingOrder.isCompleted()) {
+				completedOrderRepository.save(CompletedOrder.setCompletedOrder(incomingOrder));
+
+				orderRepository.delete(incomingOrder);
+			} else {
+				orderRepository.save(incomingOrder);
+			}
 		}
 	}
 }

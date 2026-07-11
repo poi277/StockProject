@@ -6,6 +6,7 @@ import OrderPendingForm from './Edit/OrderPendingForm';
 import useOrderBuy from './Buy/useOrderBuy';    
 import useOrderSell from './Sell/useOrderSell';
 import useOrderEdit from './Edit/useOrderEdit';
+import { UserHaveAssetContext } from '../../../../util/websocket/UserHaveAssetProvider';
 
 export default function OrderForm({ selectedPrice, stockCode,stockName,closePrice }) {
     const [tradeTypeTab, setTradeTypeTab] = useState("BUY")
@@ -20,6 +21,10 @@ export default function OrderForm({ selectedPrice, stockCode,stockName,closePric
         editPriceType, setEditPriceType,
         handleEditOpen,
         handleEditClose, stockOrders } = useOrderEdit(selectedPrice, stockCode,stockName, tradeTypeTab);
+    
+    // const { asset, haveStocks } = UserHaveAssetContext();
+    // const matched = haveStocks?.find(h => h.stockCode === stockCode);
+    // const stockQuantity = matched.quantity
 
     return (
         <div className="sa1m6r0">

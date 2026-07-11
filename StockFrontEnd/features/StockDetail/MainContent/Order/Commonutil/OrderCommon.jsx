@@ -10,7 +10,7 @@ export function QuantityForm({ quantity, setQuantity, isPending }) {
                         <label className="tw3v-1r5dc8g0" htmlFor="trading-form-quantity" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>수량</label>
                     </div>
                     <div>
-                        <OrderInputBox value={quantity} setValue={setQuantity} label="수량" unit={quantity ? "주" : ""}  maxWidth="80px" placeholder="최대 5주 가능" contentTag="수량" parentName="QuantityFieldsSet" />
+                        <OrderInputBox value={quantity} setValue={setQuantity} label="수량" unit={quantity ? "주" : ""}  maxWidth="80px" placeholder="최대 n주 가능" contentTag="수량" parentName="QuantityFieldsSet" />
                         {!isPending && <OrderPercentButton />}
                     </div>
                 </div>

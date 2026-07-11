@@ -22,7 +22,7 @@ public class KafkaConsumer {
 	@KafkaListener(topics = "settlement-topic", groupId = "settlement-group")
 	@Transactional
 	public void consume(@Payload SettlementEvent event) {
-		log.info("정산 이벤트 수신: {}", event);
+		// log.info("정산 이벤트 수신: {}", event);
 		try {
 			userAssetService.applySettlement(event);
 		} catch (Exception e) {
