@@ -87,9 +87,10 @@ public class CandleService {
 			int cacheSize = wrappedCache.size();
 			wrappedCache = wrappedCache.subList(Math.max(0, cacheSize - targetSize), cacheSize);
 		}
-		if (wrappedCache.isEmpty())
-			return List.of();
 		appendLatestRealtimeCandle(type, wrappedCache, stockCode);
+		if (wrappedCache.isEmpty()) {
+			return List.of();
+		}
 		mergeLiveCandle(type, wrappedCache);
 		calculateMovingAveragesLiveCandle(wrappedCache);
 		List<CandleDTO> result = toDTOList(wrappedCache);
@@ -377,8 +378,23 @@ public class CandleService {
 
 
 		if (type == CandleType.WEEK || type == CandleType.MONTH || type == CandleType.YEAR) {
-			mergeInto(lastCandle, liveCandle);
-			wrappedCache.remove(wrappedCache.size() - 1);
+
+			LocalDate lastDate = parseCandleTime(lastCandle.getCandleTime()).toLocalDate();
+
+			LocalDate liveDate = parseCandleTime(liveCandle.getCandleTime()).toLocalDate();
+
+			LocalDate lastPeriod = getPeriodStart(lastDate, type);
+			LocalDate livePeriod = getPeriodStart(liveDate, type);
+
+			if (lastPeriod.equals(livePeriod)) {
+				// 같은 주/월/연도면 기존 봉에 병합
+				mergeInto(lastCandle, liveCandle);
+				wrappedCache.remove(wrappedCache.size() - 1);
+			} else {
+				// 새로운 주/월/연도면 새로운 봉으로 유지
+				liveCandle.setCandleTime(livePeriod.toString());
+			}
+
 			return;
 		}
 		String liveTimeStr = liveCandle.getCandleTime().replace("-", "").replace("T", "").replace(":", "").substring(0,
@@ -395,6 +411,18 @@ public class CandleService {
 			liveCandle.setCandleTime(targetLdt.toString());
 			wrappedCache.set(wrappedCache.size() - 1, new CandleWithMA<>(liveCandle, Map.of()));
 		}
+	}
+
+	private LocalDate getPeriodStart(LocalDate date, CandleType type) {
+		return switch (type) {
+		case WEEK -> date.minusDays(date.getDayOfWeek().getValue() - 1L);
+
+		case MONTH -> date.withDayOfMonth(1);
+
+		case YEAR -> date.withDayOfYear(1);
+
+		default -> date;
+		};
 	}
 
 	private void mergeInto(Candle base, Candle incoming) {

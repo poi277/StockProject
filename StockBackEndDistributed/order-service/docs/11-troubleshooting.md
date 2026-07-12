@@ -212,16 +212,100 @@ TradeHistory, 보유 주식, 자산 정보가 모두 정상적으로 반영되�
 
 
 
-### 주봉과 월봉 실시간캔들 누락
+## 주봉·월봉·연봉 실시간 캔들 병합 오류
 
-## 문제
+### 문제
 
-주방이랑 월봉으로 필터시 당일의 redis값이 누락되 초기값에 당일이 없다.
+주봉, 월봉, 연봉으로 초기 차트를 조회할 때 당일 Redis 캔들이 새로운 봉으로 표시되지 않고, 이전 데이터베이스 캔들에 합쳐지는 문제가 발생했다.
+
+예를 들어 마지막 월봉이 6월 데이터이고 Redis에는 7월 당일 데이터가 존재해도, 7월 월봉이 새로 생성되지 않고 6월 월봉에 병합되었다.
+
+### 원인
+
+`mergeLiveCandle()`에서 주봉, 월봉, 연봉의 경우 마지막 데이터베이스 캔들과 Redis 실시간 캔들이 같은 기간인지 확인하지 않고 무조건 병합하고 있었다.
+
+```java
+if (type == CandleType.WEEK
+        || type == CandleType.MONTH
+        || type == CandleType.YEAR) {
+
+    mergeInto(lastCandle, liveCandle);
+    wrappedCache.remove(wrappedCache.size() - 1);
+    return;
+}
+```
+
+이 구조에서는 새로운 주, 월, 연도가 시작되어도 Redis 당일 캔들이 이전 기간의 캔들에 합쳐지고, 이후 리스트에서 제거되기 때문에 새로운 캔들이 누락되었다.
+
+### 해결
+
+마지막 데이터베이스 캔들과 Redis 실시간 캔들의 기간 시작일을 계산한 뒤, 같은 기간일 때만 병합하도록 수정했다.
+
+서로 다른 기간이면 Redis 실시간 캔들을 새로운 주봉, 월봉, 연봉으로 유지하도록 처리했다.
+
+```java
+if (type == CandleType.WEEK
+        || type == CandleType.MONTH
+        || type == CandleType.YEAR) {
+
+    LocalDate lastDate =
+            parseCandleTime(lastCandle.getCandleTime()).toLocalDate();
+
+    LocalDate liveDate =
+            parseCandleTime(liveCandle.getCandleTime()).toLocalDate();
+
+    LocalDate lastPeriodStart =
+            getPeriodStart(lastDate, type);
+
+    LocalDate livePeriodStart =
+            getPeriodStart(liveDate, type);
+
+    if (lastPeriodStart.equals(livePeriodStart)) {
+        mergeInto(lastCandle, liveCandle);
+        wrappedCache.remove(wrappedCache.size() - 1);
+    } else {
+        liveCandle.setCandleTime(livePeriodStart.toString());
+    }
+
+    return;
+}
+```
+
+기간별 시작일을 계산하는 공통 메서드도 추가했다.
+
+```java
+private LocalDate getPeriodStart(LocalDate date, CandleType type) {
+    return switch (type) {
+        case WEEK ->
+            date.minusDays(date.getDayOfWeek().getValue() - 1L);
+
+        case MONTH ->
+            date.withDayOfMonth(1);
+
+        case YEAR ->
+            date.withDayOfYear(1);
+
+        default -> date;
+    };
+}
+```
+
+### 결과
+
+* 같은 주, 월, 연도의 Redis 당일 데이터는 기존 캔들에 정상적으로 병합된다.
+* 새로운 주, 월, 연도가 시작되면 Redis 당일 데이터가 새로운 캔들로 생성된다.
+* 이전 기간 캔들에 현재 기간 데이터가 잘못 합쳐지는 문제를 해결했다.
+* 주봉, 월봉, 연봉 초기 조회 시 당일 캔들 누락을 방지할 수 있었다.
+
+
+
 
 ### 수정 시 수량 문제
 ## 문제
 
-현재 수정매커니즘은 불안정하며 부분체결도중 수정시 주문수량보다 더 높은 양이 체결되는 문제가있다 
+현재 수정매커니즘은 불안정하며 부분체결도중 수정시 주문수량보다 더 높은 양, 더 적은 양이 체결되는 문제가있다 
+
+
 
 
 

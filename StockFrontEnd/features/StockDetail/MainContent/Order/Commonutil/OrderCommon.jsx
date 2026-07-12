@@ -10,7 +10,7 @@ export function QuantityForm({ quantity, setQuantity, isPending }) {
                         <label className="tw3v-1r5dc8g0" htmlFor="trading-form-quantity" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-grey800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "14px" }}>수량</label>
                     </div>
                     <div>
-                        <OrderInputBox value={quantity} setValue={setQuantity} label="수량" unit={quantity ? "주" : ""}  maxWidth="80px" placeholder="최대 n주 가능" contentTag="수량" parentName="QuantityFieldsSet" />
+                        <OrderInputBox isPending={isPending} value={quantity} setValue={setQuantity} label="수량" unit={quantity ? "주" : ""}  maxWidth="80px" placeholder="최대 n주 가능" contentTag="수량" parentName="QuantityFieldsSet" />
                         {!isPending && <OrderPercentButton />}
                     </div>
                 </div>
@@ -171,13 +171,15 @@ export function SubmitButton({ tradeTypeTab,tradeType }) {
     );
 }
 
-export function OrderInputBox({ value, setValue, label, unit, placeholder, maxWidth }) {
+export function OrderInputBox({ isPending, value, setValue, label, unit, placeholder, maxWidth }) {
     const handleDown = () => {
+        if (isPending) return;
     const num = Number(String(value).replace(/,/g, ''));
         if (!isNaN(num) && num > 1) setValue((num - getStockPriceUnit(num)).toLocaleString('ko-KR'));
     };
 
     const handleUp = () => {
+        if (isPending) return;
     const num = Number(String(value).replace(/,/g, ''));
         if (!isNaN(num)) setValue((num + getStockPriceUnit(num)).toLocaleString('ko-KR'));
     };
@@ -193,16 +195,16 @@ export function OrderInputBox({ value, setValue, label, unit, placeholder, maxWi
         <div className="_13izhfo2">
             <div className="_13izhfo3 css-1qo9j44" style={{ "--wts-form-field-template-columns": "auto", "--wts-form-field-addon-columns-start": "1", "--wts-field-box-container-display": "grid" }}>
                 <div className="css-ghyw0v">
-                    <div data-tds-wts-field-box-content-variant="default" className="css-c8ze6m" style={{ "--wts-field-box-background-color": "var(--wts-adaptive-background)", "--wts-field-box-disabled-background-color": "var(--wts-adaptive-grey100)", "--wts-field-box-border-color": "var(--wts-adaptive-grey200)", "--wts-field-box-disabled-border-color": "var(--wts-adaptive-greyOpacity50)", "--wts-field-box-h-padding": "6px", "--wts-field-box-height": "32px", "--wts-field-box-font-size": "14px", "--wts-field-box-separator-height": "20px", "--wts-field-box-border-radius": "8px", "--wts-field-box-separator-margin": "0 4px", "--wts-field-box-box-shadow-color": "var(--wts-field-box-border-color)", "--wts-field-box-box-shadow-width": "1px", "--wts-field-box-hover-box-shadow-color": "var(--wts-adaptive-blue200)", "--wts-field-box-focus-box-shadow-color": "var(--wts-adaptive-blue500)", "--wts-field-box-content-left-padding": "var(--wts-field-box-h-padding)", "--wts-field-box-content-right-padding": "var(--wts-field-box-h-padding)", "--wts-field-box-content-hover-offset": "0px", "--wts-field-box-clear-content-margin-bottom": "var(--wts-field-box-content-margin-bottom, 0px)" }}>
+                    <div data-tds-wts-field-box-content-variant="default" className="css-c8ze6m" style={{  backgroundColor: isPending ? "#2A2B35" : undefined, "--wts-field-box-background-color": "var(--wts-adaptive-background)", "--wts-field-box-disabled-background-color": "var(--wts-adaptive-grey100)", "--wts-field-box-border-color": "var(--wts-adaptive-grey200)", "--wts-field-box-disabled-border-color": "var(--wts-adaptive-greyOpacity50)", "--wts-field-box-h-padding": "6px", "--wts-field-box-height": "32px", "--wts-field-box-font-size": "14px", "--wts-field-box-separator-height": "20px", "--wts-field-box-border-radius": "8px", "--wts-field-box-separator-margin": "0 4px", "--wts-field-box-box-shadow-color": "var(--wts-field-box-border-color)", "--wts-field-box-box-shadow-width": "1px", "--wts-field-box-hover-box-shadow-color": "var(--wts-adaptive-blue200)", "--wts-field-box-focus-box-shadow-color": "var(--wts-adaptive-blue500)", "--wts-field-box-content-left-padding": "var(--wts-field-box-h-padding)", "--wts-field-box-content-right-padding": "var(--wts-field-box-h-padding)", "--wts-field-box-content-hover-offset": "0px", "--wts-field-box-clear-content-margin-bottom": "var(--wts-field-box-content-margin-bottom, 0px)" }}>
                         <label className="tw3v-1r5dc8g0 _13izhfo5 _7wshe50" style={{ "--tds-wts-font-weight": "var(--tw-font-weight-semibold)", "--tds-wts-foreground-color": "var(--wts-adaptive-greyOpacity800)", "--tds-wts-line-height": "1.45", "--tds-wts-font-size": "15px" }}>
-                            <input aria-required="true" id={`trading-form-${label}`} inputMode="numeric" maxLength="11" pattern="[0-9,.]+" type="text" value={value} onChange={handleChange} name={label} style={{ width: maxWidth }} placeholder={placeholder} />
+                            <input disabled={isPending} aria-required="true" id={`trading-form-${label}`} inputMode="numeric" maxLength="11" pattern="[0-9,.]+" type="text" value={value} onChange={handleChange} name={label} style={{ width: maxWidth }} placeholder={placeholder} />
                             <span aria-hidden="true" className="_7wshe51" style={{ marginLeft: "auto", marginRight: "6px" }}>{unit}</span>
                         </label>
                     </div>
                 </div>
             </div>
             <span className="_1cx72gj1">
-                <button type="button" onClick={handleDown} tabIndex="-1" aria-disabled="false" className="tw3v-1wkoka52h tw3v-1wkoka5a tw3v-1wkoka5d tw3v-1wkoka515 tw3v-1wkoka5v tw3v-1wkoka5r tw3v-1wkoka5j tw3v-1wkoka526 _1cx72gj0" data-tds-wts-button>
+                <button disabled={isPending} type="button" onClick={handleDown} tabIndex="-1" aria-disabled="false" className="tw3v-1wkoka52h tw3v-1wkoka5a tw3v-1wkoka5d tw3v-1wkoka515 tw3v-1wkoka5v tw3v-1wkoka5r tw3v-1wkoka5j tw3v-1wkoka526 _1cx72gj0" data-tds-wts-button>
                     <span className="tw3v-1wkoka52g">
                         <span className="tw3v-17xiat90 tw3v-17xiat91" aria-hidden="true" role="presentation" style={{ height: "16px", width: "16px", minWidth: "16px", color: "var(--wts-adaptive-grey500)" }}>
                             <svg enableBackground="new 0 0 16 16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
@@ -213,7 +215,7 @@ export function OrderInputBox({ value, setValue, label, unit, placeholder, maxWi
                     </span>
                 </button>
                 <div className="_1cx72gj2"></div>
-                <button type="button" onClick={handleUp} tabIndex="-1" aria-disabled="false" className="tw3v-1wkoka52h tw3v-1wkoka5a tw3v-1wkoka5d tw3v-1wkoka515 tw3v-1wkoka5v tw3v-1wkoka5r tw3v-1wkoka5j tw3v-1wkoka526 _1cx72gj0" data-tds-wts-button>
+                <button disabled={isPending} type="button" onClick={handleUp} tabIndex="-1" aria-disabled="false" className="tw3v-1wkoka52h tw3v-1wkoka5a tw3v-1wkoka5d tw3v-1wkoka515 tw3v-1wkoka5v tw3v-1wkoka5r tw3v-1wkoka5j tw3v-1wkoka526 _1cx72gj0" data-tds-wts-button>
                     <span className="tw3v-1wkoka52g">
                         <span className="tw3v-17xiat90 tw3v-17xiat91" aria-hidden="true" role="presentation" style={{ height: "16px", width: "16px", minWidth: "16px", color: "var(--wts-adaptive-grey500)" }}>
                             <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">

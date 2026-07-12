@@ -173,28 +173,22 @@ public class OrderService {
 	public void stockEdit(TradeDTO tradeDTO, Order order) {
 		Integer oldPrice = order.getTradePrice();
 
-	    OrderBook book = orderBookCache.get(order.getStockCode());
-	    book.removeOrder(order);
+		OrderBook book = orderBookCache.get(order.getStockCode());
 
-		int filledQty = order.getQuantity() - order.getRemainingQuantity();
+		// 기존 가격의 호가에서 제거
+		book.removeOrder(order);
 
-		if (tradeDTO.getQuantity() < filledQty) {
-			throw new RuntimeException("수정 수량이 이미 체결된 수량보다 작습니다");
-		}
-
+		// 수량은 변경하지 않고 가격과 우선순위만 변경
 	    order.setTradePrice(tradeDTO.getTradePrice());
-	    order.setQuantity(tradeDTO.getQuantity());
-		order.setRemainingQuantity(tradeDTO.getQuantity() - filledQty);
 	    order.setPriority(System.nanoTime());
 
 		MatchingResult result = orderTradeService.matchLoop(order, book);
 
+		// 기존 가격 호가도 갱신하도록 추가
 		result.getMatchedPrices().add(oldPrice);
 
 		orderTradeService.saveTradeHistories(result.getExecutions());
-
 	    orderTradeService.saveEditOrders(result, order);
-
 	    orderTradeService.settlement(result);
 		orderTradeService.updateCurrentCandle(result);
 		orderTradeService.sendWebSocket(result, book);
