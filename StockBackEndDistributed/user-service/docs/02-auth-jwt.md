@@ -19,7 +19,6 @@
 ## 목차
 
 > [개요](#개요) ·
-> [핵심 구현 파일](#핵심-구현-파일) ·
 > [엔드포인트](#엔드포인트) ·
 > [로그인](#로그인) ·
 > [Refresh](#refresh)
@@ -28,8 +27,8 @@
 > [Security 설정](#security-설정) ·
 > [인증 흐름](#인증-흐름) ·
 > [Refresh 흐름](#refresh-흐름) ·
-> [민감정보](#민감정보)
-
+> [민감정보](#민감정보) ·
+> [핵심 구현 파일](#핵심-구현-파일)
 ## 개요
 
 인증 기능은 Spring Security, JWT, Redis를 사용한다. 로그인 성공 시 access token과 refresh token을 발급하고, refresh token은 Redis에 저장한다. 이후 요청은 `Authorization: Bearer {accessToken}` 헤더를 통해 인증된다.

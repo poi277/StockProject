@@ -29,6 +29,7 @@
 
 > [프로젝트 개요](#프로젝트-개요) ·
 > [미리보기](#미리보기) ·
+> [시연 영상](#시연-영상) ·
 > [주요 구현 내용](#주요-구현-내용) ·
 > [시스템 아키텍처](#시스템-아키텍처) ·
 > [UI 디자인](#ui-디자인)
@@ -48,11 +49,68 @@ Kafka 이벤트 스트림, Redis 실시간 Candle 저장, WebSocket 실시간 �
 
 ## 미리보기
 
-스크린샷은 여기에 올릴 예정입니다.
+### 전체 화면
 
-| 거래 화면 | 종목 상세 | 호가장 / 차트 |
-| --- | --- | --- |
-| `미리보기: 거래 화면` | `미리보기: 종목 상세` | `미리보기: 호가장 + 차트` |
+| 전체 거래 화면 | 시장 종목 화면 |
+| --- | --- |
+| <img src="docs/images/trading-overview.jpg" alt="전체 거래 화면" width="460"> | <img src="docs/images/market-overview.jpg" alt="시장 종목 화면" width="460"> |
+| 차트, 호가, 주문, 자산을 함께 확인하는 전체 거래 화면 | 실시간 종목 순위와 투자 자산을 확인하는 시장 화면 |
+
+| 자산 및 주문 사이드바 |  |
+| --- | --- |
+| <img src="docs/images/asset-sidebar.jpg" alt="자산 및 주문 사이드바" width="300"> |  |
+| 보유 자산과 대기 주문을 확인하는 사이드바 |  |
+
+### 주문 기능
+
+| 매수 주문 | 매도 주문 |
+| --- | --- |
+| <img src="docs/images/order-buy.jpg" alt="매수 주문" width="360"> | <img src="docs/images/order-sell.jpg" alt="매도 주문" width="360"> |
+| 지정가와 수량을 입력하는 매수 주문 화면 | 지정가와 수량을 입력하는 매도 주문 화면 |
+
+| 대기 주문 | 주문 수정 |
+| --- | --- |
+| <img src="docs/images/order-pending.jpg" alt="대기 주문" width="360"> | <img src="docs/images/order-edit.jpg" alt="주문 수정" width="360"> |
+| 정정하거나 취소할 수 있는 대기 주문 목록 | 대기 주문의 가격과 수량을 변경하는 화면 |
+
+| 주문 수정과 자산 반영 |  |
+| --- | --- |
+| <img src="docs/images/sidebar-order-edit.jpg" alt="주문 수정과 자산 반영" width="360"> |  |
+| 주문 수정 창과 변경된 보유 자산을 함께 확인하는 화면 |  |
+
+### 차트
+
+| 분봉 차트 | 그룹 분봉 선택 |
+| --- | --- |
+| <img src="docs/images/chart-minute.jpg" alt="분봉 차트" width="460"> | <img src="docs/images/chart-group.jpg" alt="그룹 분봉 선택" width="460"> |
+| 1분 단위 체결 흐름과 이동평균선을 표시하는 차트 | 1분부터 240분까지 조회 단위를 선택하는 차트 |
+
+| 일봉 차트 | 월봉 차트 |
+| --- | --- |
+| <img src="docs/images/chart-day.jpg" alt="일봉 차트" width="460"> | <img src="docs/images/chart-month.jpg" alt="월봉 차트" width="460"> |
+| 일별 가격 흐름과 이동평균선을 표시하는 차트 | 월별 장기 가격 흐름을 표시하는 차트 |
+
+| 연봉 차트 |  |
+| --- | --- |
+| <img src="docs/images/chart-year.jpg" alt="연봉 차트" width="460"> |  |
+| 연도별 가격 흐름을 표시하는 차트 |  |
+
+### 호가 및 실시간 기능
+
+| 실시간 호가창 |  |
+| --- | --- |
+| <img src="docs/images/orderbook.jpg" alt="실시간 호가창" width="320"> |  |
+| 매도·매수 호가와 잔량, 체결강도를 실시간으로 표시하는 화면 |  |
+
+<!--
+영상은 GitHub Attachments 또는 YouTube URL을 사용하는 것을 권장합니다.
+README에 MP4 파일을 직접 포함하지 않습니다.
+-->
+
+## 시연 영상
+
+- [짧은 핵심 시연 영상](VIDEO_SHORT_URL)
+- [전체 기능 시연 영상](VIDEO_FULL_URL)
 
 ## 주요 구현 내용
 

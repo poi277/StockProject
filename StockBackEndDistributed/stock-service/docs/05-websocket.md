@@ -19,15 +19,14 @@
 ## 목차
 
 > [개요](#개요) ·
-> [핵심 구현 파일](#핵심-구현-파일) ·
 > [STOMP 설정](#stomp-설정) ·
 > [Principal 설정](#principal-설정)
 
 > [발행 토픽](#발행-토픽) ·
 > [현재가 발행 Payload](#현재가-발행-payload) ·
 > [체결 발행 Payload](#체결-발행-payload) ·
-> [시세 실시간 발행 흐름](#시세-실시간-발행-흐름)
-
+> [시세 실시간 발행 흐름](#시세-실시간-발행-흐름) ·
+> [핵심 구현 파일](#핵심-구현-파일)
 ## 개요
 
 stock-service는 STOMP over SockJS 방식으로 프론트에 종목별 현재가와 체결 데이터를 발행한다. 클라이언트는 `/ws-stock` endpoint에 연결하고 `/topic/stock/{stockCode}`, `/topic/execution/{stockCode}`를 구독한다.

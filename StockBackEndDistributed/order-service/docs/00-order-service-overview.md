@@ -21,10 +21,10 @@
 
 > [주요 책임](#주요-책임) ·
 > [전체 구조](#전체-구조) ·
-> [주요 디렉터리](#주요-디렉터리)
-
-> [핵심 구현 파일](#핵심-구현-파일) ·
+> [주요 디렉터리](#주요-디렉터리) ·
 > [설정 주의](#설정-주의)
+
+> [핵심 구현 파일](#핵심-구현-파일)
 
 ## 주요 책임
 
@@ -82,7 +82,11 @@ flowchart LR
 | `init` | 서버 시작 시 캐시와 호가장 초기화 |
 | `config` | 보안, JWT, Redis, WebSocket 설정 |
 
-## 구현 파일
+## 설정 주의
+
+`application-docker.properties`에는 DB, Redis, JWT 등 민감 설정이 포함되어 있다. 해당 값은 문서에 직접 기록하지 않고, 운영 환경에서는 환경 변수로 분리 필요하다.
+
+## 핵심 구현 파일
 
 기준 경로
 
@@ -98,10 +102,6 @@ flowchart LR
 | `java/Poi/Stock/features/Candle/CandleService.java` |
 | `java/Poi/Stock/features/Websocket/WebSocketService.java` |
 | `resources/application-docker.properties` |
-
-## 설정 주의
-
-`application-docker.properties`에는 DB, Redis, JWT 등 민감 설정이 포함되어 있다. 해당 값은 문서에 직접 기록하지 않고, 운영 환경에서는 환경 변수로 분리 필요하다.
 
 <div align="right">
 

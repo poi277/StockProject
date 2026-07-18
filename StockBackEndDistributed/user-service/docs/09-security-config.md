@@ -19,7 +19,6 @@
 ## 목차
 
 > [개요](#개요) ·
-> [핵심 구현 파일](#핵심-구현-파일) ·
 > [보안 필터 설정](#보안-필터-설정) ·
 > [CORS](#cors) ·
 > [JWT 설정](#jwt-설정)
@@ -27,8 +26,8 @@
 > [Redis 설정](#redis-설정) ·
 > [서비스 간 HTTP 연동 설정](#서비스-간-http-연동-설정) ·
 > [미사용 웹 설정](#미사용-웹-설정) ·
-> [Dockerfile](#dockerfile)
-
+> [Dockerfile](#dockerfile) ·
+> [핵심 구현 파일](#핵심-구현-파일)
 ## 개요
 
 user-service는 Spring Security 기반 stateless JWT 인증을 사용한다. CORS, JWT 필터, 인증 매니저, Redis, WebSocket, RestTemplate 설정이 별도 config 클래스로 분리되어 있다.

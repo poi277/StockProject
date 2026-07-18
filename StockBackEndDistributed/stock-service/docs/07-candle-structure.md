@@ -19,14 +19,13 @@
 ## 목차
 
 > [개요](#개요) ·
-> [핵심 구현 파일](#핵심-구현-파일) ·
 > [CandleMinute](#candleminute) ·
 > [CandleDay](#candleday)
 
 > [조회 저장소](#조회-저장소) ·
 > [사용처](#사용처) ·
-> [구조](#구조)
-
+> [구조](#구조) ·
+> [핵심 구현 파일](#핵심-구현-파일)
 ## 개요
 
 stock-service에는 `CandleMinute`, `CandleDay` 엔티티와 Repository가 존재한다. 현재 코드 기준 이 Candle 구조는 차트 API 제공용이 아니라 다음 목적에 사용된다.

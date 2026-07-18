@@ -19,15 +19,14 @@
 ## 목차
 
 > [개요](#개요) ·
-> [핵심 구현 파일](#핵심-구현-파일) ·
 > [StockUser](#stockuser) ·
 > [HaveStock](#havestock)
 
 > [WatchList](#watchlist) ·
 > [조회 저장소](#조회-저장소) ·
 > [DTO와 이벤트](#dto와-이벤트) ·
-> [모델 관계](#모델-관계)
-
+> [모델 관계](#모델-관계) ·
+> [핵심 구현 파일](#핵심-구현-파일)
 ## 개요
 
 user-service의 핵심 도메인은 사용자, 보유 주식, 관심종목이다. 사용자 자산은 총 보유 자산(`Asset`)과 주문 가능 현금(`availableAsset`)으로 분리하고, 보유 주식은 보유 수량(`quantity`)과 주문 가능 수량(`availableQuantity`)으로 분리한다.

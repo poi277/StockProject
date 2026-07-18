@@ -28,18 +28,6 @@
 
 ## 사용자 서비스
 
-### 핵심 구현 파일
-
-기준 경로
-
-`StockBackEndDistributed/user-service/src/main/java/Poi/Stock`
-
-| Entity | 파일 |
-| --- | --- |
-| StockUser | `features/User/StockUser.java` |
-| HaveStock | `features/User/HaveStock.java` |
-| WatchList | `features/WatchList/WatchList.java` |
-
 ### ERD
 
 ```mermaid
@@ -78,13 +66,19 @@ erDiagram
 | `StockUser` 1:N `HaveStock` | `StockUser.holdings`의 `@OneToMany(mappedBy = "stockUser")`, `HaveStock.stockUser`의 `@ManyToOne`, `@JoinColumn(name = "stockUser_id")` |
 | `StockUser` 1:N `WatchList` | `StockUser.watchLists`의 `@OneToMany(mappedBy = "stockUser")`, `WatchList.stockUser`의 `@ManyToOne`, `@JoinColumn(name = "user_id")` |
 
-## 주문 서비스
-
 ### 핵심 구현 파일
 
 기준 경로
 
-`StockBackEndDistributed/order-service/src/main/java/Poi/Stock`
+`StockBackEndDistributed/user-service/src/main/java/Poi/Stock`
+
+| Entity | 파일 |
+| --- | --- |
+| StockUser | `features/User/StockUser.java` |
+| HaveStock | `features/User/HaveStock.java` |
+| WatchList | `features/WatchList/WatchList.java` |
+
+## 주문 서비스
 
 ### Order Domain ERD
 
@@ -297,19 +291,13 @@ erDiagram
 | `Order.userId`, `CompletedOrder.userId`, `FailedOrder.userId`, `TradeHistory.buyerId`, `TradeHistory.sellerId` | 사용자 식별자를 문자열로 저장하지만 user-service Entity와 JPA 관계가 없다. |
 | `Order.stockCode`, `CompletedOrder.stockCode`, `FailedOrder.stockCode`, `TradeHistory.stockCode`, Candle 계열 `stockCode`, `BotHaveStock.stockCode` | 종목 코드를 값으로 저장하지만 `Stock`과 JPA 관계가 없다. |
 
-## 종목 서비스
-
 ### 핵심 구현 파일
 
 기준 경로
 
-`StockBackEndDistributed/stock-service/src/main/java/Poi/Stock`
+`StockBackEndDistributed/order-service/src/main/java/Poi/Stock`
 
-| Entity | 파일 |
-| --- | --- |
-| Stock | `features/Stock/Stock.java` |
-| CandleMinute | `features/Candle/CandleMinute.java` |
-| CandleDay | `features/Candle/CandleDay.java` |
+## 종목 서비스
 
 ### ERD
 
@@ -355,6 +343,18 @@ erDiagram
 ### 관계 설명
 
 `stock-service`의 Entity에는 현재 `@ManyToOne`, `@OneToMany`, `@OneToOne`, `@ManyToMany`로 선언된 JPA 연관관계가 없다. `CandleMinute.stockCode`와 `CandleDay.stockCode`는 종목 코드를 값으로 저장하지만 `Stock` Entity와 JPA 관계로 매핑되어 있지 않다.
+
+### 핵심 구현 파일
+
+기준 경로
+
+`StockBackEndDistributed/stock-service/src/main/java/Poi/Stock`
+
+| Entity | 파일 |
+| --- | --- |
+| Stock | `features/Stock/Stock.java` |
+| CandleMinute | `features/Candle/CandleMinute.java` |
+| CandleDay | `features/Candle/CandleDay.java` |
 
 <div align="right">
 

@@ -20,12 +20,12 @@
 
 > [개요](#개요) ·
 > [주요 책임](#주요-책임) ·
-> [핵심 구현 파일](#핵심-구현-파일) ·
 > [외부 의존성](#외부-의존성)
 
 > [Redis 사용 범위](#redis-사용-범위) ·
 > [Candle 사용 범위](#candle-사용-범위) ·
-> [상위 구조](#상위-구조)
+> [상위 구조](#상위-구조) ·
+> [핵심 구현 파일](#핵심-구현-파일)
 
 ## 개요
 
@@ -42,20 +42,6 @@
 - 종목별 WebSocket 시세/체결 발행
 - 시작 시 DB 기반 시세 캐시 복구
 - 최근 30분 거래 통계 캐시 갱신
-
-## 핵심 구현 파일
-
-기준 경로
-
-`StockBackEndDistributed/stock-service`
-
-| 파일 |
-| --- |
-| `build.gradle` |
-| `settings.gradle` |
-| `Dockerfile` |
-| `src/main/resources/application-docker.properties` |
-| `src/main/java/Poi/Stock/StockServiceApplication.java` |
 
 ## 외부 의존성
 
@@ -92,6 +78,20 @@ flowchart TD
   Scheduler["초기 시세 복구와 최근 통계 갱신"] --> DB["종목/캔들 데이터 조회"]
   Scheduler --> Cache
 ```
+
+## 핵심 구현 파일
+
+기준 경로
+
+`StockBackEndDistributed/stock-service`
+
+| 파일 |
+| --- |
+| `build.gradle` |
+| `settings.gradle` |
+| `Dockerfile` |
+| `src/main/resources/application-docker.properties` |
+| `src/main/java/Poi/Stock/StockServiceApplication.java` |
 
 <div align="right">
 

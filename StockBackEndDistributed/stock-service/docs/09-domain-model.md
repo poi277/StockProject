@@ -19,7 +19,6 @@
 ## 목차
 
 > [개요](#개요) ·
-> [핵심 구현 파일](#핵심-구현-파일) ·
 > [Stock](#stock) ·
 > [StockDailyPriceId](#stockdailypriceid) ·
 > [실시간 시세 스냅샷](#실시간-시세-스냅샷)
@@ -28,8 +27,8 @@
 > [StockListResponseDto](#stocklistresponsedto) ·
 > [TradeExecution / TradeExecutionList](#tradeexecution-tradeexecutionlist) ·
 > [조회 저장소](#조회-저장소) ·
-> [모델 관계](#모델-관계)
-
+> [모델 관계](#모델-관계) ·
+> [핵심 구현 파일](#핵심-구현-파일)
 ## 개요
 
 stock-service의 핵심 모델은 DB 기반 종목 일별 데이터, 메모리 기반 실시간 시세 스냅샷, 분/일봉 Candle, 체결 이벤트 객체로 나뉜다.
@@ -230,6 +229,5 @@ classDiagram
 [문서 맨 위로](#top)
 
 </div>
-
 
 

@@ -81,7 +81,6 @@ public class OrderTradeService {
 
 	public MatchingResult matchLoop(Order order, OrderBook book) {
 		MatchingResult result = new MatchingResult(order.getStockCode());
-		// 거래량은 아직 정산이 안되기 떄문에 여기서 임의로 증가시켜줘야함
 		TreeMap<Integer, PriceLevel> oppositeBook = order.getTradeType() == tradeType.BUY ? book.getSellBook()
 				: book.getBuyBook();
 		while (!order.isCompleted() && !oppositeBook.isEmpty()) {
