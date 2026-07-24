@@ -13,187 +13,109 @@
 [![Nginx](https://img.shields.io/badge/Nginx-alpine-009639?logo=nginx&logoColor=white)](https://nginx.org/)
 [![실시간 연결](https://img.shields.io/badge/WebSocket-STOMP-010101)](https://stomp.github.io/)
 
-## 문서 포털
-
-문서의 상세 구현, API, 아키텍처, 트러블슈팅은 아래 문서를 참고한다.
-
-| 분류 | 문서 | 분류 | 문서 |
-| --- | --- | --- | --- |
-| 루트 README | [README](README.md) | 서비스 README | [프론트엔드](StockFrontEnd/README.md) |
-| Engineering Notes | [Engineering Notes](docs/ENGINEERING.md) | Database Schema ERD | [Database Schema ERD](docs/database-schema.md) |
-| Troubleshooting | [Troubleshooting](docs/TROUBLESHOOTING.md) | Docker | [Docker / 인프라](docker/README.md) |
-| user-service | [user-service](StockBackEndDistributed/user-service/README.md) | stock-service | [stock-service](StockBackEndDistributed/stock-service/README.md) |
-| order-service | [order-service](StockBackEndDistributed/order-service/README.md) |  |  |
+MSA 기반 주식 거래 플랫폼입니다. 사용자·자산, 종목·시세, 주문·체결 도메인을 서비스 분리하고 Kafka 이벤트, Redis Candle 캐시, STOMP WebSocket을 연결해 주문 접수부터 체결·정산·시세 및 화면 갱신까지 처리합니다.
 
 ## 목차
 
-> [프로젝트 개요](#프로젝트-개요) ·
-> [미리보기](#미리보기) ·
-> [시연 영상](#시연-영상) ·
-> [주요 구현 내용](#주요-구현-내용) ·
-> [시스템 아키텍처](#시스템-아키텍처) ·
-> [UI 디자인](#ui-디자인)
+> [프로젝트 개요](#프로젝트-개요) · [전체 기술 스택](#전체-기술-스택) · [MSA 서비스 구성](#msa-서비스-구성) · [전체 아키텍처](#전체-아키텍처) · [주요 구현 내용](#주요-구현-내용) · [전체 실행 방법](#전체-실행-방법) · [문서 포털](#문서-포털) · [대표 화면 미리보기](#대표-화면-미리보기) · [시연 영상](#시연-영상)
 
-> [저장소 구조](#저장소-구조) ·
-> [서비스 구성](#서비스-구성) ·
-> [실행 방법](#실행-방법) ·
-> [보안 참고사항](#보안-참고사항) ·
-> [외부 시세 연동 참고](#외부-시세-연동-참고)
+
+## 문서 포털
+
+| 분류 | 문서 | 분류 | 문서 |
+| --- | --- | --- | --- |
+| 프론트엔드 | [프론트엔드 상세 문서](StockFrontEnd/README.md) | 사용자 서비스 | [user-service](StockBackEndDistributed/user-service/README.md) |
+| 종목 서비스 | [stock-service](StockBackEndDistributed/stock-service/README.md) | 주문 서비스 | [order-service](StockBackEndDistributed/order-service/README.md) |
+| 전체 문서 색인 | [Documentation Index](docs/DOCUMENTATION.md) | 설계 노트 | [Engineering Notes](docs/ENGINEERING.md) |
+| 데이터 스키마 | [Database Schema ERD](docs/database-schema.md) | 공통 트러블슈팅 | [Troubleshooting](docs/TROUBLESHOOTING.md) |
+| 인프라 | [Docker / 인프라](docker/README.md) |  |  |
 
 ## 프로젝트 개요
 
-MSA 기반 주식 거래 프로젝트입니다.<br>
-Kafka 이벤트 스트림, Redis 실시간 Candle 저장, WebSocket 실시간 발행,<br>
-메모리 OrderBook Matching Engine을 중심으로 주문 접수부터 <br>
-체결, 정산, 시세 반영, 차트 갱신까지의 흐름을 분리된 서비스로 구현했습니다.
+메모리 기반 OrderBook이 가격·시간 우선으로 주문을 매칭하고, 체결 이벤트가 Kafka를 통해 정산과 시세 서비스로 전달됩니다. 체결로 생성되는 Candle은 Redis와 DB에 반영되며, 프론트엔드는 REST API로 초기 상태를 받은 뒤 WebSocket topic을 구독해 호가·체결·주문·자산·차트를 실시간으로 갱신합니다.
 
-## 미리보기
+```text
+Stock/
+├─ StockFrontEnd/                  # Next.js 사용자 화면
+├─ StockBackEndDistributed/        # MSA 백엔드
+│  ├─ user-service/                # 인증, 사용자 자산, 정산
+│  ├─ stock-service/               # 종목 API, 실시간 시세
+│  └─ order-service/               # 주문, 매칭, Candle, WebSocket
+├─ StockBackEnd/                   # 레거시 백엔드 프로젝트
+├─ StockBackEndMonoless/           # 레거시 백엔드 백업 프로젝트
+├─ docs/                           # 공통 설계, ERD, 트러블슈팅
+└─ docker/                         # Kafka, Zookeeper, Nginx 구성
+```
 
-### 전체 화면
+## 전체 기술 스택
 
-| 전체 거래 화면 | 시장 종목 화면 |
+| 영역 | 기술 |
 | --- | --- |
-| <img src="docs/images/trading-overview.jpg" alt="전체 거래 화면" width="460"> | <img src="docs/images/market-overview.jpg" alt="시장 종목 화면" width="460"> |
-| 차트, 호가, 주문, 자산을 함께 확인하는 전체 거래 화면 | 실시간 종목 순위와 투자 자산을 확인하는 시장 화면 |
+| 프론트엔드 | Next.js 16, React 19, Tailwind CSS 4, Lightweight Charts, Zustand |
+| 백엔드 | Java 17, Spring Boot 3.2.2, Gradle |
+| 서비스 통신 | REST API, Kafka, STOMP WebSocket, SockJS |
+| 데이터 | PostgreSQL, Spring Data JPA, Redis |
+| 인프라 | Docker Compose, Nginx, Zookeeper |
+| 인증 | JWT, Refresh Token |
 
-| 자산 및 주문 사이드바 |  |
-| --- | --- |
-| <img src="docs/images/asset-sidebar.jpg" alt="자산 및 주문 사이드바" width="300"> |  |
-| 보유 자산과 대기 주문을 확인하는 사이드바 |  |
+## MSA 서비스 구성
 
-### 주문 기능
+| 서비스 | 역할 | README |
+| --- | --- | --- |
+| 프론트엔드 | 시장·종목 상세, 주문·차트·호가·자산 UI와 실시간 구독 | [StockFrontEnd](StockFrontEnd/README.md) |
+| 사용자 서비스 (`user-service`) | 인증, 사용자 자산, 관심 종목, 주문 검증, Kafka 정산 | [user-service](StockBackEndDistributed/user-service/README.md) |
+| 종목 서비스 (`stock-service`) | 종목 API, 실시간 시세 캐시, 체결 이벤트의 시세 반영 | [stock-service](StockBackEndDistributed/stock-service/README.md) |
+| 주문 서비스 (`order-service`) | 주문 API, OrderBook 매칭, Candle, WebSocket, 정산 이벤트 발행 | [order-service](StockBackEndDistributed/order-service/README.md) |
 
-| 매수 주문 | 매도 주문 |
-| --- | --- |
-| <img src="docs/images/order-buy.jpg" alt="매수 주문" width="360"> | <img src="docs/images/order-sell.jpg" alt="매도 주문" width="360"> |
-| 지정가와 수량을 입력하는 매수 주문 화면 | 지정가와 수량을 입력하는 매도 주문 화면 |
+## 전체 아키텍처
 
-| 대기 주문 | 주문 수정 |
-| --- | --- |
-| <img src="docs/images/order-pending.jpg" alt="대기 주문" width="360"> | <img src="docs/images/order-edit.jpg" alt="주문 수정" width="360"> |
-| 정정하거나 취소할 수 있는 대기 주문 목록 | 대기 주문의 가격과 수량을 변경하는 화면 |
+```mermaid
+flowchart LR
+    FE["Next.js 프론트엔드"] -->|"REST / STOMP"| Nginx["Nginx 라우팅"]
+    Nginx --> User["user-service"]
+    Nginx --> Stock["stock-service"]
+    Nginx --> Order["order-service"]
+    Order -->|"주문·체결 이벤트"| Kafka[("Kafka")]
+    Kafka -->|"정산"| User
+    Kafka -->|"체결 시세 반영"| Stock
+    Order <-->|"진행·완료 Candle"| Redis[("Redis")]
+    User --> UserDB[("PostgreSQL")]
+    Stock --> StockDB[("PostgreSQL")]
+    Order --> OrderDB[("PostgreSQL")]
+    User -.->|"자산"| FE
+    Stock -.->|"시세"| FE
+    Order -.->|"호가·체결·주문·Candle"| FE
+```
 
-| 주문 수정과 자산 반영 |  |
-| --- | --- |
-| <img src="docs/images/sidebar-order-edit.jpg" alt="주문 수정과 자산 반영" width="360"> |  |
-| 주문 수정 창과 변경된 보유 자산을 함께 확인하는 화면 |  |
-
-### 차트
-
-| 분봉 차트 | 그룹 분봉 선택 |
-| --- | --- |
-| <img src="docs/images/chart-minute.jpg" alt="분봉 차트" width="460"> | <img src="docs/images/chart-group.jpg" alt="그룹 분봉 선택" width="460"> |
-| 1분 단위 체결 흐름과 이동평균선을 표시하는 차트 | 1분부터 240분까지 조회 단위를 선택하는 차트 |
-
-| 일봉 차트 | 월봉 차트 |
-| --- | --- |
-| <img src="docs/images/chart-day.jpg" alt="일봉 차트" width="460"> | <img src="docs/images/chart-month.jpg" alt="월봉 차트" width="460"> |
-| 일별 가격 흐름과 이동평균선을 표시하는 차트 | 월별 장기 가격 흐름을 표시하는 차트 |
-
-| 연봉 차트 |  |
-| --- | --- |
-| <img src="docs/images/chart-year.jpg" alt="연봉 차트" width="460"> |  |
-| 연도별 가격 흐름을 표시하는 차트 |  |
-
-### 호가 및 실시간 기능
-
-| 실시간 호가창 |  |
-| --- | --- |
-| <img src="docs/images/orderbook.jpg" alt="실시간 호가창" width="320"> |  |
-| 매도·매수 호가와 잔량, 체결강도를 실시간으로 표시하는 화면 |  |
-
-<!--
-영상은 GitHub Attachments 또는 YouTube URL을 사용하는 것을 권장합니다.
-README에 MP4 파일을 직접 포함하지 않습니다.
--->
-
-## 시연 영상
-
-- [짧은 핵심 시연 영상](VIDEO_SHORT_URL)
-- [전체 기능 시연 영상](VIDEO_FULL_URL)
+REST 요청은 Nginx를 거쳐 각 도메인 서비스로 전달됩니다. Kafka는 서비스 사이의 비동기 체결·정산 흐름을 분리하고, Redis는 진행 중 Candle 조회를 지원합니다. 각 서비스가 발행하는 STOMP WebSocket 데이터는 프론트엔드의 서비스별 연결 Context에서 구독합니다.
 
 ## 주요 구현 내용
 
 | 영역 | 구현 내용 |
 | --- | --- |
-| MSA 서비스 분리 | 인증/자산은 `user-service`, 종목/시세는 `stock-service`, 주문/체결은 `order-service`가 담당하도록 도메인 경계를 분리 |
-| Kafka 이벤트 기반 처리 | 주문은 `order-topic`으로 비동기 처리하고, 체결 결과는 `settlement-topic`, `trade-execution-topic`으로 정산과 시세 반영에 전달 |
-| 메모리 OrderBook 매칭 엔진 | `order-service`에서 종목별 OrderBook을 메모리에 유지하고 가격/시간 우선으로 부분 체결과 완료 체결을 처리 |
-| Redis 기반 Candle 처리 | 체결로 갱신되는 현재 Candle을 Redis에 먼저 저장하고 Scheduler가 완료 Candle을 DB와 캐시에 반영 |
-| WebSocket 실시간 데이터 전송 | 호가, 체결, 주문 상태, 시세, Candle, 사용자 자산 변경을 STOMP WebSocket topic으로 발행 |
-| JWT 인증 및 주문 검증 | `user-service`가 JWT 인증과 refresh token 저장을 담당하고, 주문 전 매수 가능 금액과 매도 가능 수량을 검증 |
-| 차트/Candle | `order-service`의 Candle API, 현재/완성 Candle WebSocket 발행, 프론트엔드의 초기 조회와 실시간 차트 반영 흐름을 구성 |
-| Bot 시뮬레이션 | 시장 시뮬레이션을 위한 Bot 모델, 보유 주식 관리, 주문 실행 구조 구현 |
-| 데이터 일관성 | 주문 전 자산 예약, 체결 후 Kafka 정산, 주문 실패 DLT 재처리와 실패 주문 저장 흐름을 구성 |
+| 도메인 분리 | 사용자·자산, 종목·시세, 주문·체결 책임을 서비스 경계로 분리 |
+| 주문 매칭 | 종목별 메모리 OrderBook에서 가격·시간 우선으로 부분 및 완료 체결 처리 |
+| 이벤트 처리 | 주문과 체결 결과를 Kafka topic으로 전달해 정산과 시세 반영을 비동기 처리 |
+| Candle | 현재 Candle은 Redis에서 관리하고 완료 Candle은 Scheduler를 통해 DB와 캐시에 반영 |
+| 실시간 전송 | 호가, 체결, 주문 상태, 시세, Candle, 사용자 자산 변경을 STOMP topic으로 발행 |
+| 인증과 검증 | JWT·Refresh Token 인증, 매수 가능 금액 및 매도 가능 수량 검증 |
+| 데이터 일관성 | 주문 시 자산 예약, 체결 시 Kafka 정산, 실패 주문 재처리와 DLT 구성 |
+| 거래 시뮬레이션 | Bot 모델과 자동 주문 실행 구조로 시장 흐름 시뮬레이션 |
 
-## 시스템 아키텍처
+## 전체 실행 방법
 
-```mermaid
-flowchart LR
-    FE["사용자 화면"] --> GW["요청 라우팅"]
-    GW --> User["인증과 자산 관리"]
-    GW --> Stock["종목과 시세 관리"]
-    GW --> Order["주문 접수와 매칭"]
-    Order <--> Kafka[("이벤트 전달")]
-    Order --> Redis[("진행 중인 Candle 저장")]
-    User --> DB[("영속 데이터 저장")]
-    Stock --> DB
-    Order --> DB
-    Stock --> FE
-    Order --> FE
-```
+실행 전 PostgreSQL, Redis와 각 서비스의 환경별 설정을 준비해야 합니다. 실제 DB·Redis·JWT 값은 각 서비스 설정 또는 환경 변수로 관리합니다.
 
-상세 Kafka 흐름, WebSocket topic, Scheduler, 도메인 모델은 [Documentation Index](docs/DOCUMENTATION.md)에서 확인할 수 있다.
-
-## UI 디자인
-
-프론트엔드 UI는 Toss 앱의 디자인을 참고하여 구현했습니다.<br>
-Chrome DevTools의 Element/CSS를 참고해 레이아웃과 스타일을 분석했으며
-프로젝트 구조에 맞게 직접 구현했습니다.
-
-## 저장소 구조
-
-```text
-Stock/
-├─ StockFrontEnd/                 # Next.js 프론트엔드
-├─ StockBackEndDistributed/        # MSA 백엔드
-│  ├─ user-service/                # 인증, 사용자, 자산, 정산
-│  ├─ stock-service/               # 종목 API, 실시간 시세 캐시
-│  └─ order-service/               # 호가장, 매칭, Candle, WebSocket
-├─ StockBackEnd/                   # 레거시 백엔드 프로젝트
-├─ StockBackEndMonoless/           # 레거시 백엔드 백업 프로젝트
-├─ docs/                           # 공통 설계 문서와 ERD
-│  ├─ ENGINEERING.md               # 설계 배경과 기술 선택 이유
-│  ├─ TROUBLESHOOTING.md           # 서비스별 트러블슈팅 진입점
-│  └─ database-schema.md           # 데이터베이스 스키마 ERD
-├─ docker/                         # Kafka, Zookeeper, Nginx 구성
-└─ docs/DOCUMENTATION.md           # 문서 포털
-```
-
-## 서비스 구성
-
-| 서비스 | 역할 | README |
-| --- | --- | --- |
-| 프론트엔드 | Next.js 기반 사용자 화면, 주문/차트/호가/WebSocket UI | [StockFrontEnd](StockFrontEnd/README.md) |
-| user-service | 인증, 사용자, 자산, 관심종목, 주문 검증, Kafka 정산 | [user-service](StockBackEndDistributed/user-service/README.md) |
-| stock-service | 종목 API, 실시간 시세 캐시, 체결 이벤트 반영 | [stock-service](StockBackEndDistributed/stock-service/README.md) |
-| order-service | 주문 API, 호가장, 매칭 엔진, Candle, WebSocket, 정산 이벤트 발행 | [order-service](StockBackEndDistributed/order-service/README.md) |
-
-## 실행 방법
-
-### 프론트엔드
+### 1. 개발 인프라
 
 ```bash
-cd StockFrontEnd
-npm install
-npm run dev
+cd docker
+docker compose up zookeeper kafka nginx
 ```
 
-Next.js 개발 서버는 기본적으로 `http://localhost:3000`에서 실행됩니다.
+### 2. 백엔드 서비스
 
-### 백엔드
-
-각 백엔드 서비스는 개별 Gradle 프로젝트입니다.
+각 터미널에서 서비스를 실행합니다.
 
 ```bash
 cd StockBackEndDistributed/user-service
@@ -212,43 +134,58 @@ cd StockBackEndDistributed/order-service
 
 | 서비스 | 포트 |
 | --- | --- |
-| user-service | 8081 |
-| stock-service | 8082 |
-| order-service | 8083 |
+| `user-service` | 8081 |
+| `stock-service` | 8082 |
+| `order-service` | 8083 |
 
-### Docker
-
-개발 인프라만 실행:
+### 3. 프론트엔드
 
 ```bash
-cd docker
-docker compose up zookeeper kafka nginx
+cd StockFrontEnd
+npm install
+npm run dev
 ```
 
-전체 Docker 실행:
+프론트엔드 기본 주소는 `http://localhost:3000`입니다. 환경 변수와 상세 실행·검증 방법은 [프론트엔드 상세 문서](StockFrontEnd/README.md#실행-방법)를 참고합니다.
+
+### 전체 Docker 실행
 
 ```bash
 cd docker
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
 ```
 
-## 보안 참고사항
 
-각 서비스의 `application-docker.properties`에는 DB, Redis, JWT 등 민감 설정이 포함되어 있습니다. 그렇기에 README와 docs에는 실제 값을 기록하지 않습니다.
+## 대표 화면 미리보기
 
-- 민감정보는 환경 변수로 분리 필요
-- 배포 환경에서는 secret 관리 방식 적용 필요
-- 공개 저장소에 민감 설정 파일이 포함되지 않도록 점검 필요
+| 메인 시장 화면 | 상세 거래 화면 |
+| --- | --- |
+| <img src="시각자료/메인화면1.JPG" alt="메인 시장 화면" width="460"> | <img src="시각자료/전체화면1.JPG" alt="상세 거래 화면" width="460"> |
 
-## 외부 시세 연동 참고
+| 실시간 호가창 |  |
+| --- | --- |
+| <img src="시각자료/호가1.JPG" alt="실시간 호가창" width="320"> |  |
 
-KIS 연동은 사용하려고 만들었지만, 프로젝트 내부 캐시 데이터와 KIS 데이터 사이에 불일치가 발생해 현재 사용을 중단했습니다. 지금은 주요 기능 흐름에서 제외된 더미/잔여 코드이며, 실제 시세 갱신 설명은 Kafka 체결 이벤트와 서비스 내부 캐시 데이터를 기준으로 합니다.
+주문 정정·취소, 자산 사이드바와 차트 주기별 화면은 [프론트엔드 상세 문서](StockFrontEnd/README.md#주요-화면-미리보기)에서 확인할 수 있습니다.
+
+<!--
+영상은 GitHub Attachments 또는 YouTube URL을 사용하는 것을 권장합니다.
+README에 MP4 파일을 직접 포함하지 않습니다.
+-->
+
+## 시연 영상
+
+- [시연 영상](VIDEO_SHORT_URL)
+- [긴 시연 영상](VIDEO_FULL_URL)
+
+## 보안 및 외부 시세 참고
+
+각 서비스의 DB, Redis, JWT 등 민감 설정은 환경 변수 또는 별도 secret으로 관리해야 하며 공개 저장소에 포함하지 않습니다.
+
+KIS 연동 코드는 내부 캐시 데이터와 KIS 데이터 사이의 불일치 때문에 현재 주요 기능 흐름에서 제외되어 있습니다. 실시간 시세 갱신은 Kafka 체결 이벤트와 서비스 내부 캐시 데이터를 기준으로 합니다.
 
 <div align="right">
 
 [문서 맨 위로](#top)
 
 </div>
-
-
-

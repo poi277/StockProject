@@ -4,42 +4,42 @@
 
 ## 문서 포털
 
-문서의 상세 구현, API, 아키텍처, 트러블슈팅은 아래 문서를 참고하세요.
+문서의 상세 구현, API, 아키텍처, 트러블슈팅은 아래 문서를 참고합니다.
 
 | 분류 | 문서 | 분류 | 문서 |
 | --- | --- | --- | --- |
-| 루트 README | [README](../../../README.md) | 서비스 README | [README](../README.md) |
-| Engineering Notes | [Engineering Notes](../../../docs/ENGINEERING.md) | Database Schema ERD | [Database Schema ERD](../../../docs/database-schema.md) |
-| 00 | [주문 서비스 개요](00-order-service-overview.md) | 01 | [주문 API](01-order-api.md) |
-| 02 | [Kafka 주문 흐름](02-kafka-order-flow.md) | 03 | [정산/체결 이벤트](03-settlement-and-trade-events.md) |
-| 04 | [호가장](04-orderbook.md) | 05 | [매칭 엔진](05-matching-engine.md) |
-| 06 | [Candle 차트 흐름](06-candle-chart-flow.md) | 07 | [실시간 발행 흐름](07-websocket-flow.md) |
-| 08 | [Bot 거래 구조](08-bot-trading-flow.md) | 09 | [초기화/주기 작업](09-initialization-and-scheduler.md) |
-| 10 | [order-service 이슈](10-order-service-issues.md) |  |  |
+| 주식 README | [README](../../../README.md) | 주문 서비스 README | [README](../README.md) |
+| 설계 노트 | [Engineering Notes](../../../docs/ENGINEERING.md) | 데이터베이스 ERD | [Database Schema ERD](../../../docs/database-schema.md) |
+| 주문 서비스 개요 | [주문 서비스 개요](00-order-service-overview.md) | 주문 API | [주문 API](01-order-api.md) |
+| Kafka 주문 흐름 | [Kafka 주문 흐름](02-kafka-order-flow.md) | 정산/체결 이벤트 | [정산/체결 이벤트](03-settlement-and-trade-events.md) |
+| 호가장 | [호가장](04-orderbook.md) | 매칭 엔진 | [매칭 엔진](05-matching-engine.md) |
+| Candle 차트 흐름 | [Candle 차트 흐름](06-candle-chart-flow.md) | 실시간 발행 흐름 | [실시간 발행 흐름](07-websocket-flow.md) |
+| Bot 거래 구조 | [Bot 거래 구조](08-bot-trading-flow.md) | 초기화/주기 작업 | [초기화/주기 작업](09-initialization-and-scheduler.md) |
+| 주문 서비스 이슈 | [order-service 이슈](10-order-service-issues.md) |  |  |
 
 ## 목차
 
-> [주요 책임](#주요-책임) ·
+> [개요](#개요) ·
 > [전체 구조](#전체-구조) ·
 > [주요 디렉터리](#주요-디렉터리) ·
 > [설정 주의](#설정-주의)
 
 > [핵심 구현 파일](#핵심-구현-파일)
 
-## 주요 책임
+## 개요
 
-`order-service`는 주문 접수와 체결 처리를 중심으로, 호가장 관리, 정산 이벤트 발행, 체결 기반 Candle 생성, WebSocket 실시간 발행을 담당한다.
+주문 서비스는 주문 접수부터 매칭, 체결 후속 처리까지 주식 거래의 전체 흐름을 담당합니다. 호가장과 Candle을 갱신하고, 사용자 자산과 종목 시세에 반영할 체결 결과를 다른 서비스로 전달합니다.
 
-현재 코드 기준 주요 책임은 다음과 같다.
+현재 코드 기준 주요 책임은 다음과 같습니다.
 
 - 사용자 주문 접수, 정정, 취소 API 제공
 - user-service를 통한 주문 가능 여부와 정정/취소 가능 여부 검증
-- Kafka `order-topic` 기반 비동기 주문 처리
+- 주문 이벤트를 전달하는 Kafka Topic(`order-topic`) 기반 비동기 처리
 - 종목별 메모리 호가장 관리
 - 가격/시간 우선 방식의 주문 매칭
 - 체결 결과를 user-service 정산 이벤트와 stock-service 체결 이벤트로 발행
-- 체결 데이터를 기반으로 Redis 현재 Candle 갱신
-- Candle 조회 API와 WebSocket Candle 발행 제공
+- 체결 데이터를 기반으로 진행 중인 Candle을 Redis에 갱신
+- 과거 Candle 조회 REST API와 실시간 Candle 발행 제공
 - 서버 시작 시 종목, 호가장, Candle 캐시, Bot 캐시 초기화
 - Bot 모델과 주문 실행 경로 제공
 
@@ -75,16 +75,16 @@ flowchart LR
 | 디렉터리 | 설명 |
 | --- | --- |
 | `features/Order` | 주문 API, 주문 서비스, 호가장, 체결 처리 |
-| `features/kafka` | 주문 Kafka 생산/소비, 정산 이벤트 생산 |
-| `features/Candle` | Candle API, Redis 저장, 스케줄러, 캐시 |
-| `features/Websocket` | STOMP WebSocket 발행 |
+| `features/kafka` | 주문 이벤트 수신과 체결 후속 이벤트 발행 |
+| `features/Candle` | Candle 조회, 진행 데이터 저장, 주기 작업 |
+| `features/Websocket` | 호가·주문 상태·Candle 실시간 발행 |
 | `features/Bot` | Bot 엔티티, 캐시, 전략, 주문 실행 경로 |
 | `init` | 서버 시작 시 캐시와 호가장 초기화 |
 | `config` | 보안, JWT, Redis, WebSocket 설정 |
 
 ## 설정 주의
 
-`application-docker.properties`에는 DB, Redis, JWT 등 민감 설정이 포함되어 있다. 해당 값은 문서에 직접 기록하지 않고, 운영 환경에서는 환경 변수로 분리 필요하다.
+`application-docker.properties`에는 DB, Redis, JWT 등 민감 설정이 포함되어 있습니다. 해당 값은 문서에 직접 기록하지 않고, 운영 환경에서는 환경 변수로 분리 필요합니다.
 
 ## 핵심 구현 파일
 

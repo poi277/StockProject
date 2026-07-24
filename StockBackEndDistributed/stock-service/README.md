@@ -20,14 +20,14 @@
 
 | 분류 | 문서 | 분류 | 문서 |
 | --- | --- | --- | --- |
-| 루트 README | [README](../../README.md) | 서비스 README | [README](README.md) |
-| Engineering Notes | [Engineering Notes](../../docs/ENGINEERING.md) | Database Schema ERD | [Database Schema ERD](../../docs/database-schema.md) |
-| 01 | [개요](docs/01-overview.md) | 02 | [종목 API](docs/02-stock-api.md) |
-| 03 | [실시간 시세 캐시](docs/03-realtime-stock-cache.md) | 04 | [Kafka 체결 처리](docs/04-kafka-trade-execution.md) |
-| 05 | [실시간 연결](docs/05-websocket.md) | 06 | [주기 작업](docs/06-scheduler.md) |
-| 07 | [Candle 구조](docs/07-candle-structure.md) | 08 | [외부 시세 연동 사용 중단](docs/08-external-market-data-disabled.md) |
-| 09 | [도메인 모델](docs/09-domain-model.md) | 10 | [stock-service 이슈](docs/10-stock-service-issues.md) |
-| 11 | [stock-service 트러블슈팅](docs/11-troubleshooting.md) |  |  |
+| 주식 README | [README](../../README.md) | 종목 서비스 README | [README](README.md) |
+| 설계 노트 | [Engineering Notes](../../docs/ENGINEERING.md) | 데이터베이스 ERD | [Database Schema ERD](../../docs/database-schema.md) |
+| 개요 | [개요](docs/01-overview.md) | 종목 API | [종목 API](docs/02-stock-api.md) |
+| 실시간 시세 캐시 | [실시간 시세 캐시](docs/03-realtime-stock-cache.md) | Kafka 체결 처리 | [Kafka 체결 처리](docs/04-kafka-trade-execution.md) |
+| 실시간 연결 | [실시간 연결](docs/05-websocket.md) | 주기 작업 | [주기 작업](docs/06-scheduler.md) |
+| Candle 구조 | [Candle 구조](docs/07-candle-structure.md) | 외부 시세 연동 사용 중단 | [외부 시세 연동 사용 중단](docs/08-external-market-data-disabled.md) |
+| 도메인 모델 | [도메인 모델](docs/09-domain-model.md) | 주식 서비스 이슈 | [stock-service 이슈](docs/10-stock-service-issues.md) |
+| 주식 서비스 트러블슈팅 | [stock-service 트러블슈팅](docs/11-troubleshooting.md) |  |  |
 
 ## 목차
 
@@ -41,32 +41,18 @@
 
 종목 조회, 실시간 시세 스냅샷, Kafka 체결 이벤트 반영, WebSocket 시세 발행을 담당하는 종목 서비스입니다.
 
-`stock-service`는 주문을 직접 체결하지 않습니다. order-service가 발행한 `trade-execution-topic` 체결 이벤트를 소비해 종목별 현재가, 고가, 저가, 누적 거래량, 등락률을 갱신하고 프론트엔드에 WebSocket으로 발행합니다.
-
-Redis 설정은 존재하지만 현재 stock-service 주요 흐름에서 직접 사용은 거의 없습니다. Candle 구조는 프론트 차트 API가 아니라 초기 시세 복구와 최근 30분 거래 통계 계산 용도입니다.
+`stock-service`는 order-service가 발행한 체결 이벤트로 현재가, 고가, 저가, 누적 거래량, 등락률을 갱신하고 차트 분봉을 이용하여 현재가와 초기 시세 복구, 최근 30분 거래 통계 계산하고 프론트엔드에 WebSocket으로 발행 합니다.
 
 ## 주요 구현 내용
 
-stock-service는 주문 체결 자체가 아니라 종목 데이터와 시세 반영을 담당합니다. 현재 구현 기준으로 stock-service가 분리되어 맡는 흐름은 다음과 같습니다.
-
-- 종목 목록과 단일 종목 스냅샷 API 제공
-- 관심종목 조회를 위한 단일 종목 조회 API 제공
-- order-service가 발행한 `trade-execution-topic` 소비
-- 체결 이벤트 기반 `StockCache` 갱신
-- 종목별 현재가와 체결 데이터 WebSocket 발행
-- 서버 시작 시 최신 종목 시세 복구
-- 최근 30분 거래 통계 계산
-
-이 분리는 주문 매칭 책임은 order-service에 두고, 종목 현재 상태와 외부 시세 연동 책임은 stock-service에 두는 구조다.
-
-| Area | 구현 내용 | 관련 코드 |
-| --- | --- | --- |
-| 종목 API | 종목 목록, 단일 종목, 관심종목용 단일 종목 조회 | `features/Stock/StockController.java` |
-| 실시간 스냅샷 | 현재가, 고가, 저가, 거래량, 등락률 캐시 | `features/Stock/StockCache.java`, `StockRealTimeSnapshot.java` |
-| Kafka 체결 처리 | `trade-execution-topic` 소비와 종목 시세 반영 | `features/kafka/TradeExecutionConsumer.java` |
-| WebSocket 발행 | 현재가와 체결 데이터를 topic으로 발행 | `features/WebSocket/WebSocketService.java` |
-| 스케줄러 | 초기 시세 복구와 최근 거래 통계 계산 | `features/Stock/StockScheduler.java`, `StockTradeStatsScheduler.java` |
-| Candle 구조 | 초기 시세 복구와 최근 30분 통계 계산에 사용 | `features/Candle/*` |
+| 영역 | 주요 구현 내용 | 사용 기술/처리 방식 | 관련 문서 |
+| --- | --- | --- | --- |
+| 종목 API | 종목 목록과 단일 종목 조회<br>관심종목용 단일 종목 조회 | REST API 제공<br>`features/Stock/StockController.java` | [종목 API](docs/02-stock-api.md) |
+| 실시간 스냅샷 | 현재가·고가·저가 관리<br>거래량과 등락률 관리 | `StockCache` 기반 시세 캐시<br>`StockRealTimeSnapshot.java` | [실시간 시세 캐시](docs/03-realtime-stock-cache.md) |
+| Kafka 체결 처리 | `trade-execution-topic` 소비<br>체결 이벤트 기반 종목 시세 반영 | Kafka 이벤트 소비<br>`TradeExecutionConsumer.java` | [Kafka 체결 처리](docs/04-kafka-trade-execution.md) |
+| 웹소켓 발행 | 종목별 현재가 발행<br>체결 데이터 실시간 발행 | WebSocket topic 발행<br>`WebSocketService.java` | [실시간 연결](docs/05-websocket.md) |
+| 스케줄러 | 서버 시작 시 최신 시세 복구<br>최근 30분 거래 통계 계산 | 초기화 및 주기 작업<br>`StockScheduler`, `StockTradeStatsScheduler` | [주기 작업](docs/06-scheduler.md) |
+| Candle 구조 | 초기 시세 복구 데이터 제공<br>최근 30분 통계 계산 지원 | Candle 데이터 조회·집계<br>`features/Candle/*` | [Candle 구조](docs/07-candle-structure.md) |
 
 ## 시스템 아키텍처
 

@@ -4,182 +4,245 @@
 
 ## 문서 포털
 
-문서의 상세 구현, API, 아키텍처, 트러블슈팅은 아래 문서를 참고하세요.
+상세 구현, API, 아키텍처와 트러블슈팅 정보는 아래 문서에서 확인할 수 있습니다.
 
 | 분류 | 문서 | 분류 | 문서 |
 | --- | --- | --- | --- |
-| 루트 README | [README](../../README.md) | 서비스 README | [README](../README.md) |
-| Engineering Notes | [Engineering Notes](../../docs/ENGINEERING.md) | Database Schema ERD | [Database Schema ERD](../../docs/database-schema.md) |
-| 01 | [인증](01-auth.md) | 02 | [종목 목록](02-stock-list.md) |
-| 03 | [종목 상세](03-stock-detail.md) | 04 | [차트](04-chart.md) |
-| 05 | [주문](05-order.md) | 06 | [호가/체결](06-orderbook-execution.md) |
-| 07 | [자산](07-user-asset.md) | 08 | [관심종목](08-watchlist.md) |
-| 09 | [실시간 연결](09-websocket.md) | 10 | [프론트엔드 이슈](10-frontend-issues.md) |
+| 주식 README | [README](../../README.md) | 주식 거래 플랫폼 README | [README](../README.md) |
+| 설계 노트 | [Engineering Notes](../../docs/ENGINEERING.md) | 데이터베이스 ERD | [Database Schema ERD](../../docs/database-schema.md) |
+| 인증 | [인증](01-auth.md) | 종목 목록 | [종목 목록](02-stock-list.md) |
+| 종목 상세 | [종목 상세](03-stock-detail.md) | 차트 | [차트](04-chart.md) |
+| 주문 | [주문](05-order.md) | 호가/체결 | [호가/체결](06-orderbook-execution.md) |
+| 자산 | [자산](07-user-asset.md) | 관심종목 | [관심종목](08-watchlist.md) |
+| 실시간 연결 | [실시간 연결](09-websocket.md) | 프론트엔드 이슈 | [프론트엔드 이슈](10-frontend-issues.md) |
 
 ## 목차
 
-> [개요](#개요) ·
-> [주문 탭](#주문-탭) ·
-> [주문 생성](#주문-생성) ·
-> [주문 정정](#주문-정정)
+> [개요](#개요) · [주문 생성](#주문-생성) · [주문 정정](#주문-정정) · [주문 취소](#주문-취소) · [주문 데이터 비교](#주문-데이터-비교) · [주문 조회와 실시간 갱신](#주문-조회와-실시간-갱신) · [흐름](#흐름) · [핵심 구현 파일](#핵심-구현-파일) · [관련 문서](#관련-문서)
 
-> [주문 취소](#주문-취소) ·
-> [내 주문 조회](#내-주문-조회) ·
-> [주문 실시간 갱신](#주문-실시간-갱신) ·
-> [흐름](#흐름) ·
-> [핵심 구현 파일](#핵심-구현-파일)
 ## 개요
 
-주문 기능은 종목 상세 화면의 주문 패널에서 제공된다. 매수, 매도, 대기 주문 탭을 전환할 수 있고, 주문 생성, 주문 정정, 주문 취소 API를 사용한다.
-
-
-## 주문 탭
-
-주문(tradeTypeTab) 탭으로 주문을  제어한다.
-
-- `BUY`: 매수
-- `SELL`: 매도
-- `PENDING`: 대기 주문
-
-호가창에서 선택한 가격은 `selectedPrice`로 전달되어 주문 가격 입력에 활용된다.
+종목 상세 화면에서 매수·매도·대기 주문을 처리합니다. 호가에서 선택한 가격을 주문에 반영하고 주문 상태는 사용자 WebSocket 메시지로 갱신합니다.
 
 ## 주문 생성
 
-`orderApi()`는 주문 생성 요청을 담당한다.
+지정가는 입력 가격을 사용하고 시장가는 `tradePrice`를 `null`로 전송합니다. 요청에는 주문 유형, 종목, 수량과 가격을 포함합니다.
 
-엔드포인트:
+### 동작 순서
 
-- `POST {ORDER_API_URL}/order/trade`
+1. 매수 또는 매도 탭을 선택합니다.
+2. 호가 가격이나 직접 입력한 가격과 수량을 확인합니다.
+3. 매수·매도 주문을 생성하는 API(`POST {ORDER_API_URL}/order/trade`)를 호출합니다.
+4. 주문 결과는 WebSocket으로 주문 목록에 반영합니다.
 
-요청 데이터:
+### 핵심 코드
 
-- `tradeType`
-- `stockCode`
-- `stockName`
-- `quantity`
-- `tradePrice`
+```js
+async function buyExecuteOrder({ tradeTypeTab }) {
+        try {
+            const numericPrice = priceType === 'market' ? null : Number(buyPrice.replace(/,/g, ''));
+            const res = await orderApi(tradeTypeTab, stockCode,stockName, buyQuantity, numericPrice);
+            if (!res.success) {
+                throw new Error(res.message || "주문 실패");
+            }
+            return res.data;
+        } catch (err) {
+            console.log(err.message);
+            return null;
+        }
+    }
+```
 
-매수/매도 훅은 `priceType`을 기준으로 지정가와 시장가를 구분한다.
+화면 입력 형식과 백엔드 주문 형식을 분리해 지정가와 시장가를 같은 API로 처리하기 위한 로직입니다. 주문 유형·종목·수량·화면 가격을 입력받아 숫자 가격으로 정규화하고, 시장가는 `tradePrice`를 `null`로 전달합니다. 접수 성공 이후 목록은 WebSocket 주문 메시지로 갱신되므로 API 결과와 실시간 상태의 책임이 분리됩니다.
 
-- 지정가: 입력 가격에서 콤마를 제거하고 숫자로 변환해 `tradePrice`로 전달
-- 시장가: `tradePrice`를 `null`로 전달
+### 구현 위치
 
-호가에서 가격을 선택하면 현재 탭이 `BUY`일 때는 `buyPrice`, `SELL`일 때는 `sellPrice`에 반영된다. 초기 가격은 `closePrice`가 있으면 종가 기준으로 설정된다.
+- 주문 화면: `features/StockDetail/MainContent/Order/OrderForm.jsx`
+- 매수·매도 상태: `features/StockDetail/MainContent/Order/Buy/useOrderBuy.js`, `features/StockDetail/MainContent/Order/Sell/useOrderSell.js`
+- 주문 API: `lib/order.js`의 `orderApi()`
 
 ## 주문 정정
 
-`editOrderApi()`는 주문 정정 요청을 담당한다.
+대기 주문의 가격과 수량을 선택해 정정 요청을 전송합니다. 상세 패널과 전역 사이드 패널에서 같은 API를 사용합니다.
 
-엔드포인트:
+### 동작 순서
 
-- `POST {ORDER_API_URL}/order/edit`
+1. 대기 주문에서 정정 대상을 선택합니다.
+2. 주문 정보를 정정 입력 상태로 복사합니다.
+3. 대기 주문을 변경하는 정정 API(`POST {ORDER_API_URL}/order/edit`)에 변경 값을 전송합니다.
+4. 실시간 주문 메시지로 목록을 갱신합니다.
 
-요청 데이터:
+### 핵심 코드
 
-- `orderId`
-- `tradeType`
-- `stockCode`
-- `stockName`
-- `quantity`
-- `tradePrice`
+```js
+export async function editOrderApi(orderId,tradeType,stockName,stockCode,quantity,tradePrice) {
+  // 생략: 요청 값 로그
+  return await apiFetch(`${ORDER_API_URL}/order/edit`,{
+    method: 'POST',
+    auth: true,
+    body: JSON.stringify({
+      orderId,
+      tradeType,
+      stockCode,
+      stockName,
+      quantity: Number(quantity),
+      tradePrice
+    }),
+  })
+}
+```
 
-상세 주문 패널 내부의 대기 주문 탭은 `useOrderEdit()`가 관리한다.
+기존 주문을 정확히 식별하면서 생성 주문과 같은 가격 규칙을 재사용하기 위한 정정 로직입니다. 정정 대상의 `orderId`와 거래 정보, 새 수량·가격을 입력받아 시장가 여부를 정규화한 뒤 정정 API를 호출합니다. 성공 결과는 WebSocket 상태 변경으로 주문 목록에 반영되고 실패 메시지는 정정 화면의 오류 상태가 됩니다.
 
-- `UserHaveAssetContext()`에서 전체 주문 목록을 읽는다.
-- 현재 종목 코드와 같은 주문만 `stockOrders`로 필터링한다.
-- `handleEditOpen(order)`로 정정 대상, 가격, 수량을 초기화한다.
-- `editExecuteOrder()`로 정정 API 요청을 보낸다.
+### 구현 위치
 
-전역 정정 사이드 패널 상태는 `store/editStore.js`에서 관리한다.
+- 상세 정정: `features/StockDetail/MainContent/Order/Edit/useOrderEdit.js`
+- 사이드 정정: `features/StockDetail/MainContent/Order/Edit/useSideBarEditOrder.js`
+- 전역 상태: `store/editStore.js`
+- 정정 API: `lib/order.js`의 `editOrderApi()`
 
 ## 주문 취소
 
-`cancelOrder()`는 주문 취소 요청을 담당한다.
+선택한 대기 주문을 확인한 뒤 주문 ID로 취소합니다.
 
-엔드포인트:
+### 동작 순서
 
-- `POST {ORDER_API_URL}/order/cancel/{orderId}`
+1. 취소할 주문을 선택합니다.
+2. 확인 화면에 주문 정보를 표시합니다.
+3. 선택한 주문을 취소하는 API(`POST {ORDER_API_URL}/order/cancel/{orderId}`)를 호출합니다.
+4. 취소 메시지를 받으면 주문 목록에서 제거합니다.
 
-취소 모달/패널 상태는 `store/cancelStore.js`에서 관리한다.
+### 핵심 코드
 
-## 내 주문 조회
+```js
+executeCancel: async () => {
+    const { cancelTarget, closeCancel } = get();
+    try {
+        await cancelOrder(cancelTarget.orderId);
+        closeCancel();
+    } catch (e) {
+        console.error(e);
+    }
+}
+```
 
-`lib/order.js`는 다음 조회 API를 제공한다.
+화면 종류와 관계없이 같은 취소 대상을 처리하도록 선택 주문을 전역 취소 상태에 보관합니다. 저장된 주문의 `orderId`를 입력으로 취소 API를 호출하고 성공하면 확인 화면을 닫습니다. 실제 목록 제거는 서버의 `CANCELLED` 메시지가 도착했을 때 수행해 서버 상태와 UI 상태를 일치시킵니다.
 
-- `getMyStockOrder(stockCode)`: 종목별 내 주문
-- `getMyAllOrder()`: 전체 미체결/진행 주문
-- `getMyCompletedOrder()`: 체결 완료 주문
+### 구현 위치
 
-## 주문 실시간 갱신
+- 취소 화면: `features/StockDetail/MainContent/Order/Cancel/CancelForm.jsx`, `features/StockDetail/MainContent/Order/Cancel/SideBarCancelForm.jsx`
+- 취소 상태: `store/cancelStore.js`
+- 취소 API: `lib/order.js`의 `cancelOrder()`
 
-`util/websocket/useOrderSocket.js`는 로그인 사용자 기준으로 주문 상태를 구독한다.
+## 주문 데이터 비교
 
-구독 토픽:
+주문 생성·정정 요청과 실시간 주문 응답은 목적이 달라 포함하는 필드가 다릅니다.
 
-- `/user/queue/orders`
+| 데이터 | 공통 필드 | 추가 필드 | 역할 |
+| --- | --- | --- | --- |
+| 생성 요청 | `tradeType`, `stockCode`, `stockName`, `quantity`, `tradePrice` | 없음 | 신규 주문 접수 |
+| 정정 요청 | 생성 요청 필드 전체 | `orderId` | 기존 주문 식별 후 변경 |
+| 취소 요청 | 없음 | URL의 `orderId` | 선택한 주문 취소 |
+| 실시간 주문 응답 | `orderId`, `tradeType`, `stockCode`, `stockName`, `quantity`, `tradePrice` | `remainingQuantity`, `status`, `executedQuantity` | 목록과 알림 갱신 |
 
-처리하는 주문 상태:
+시장가 주문은 생성·정정 요청의 `tradePrice`를 `null`로 전송합니다. 실시간 응답의 `status`는 `PENDING`, `PARTIAL`, `COMPLETED`, `CANCELLED` 중 하나입니다.
 
-- `PENDING`
-- `PARTIAL`
-- `COMPLETED`
-- `CANCELLED`
+### 구현 위치
 
-상태에 따라 주문 목록을 추가, 갱신, 삭제하고 알림 목록도 함께 갱신한다.
+- 요청 객체 생성: `lib/order.js`
+- 실시간 응답 처리: `util/websocket/useOrderSocket.js`
 
-알림은 `UserHaveAssetProvider`가 제공하는 `notifications`에 저장되고, `features/UI/notification/NotificationForm.jsx`에서 렌더링된다. 각 알림은 3초 뒤 제거된다.
+## 주문 조회와 실시간 갱신
+
+종목별·전체·체결 완료 주문을 API로 조회합니다. 사용자 주문 상태를 수신하는 WebSocket Queue(`/user/queue/orders`)에서 `PENDING`, `PARTIAL`, `COMPLETED`, `CANCELLED` 상태를 받아 목록과 알림을 갱신합니다.
+
+### 동작 순서
+
+1. 화면에 필요한 주문 목록을 조회합니다.
+2. 로그인 사용자의 주문 queue를 구독합니다.
+3. 주문 상태에 따라 항목을 추가·교체·삭제합니다.
+4. 결과 알림을 표시합니다.
+
+### 핵심 코드
+
+#### WebSocket 구독
+
+```js
+useEffect(() => {
+  const sub = client.subscribe('/user/queue/orders', message => {
+    const data = JSON.parse(message.body);
+    updateOrders(data);
+  });
+  return () => sub.unsubscribe();
+}, [client, connected, user]);
+```
+
+#### 상태 갱신
+
+```js
+setOrders(prev => {
+    switch (data.status) {
+        case 'PENDING': {
+            const exists = prev.find(o => o.orderId == data.orderId);
+            if (exists) {
+                return prev.map(o => o.orderId == data.orderId ? { ...o, ...data } : o);
+            }
+            return [...prev, data];
+        }
+        // 생략: PARTIAL도 같은 방식으로 추가하거나 교체한다.
+        case 'COMPLETED':
+        case 'CANCELLED': {
+            const exists = prev.find(o => o.orderId == data.orderId);
+            if (!exists) return prev;
+            return prev.filter(o => o.orderId != data.orderId);
+        }
+        default: return prev;
+    }
+});
+```
+
+API 조회 이후 발생하는 주문 변화를 추가 요청 없이 동기화하기 위한 두 단계 로직입니다. 사용자 Queue 메시지를 `updateOrders()`로 전달하고 `orderId`와 상태를 기준으로 대기·부분 체결 항목은 추가 또는 교체합니다. 완료·취소 항목은 대기 목록에서 제거되며 같은 메시지는 사용자 알림에도 반영됩니다.
+
+### 구현 위치
+
+- 주문 조회: `lib/order.js`
+- 실시간 상태: `util/websocket/useOrderSocket.js`
+- 알림: `features/UI/notification/NotificationForm.jsx`
 
 ## 흐름
 
 ```mermaid
 flowchart TD
-  Hoga["호가 가격 선택"] --> OrderForm["주문 입력 화면"]
-  OrderForm --> Buy["매수 주문 작성"]
-  OrderForm --> Sell["매도 주문 작성"]
-  OrderForm --> Pending["대기 주문 정정"]
-  Buy --> OrderAPI["주문 생성 요청"]
-  Sell --> OrderAPI
-  Pending --> EditAPI["주문 정정 요청"]
-  CancelUI["주문 취소 확인"] --> CancelStore["취소 대상 선택"]
-  CancelStore --> CancelAPI["주문 취소 요청"]
-  OrderSocket["주문 상태 실시간 수신"] --> Orders["주문 목록과 알림 갱신"]
-  Orders --> Notification["주문 결과 알림 표시"]
+  Hoga["호가 선택"] --> Form["주문 입력"]
+  Form --> Create["매수·매도 요청"]
+  Pending["대기 주문 선택"] --> Edit["정정 요청"]
+  Pending --> Cancel["취소 요청"]
+  Create --> Socket["주문 상태 수신"]
+  Edit --> Socket
+  Cancel --> Socket
+  Socket --> List["주문 목록과 알림 갱신"]
 ```
 
 ## 핵심 구현 파일
 
-기준 경로
-
-`StockFrontEnd`
+기준 경로: `StockFrontEnd`
 
 | 파일 |
 | --- |
 | `features/StockDetail/MainContent/Order/OrderForm.jsx` |
-| `features/StockDetail/MainContent/Order/Buy/OrderBuyForm.jsx` |
 | `features/StockDetail/MainContent/Order/Buy/useOrderBuy.js` |
-| `features/StockDetail/MainContent/Order/Sell/OrderSellForm.jsx` |
 | `features/StockDetail/MainContent/Order/Sell/useOrderSell.js` |
-| `features/StockDetail/MainContent/Order/Edit/OrderPendingForm.jsx` |
 | `features/StockDetail/MainContent/Order/Edit/useOrderEdit.js` |
-| `features/StockDetail/MainContent/Order/Edit/SideBarEditForm.jsx` |
-| `features/StockDetail/MainContent/Order/Edit/useSideBarEditOrder.js` |
-| `features/StockDetail/MainContent/Order/Cancel/CancelForm.jsx` |
-| `features/StockDetail/MainContent/Order/Cancel/SideBarCancelForm.jsx` |
 | `features/StockDetail/MainContent/Order/Cancel/useCancel.js` |
-| `features/StockDetail/MainContent/Order/Commonutil/OrderCommon.jsx` |
-| `features/StockDetail/MainContent/Order/Commonutil/stockPriceUnit.js` |
 | `lib/order.js` |
 | `store/cancelStore.js` |
 | `store/editStore.js` |
 | `util/websocket/useOrderSocket.js` |
-| `features/UI/notification/NotificationForm.jsx` |
-| `features/UI/notification/useNotification.js` |
 
-<div align="right">
+## 관련 문서
 
-[문서 맨 위로](#top)
+- [인증](01-auth.md)
+- [호가와 체결](06-orderbook-execution.md)
+- [사용자 자산](07-user-asset.md)
 
-</div>
-
-
-
+<div align="right">[문서 맨 위로](#top)</div>

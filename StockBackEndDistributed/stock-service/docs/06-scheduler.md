@@ -4,17 +4,17 @@
 
 ## 문서 포털
 
-문서의 상세 구현, API, 아키텍처, 트러블슈팅은 아래 문서를 참고하세요.
+문서의 상세 구현, API, 아키텍처, 트러블슈팅은 아래 문서를 참고합니다.
 
 | 분류 | 문서 | 분류 | 문서 |
 | --- | --- | --- | --- |
-| 루트 README | [README](../../../README.md) | 서비스 README | [README](../README.md) |
-| Engineering Notes | [Engineering Notes](../../../docs/ENGINEERING.md) | Database Schema ERD | [Database Schema ERD](../../../docs/database-schema.md) |
-| 01 | [개요](01-overview.md) | 02 | [종목 API](02-stock-api.md) |
-| 03 | [실시간 시세 캐시](03-realtime-stock-cache.md) | 04 | [Kafka 체결 처리](04-kafka-trade-execution.md) |
-| 05 | [실시간 연결](05-websocket.md) | 06 | [주기 작업](06-scheduler.md) |
-| 07 | [Candle 구조](07-candle-structure.md) | 08 | [외부 시세 연동 사용 중단](08-external-market-data-disabled.md) |
-| 09 | [도메인 모델](09-domain-model.md) | 10 | [stock-service 이슈](10-stock-service-issues.md) |
+| 주식 README | [README](../../../README.md) | 종목 서비스 README | [README](../README.md) |
+| 설계 노트 | [Engineering Notes](../../../docs/ENGINEERING.md) | 데이터베이스 ERD | [Database Schema ERD](../../../docs/database-schema.md) |
+| 개요 | [개요](01-overview.md) | 종목 API | [종목 API](02-stock-api.md) |
+| 실시간 시세 캐시 | [실시간 시세 캐시](03-realtime-stock-cache.md) | Kafka 체결 처리 | [Kafka 체결 처리](04-kafka-trade-execution.md) |
+| 실시간 연결 | [실시간 연결](05-websocket.md) | 주기 작업 | [주기 작업](06-scheduler.md) |
+| Candle 구조 | [Candle 구조](07-candle-structure.md) | 외부 시세 연동 사용 중단 | [외부 시세 연동 사용 중단](08-external-market-data-disabled.md) |
+| 도메인 모델 | [도메인 모델](09-domain-model.md) | 주식 서비스 이슈 | [stock-service 이슈](10-stock-service-issues.md) |
 
 ## 목차
 
@@ -26,22 +26,28 @@
 > [거래 통계 스케줄러](#거래-통계-스케줄러) ·
 > [거래 통계 스케줄러 흐름](#거래-통계-스케줄러-흐름) ·
 > [사용처](#사용처) ·
-> [핵심 구현 파일](#핵심-구현-파일)
+> [핵심 구현 파일](#핵심-구현-파일) · [관련 문서](#관련-문서)
 ## 개요
 
-stock-service는 Spring Scheduling을 사용한다. 시작 시에는 DB의 최신 종목과 캔들 데이터를 기반으로 실시간 시세 캐시를 복구하고, 실행 중에는 최근 30분 거래 통계를 1분마다 갱신한다.
+주기 작업은 서비스 시작 시 최신 시세를 복구하고 실행 중에는 최근 거래 통계를 갱신합니다. 저장된 종목과 Candle을 기준으로 현재가를 만들며 통계는 1분마다 다시 계산합니다.
+
+정해진 시점과 간격에 실행하기 위해 Spring Scheduling을 사용합니다.
 
 
 
 ## 주기 작업 활성화
 
-`StockServiceApplication`에 `@EnableScheduling`이 선언되어 있다.
+서비스가 주기 작업을 실행할 수 있도록 Scheduling을 활성화합니다.
+
+### 구현 위치
+
+- 활성화 설정: `StockServiceApplication.java`의 `@EnableScheduling`
 
 ## 초기 시세 복구
 
-`StockScheduler.init()` (서비스 시작 시 실시간 시세 캐시를 복구하는 기능)은 `@PostConstruct`로 애플리케이션 시작 시 실행된다.
+서비스가 시작되면 최신 종목, 전일 종가와 당일 분봉으로 실시간 시세를 복구합니다.
 
-처리 순서:
+### 동작 순서
 
 1. 최신 종목 목록 조회
 2. `stock.assigned-codes` 설정이 있으면 대상 종목 필터링
@@ -52,6 +58,50 @@ stock-service는 Spring Scheduling을 사용한다. 시작 시에는 DB의 최�
 7. 전일 종가 기준 등락 금액과 등락률 계산
 8. `StockCache`에 `StockRealTimeSnapshot` 저장
 9. 최근 거래 통계 갱신
+
+### 핵심 코드
+
+#### 복구 대상 종목 선택
+
+```java
+List<Stock> latestStocks = stockRepository.findLatestStocks();
+List<Stock> targetStocks = assignedCodes.isEmpty()
+        ? latestStocks
+        : latestStocks.stream()
+                .filter(stock -> assignedCodes.contains(stock.getStockCode()))
+                .toList();
+```
+
+#### 당일 시세 복구
+
+```java
+int currentPrice, highPrice, lowPrice;
+long totalVolume;
+
+if (todayCandles.isEmpty()) {
+    currentPrice = highPrice = lowPrice = yesterdayClose;
+    totalVolume = 0L;
+} else {
+    currentPrice = todayCandles.get(todayCandles.size() - 1).getClose();
+    highPrice = todayCandles.stream()
+            .mapToInt(CandleMinute::getHigh).max().orElse(yesterdayClose);
+    lowPrice = todayCandles.stream()
+            .mapToInt(CandleMinute::getLow).min().orElse(yesterdayClose);
+    totalVolume = todayCandles.stream()
+            .mapToLong(CandleMinute::getTotalVolume).sum();
+}
+
+int changeAmount = currentPrice - yesterdayClose;
+double changeRate = yesterdayClose == 0
+        ? 0.0 : (changeAmount / (double) yesterdayClose) * 100;
+```
+
+전일 종가와 당일 분봉을 입력으로 현재가·당일 범위·거래량을 복원하며, 계산 결과는 실시간 시세 스냅샷에 사용됩니다.
+
+### 구현 위치
+
+- 초기 복구: `init/StockScheduler.java`의 `init()`
+- 시세 저장: `features/Stock/StockCache.java`
 
 ## 초기 시세 복구 흐름
 
@@ -70,15 +120,48 @@ flowchart TD
 
 ## 거래 통계 스케줄러
 
-`StockTradeStatsScheduler.refreshFromDb()` (최근 30분 거래 통계를 갱신하는 기능)는 `@Scheduled(fixedDelay = 60_000)`으로 실행된다.
+최근 30분의 매수·매도 수량과 거래대금을 60초마다 계산합니다.
 
-처리 순서:
+### 동작 순서
 
 1. 현재 시각 기준 30분 전 시간 계산
 2. 거래가 있는 종목 코드 목록 조회
 3. 종목별 최근 30분 분봉 조회
 4. `buyQty`, `sellQty`, `tradeAmount` 합산
 5. `stockTradeStatusCache`에 `StockTradeStatus` 저장
+
+### 핵심 코드
+
+```java
+LocalDateTime from = LocalDateTime.now().minusMinutes(30);
+List<String> stockCodes = candleMinuteRepository.findDistinctStockCodes();
+
+for (String stockCode : stockCodes) {
+    try {
+        List<CandleMinute> recent = candleMinuteRepository
+                .findByStockCodeAndTimeAfter(stockCode, from);
+        long buyQty = recent.stream()
+                .mapToLong(c -> c.getBuyQty() != null ? c.getBuyQty() : 0).sum();
+        long sellQty = recent.stream()
+                .mapToLong(c -> c.getSellQty() != null ? c.getSellQty() : 0).sum();
+        double tradeAmount = recent.stream()
+                .mapToDouble(c -> c.getTradeAmount() != null ? c.getTradeAmount() : 0).sum();
+        stockTradeStatusCache.put(
+                stockCode, new StockTradeStatus(buyQty, sellQty, tradeAmount));
+        // 생략: 종목별 통계 갱신 로그
+    } catch (Exception e) {
+        log.error("캐시 갱신 실패 - stockCode: {} error: {}",
+                stockCode, e.getMessage());
+    }
+}
+```
+
+최근 30분이라는 이동 구간을 유지하기 위해 저장된 분봉을 다시 집계합니다. 종목별 매수·매도 수량과 거래대금을 계산하고, 결과는 종목 목록의 거래 통계에 반영됩니다.
+
+### 구현 위치
+
+- 통계 갱신: `Scheduler/StockTradeStatsScheduler.java`의 `refreshFromDb()`
+- 분봉 조회: `features/Candle/CandleMinuteRepository.java`
 
 ## 거래 통계 스케줄러 흐름
 
@@ -94,8 +177,30 @@ flowchart TD
 
 ## 사용처
 
-종목 목록 응답은 실시간 시세 캐시의 각 스냅샷에 최근 거래 통계를 결합해 생성한다.
-구현은 `StockService.getAllStocks()` (종목 목록 응답 생성 기능)에서 담당한다.
+종목 목록은 최신 시세에 최근 거래 통계를 결합해 반환합니다.
+
+### 동작 순서
+
+1. 현재 시세 캐시의 모든 스냅샷을 순회합니다.
+2. 종목 코드로 최근 거래 통계를 조회합니다.
+3. 시세와 통계를 하나의 목록 DTO로 결합합니다.
+
+### 핵심 코드
+
+```java
+public List<StockListResponseDto> getAllStocks() {
+    return stockCache.values().stream()
+            .map(snapshot -> new StockListResponseDto(snapshot,
+                    stockTradeStatsScheduler.getStats(snapshot.getStockCode())))
+            .toList();
+}
+```
+
+시세 갱신 주기와 통계 계산 주기를 분리하면서도 API에서는 하나의 응답으로 제공하기 위한 결합 지점입니다. 최신 스냅샷을 입력으로 종목별 통계를 조회하고 전체 종목 목록에 반영합니다.
+
+### 구현 위치
+
+- 목록 응답 결합: `features/Stock/StockService.java`의 `getAllStocks()`
 
 ## 핵심 구현 파일
 
@@ -114,6 +219,12 @@ flowchart TD
 | `repository/StockRepository.java` |
 | `features/Candle/CandleMinuteRepository.java` |
 | `features/Candle/CandleDayRepository.java` |
+
+## 관련 문서
+
+- [실시간 시세](03-realtime-stock-cache.md)
+- [Candle 구조](07-candle-structure.md)
+- [종목 API](02-stock-api.md)
 
 <div align="right">
 

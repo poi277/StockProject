@@ -4,136 +4,163 @@
 
 ## 문서 포털
 
-문서의 상세 구현, API, 아키텍처, 트러블슈팅은 아래 문서를 참고하세요.
+상세 구현, API, 아키텍처와 트러블슈팅 정보는 아래 문서에서 확인할 수 있습니다.
 
 | 분류 | 문서 | 분류 | 문서 |
 | --- | --- | --- | --- |
-| 루트 README | [README](../../README.md) | 서비스 README | [README](../README.md) |
-| Engineering Notes | [Engineering Notes](../../docs/ENGINEERING.md) | Database Schema ERD | [Database Schema ERD](../../docs/database-schema.md) |
-| 01 | [인증](01-auth.md) | 02 | [종목 목록](02-stock-list.md) |
-| 03 | [종목 상세](03-stock-detail.md) | 04 | [차트](04-chart.md) |
-| 05 | [주문](05-order.md) | 06 | [호가/체결](06-orderbook-execution.md) |
-| 07 | [자산](07-user-asset.md) | 08 | [관심종목](08-watchlist.md) |
-| 09 | [실시간 연결](09-websocket.md) | 10 | [프론트엔드 이슈](10-frontend-issues.md) |
+| 주식 README | [README](../../README.md) | 주식 거래 플랫폼 README | [README](../README.md) |
+| 설계 노트 | [Engineering Notes](../../docs/ENGINEERING.md) | 데이터베이스 ERD | [Database Schema ERD](../../docs/database-schema.md) |
+| 인증 | [인증](01-auth.md) | 종목 목록 | [종목 목록](02-stock-list.md) |
+| 종목 상세 | [종목 상세](03-stock-detail.md) | 차트 | [차트](04-chart.md) |
+| 주문 | [주문](05-order.md) | 호가/체결 | [호가/체결](06-orderbook-execution.md) |
+| 자산 | [자산](07-user-asset.md) | 관심종목 | [관심종목](08-watchlist.md) |
+| 실시간 연결 | [실시간 연결](09-websocket.md) | 프론트엔드 이슈 | [프론트엔드 이슈](10-frontend-issues.md) |
 
 ## 목차
 
-> [개요](#개요) ·
-> [초기 호가 조회](#초기-호가-조회) ·
-> [실시간 호가](#실시간-호가)
+> [개요](#개요) · [호가 조회와 갱신](#호가-조회와-갱신) · [체결 내역](#체결-내역) · [주문 연동](#주문-연동) · [흐름](#흐름) · [핵심 구현 파일](#핵심-구현-파일) · [관련 문서](#관련-문서)
 
-> [표시 범위](#표시-범위) ·
-> [체결 내역](#체결-내역) ·
-> [가격 색상](#가격-색상) ·
-> [흐름](#흐름) ·
-> [핵심 구현 파일](#핵심-구현-파일)
 ## 개요
 
-호가 기능은 REST API로 초기 호가 데이터를 가져온 뒤 WebSocket으로 매수/매도 호가 변경을 반영한다. 체결 내역은 종목 WebSocket을 통해 받아 호가 화면과 실시간 체결 영역에서 사용한다.
+호가창은 초기 매수·매도 호가를 조회하고 WebSocket으로 변경을 반영합니다. 체결 영역은 최신 체결 가격과 수량을 실시간으로 표시합니다.
 
+## 호가 조회와 갱신
 
+초기 호가를 가격순으로 구성한 뒤 종목별 호가 topic을 구독합니다. 수량이 0이면 가격대를 제거하고, 나머지는 추가하거나 수량을 교체합니다.
 
-## 초기 호가 조회
+### 동작 순서
 
-`getOrderbookApi()`는 초기 호가 데이터를 조회한다.
+1. 선택 종목의 초기 매수·매도 호가를 조회하는 API(`GET {ORDER_API_URL}/order/orderbook/{stockCode}`)를 호출합니다.
+2. 매도·매수 호가를 화면용 배열로 변환합니다.
+3. 선택 종목의 호가 변경을 수신하는 WebSocket Topic(`/topic/hoga/{stockCode}`)을 구독합니다.
+4. 변경된 가격대와 수량을 반영하고 다시 정렬합니다.
+5. 매도·매수 호가를 각각 최대 10개 표시합니다.
 
-엔드포인트:
+### 핵심 코드
 
-- `GET {ORDER_API_URL}/order/orderbook/{stockCode}`
+```js
+export function useHogaSocket(client, connected, stockCode, { onSellUpdate, onBuyUpdate }) {
+  useEffect(() => {
+    if (!client || !connected || !stockCode) return;
 
-`useHoga.js`는 응답의 `sellOrders`, `buyOrders`를 화면 표시용 데이터로 변환한다.
+    const sub = client.subscribe(`/topic/hoga/${stockCode}`, message => {
+      try {
+      const { side, price, qty } = JSON.parse(message.body);
+      if (side === 'SELL') onSellUpdate({ price, qty });
+      else onBuyUpdate({ price, qty });
+      } catch (error) {
+        console.error('호가 파싱 실패:', error);
+      }
+    });
 
-## 실시간 호가
+    return () => sub.unsubscribe();
+  }, [client, connected, stockCode]);
+}
+```
 
-`useHoga.js`는 주문 실시간 연결 상태를 기준으로 종목별 호가 변경을 구독한다.
-구현은 `useHogaSocket()` (호가 변경 메시지 구독 기능)에서 담당한다.
+초기 호가 전체를 반복 조회하지 않고 변경된 가격대만 반영하기 위한 구독 경계입니다. 종목별 메시지의 방향(`side`), 가격과 수량을 입력으로 매도·매수 갱신 callback을 분리합니다. 종목 전환 시 구독도 함께 종료되어 이전 종목의 호가가 현재 화면에 섞이지 않습니다.
 
-실제 구독 토픽:
+### 구현 위치
 
-- `/topic/hoga/{stockCode}`
-
-콜백:
-
-- `onSellUpdate({ price, qty })`
-- `onBuyUpdate({ price, qty })`
-
-수량이 0이면 해당 가격대 호가를 제거하고, 기존 가격대가 있으면 수량을 갱신한다. 없으면 새 가격대를 추가한 뒤 가격 기준으로 정렬한다.
-
-## 표시 범위
-
-`useHoga.js`는 화면에 표시할 호가 개수를 제한한다.
-
-- `MAX_VISIBLE_ORDERS = 10`
-- 매도 호가: `sellOrders.slice(-MAX_VISIBLE_ORDERS)`
-- 매수 호가: `buyOrders.slice(0, MAX_VISIBLE_ORDERS)`
-
-총 매도/매수 수량과 막대 너비 계산도 이 훅에서 처리한다.
+- 호가 화면과 상태: `features/StockDetail/MainContent/HogaChart/HogaChart.jsx`, `useHoga.js`
+- 초기 조회: `lib/trade.js`의 `getOrderbookApi()`
+- 실시간 구독: `util/websocket/useHogaSocket.js`
 
 ## 체결 내역
 
-`useExecutionSocket()`는 체결 메시지를 구독해 `executions`배열을 제공한다. `stockClient`, `stockConnected`는 `StockWebSocketContext`에서 온다.
+종목별 체결 topic에서 최신 거래를 받아 호가창과 실시간 체결 영역에 공유합니다. 체결 목록은 최신순으로 최대 100개를 유지합니다.
 
-실제 구독 토픽:
+### 동작 순서
 
-- `/topic/execution/{stockCode}`
+1. 선택 종목의 실시간 체결을 수신하는 WebSocket Topic(`/topic/execution/{stockCode}`)을 구독합니다.
+2. 가격, 수량, 거래 유형, 등락률과 시간을 정규화합니다.
+3. 새 체결을 목록 앞에 추가합니다.
+4. 최신 체결 가격과 최대 100개 내역을 화면에 표시합니다.
 
-수신 메시지는 다음 필드로 정규화된다.
+### 핵심 코드
 
-- `tradeType`
-- `price`
-- `quantity`
-- `changeRate`
-- `totalVolume`
-- `time`
+```js
+const subscription = client.subscribe(`/topic/execution/${stockCode}`, message => {
+  const data = JSON.parse(message.body);
+  const execution = {
+    tradeType: data.tradeType,
+    price: data.price,
+    quantity: data.quantity,
+    changeRate: data.changeRate,
+    totalVolume: data.totalVolume,
+    time: data.time,
+  };
+  setExecutions(prev => [execution, ...prev.slice(0, 99)]);
+});
+```
 
-`useExecutionSocket()` 은 최신 체결을 배열 앞에 추가해 최신순을 유지하고, 최대 100개까지 유지한다.
+체결이 계속 누적되어 브라우저 상태가 무한히 커지는 문제를 막으면서 최신 거래를 보여주는 로직입니다. 종목 코드로 Topic을 구독하고 수신 메시지를 체결 화면의 필드 구조로 변환합니다. 새 항목은 목록 앞에 추가하고 최대 100개만 유지해 최신 체결 가격과 내역에 반영합니다.
 
-`useHoga.js`는 `executions[0]?.price`를 `lastExecutionPrice`로 계산한다.
+### 구현 위치
 
-`RealTimeTicks` 영역은 `useRealTimeTicks(stockCode)` 훅을 통해 같은 체결 데이터를 표시한다.
+- 체결 구독: `util/websocket/useExecutionSocket.js`
+- 체결 화면: `features/StockDetail/MainContent/RealTimeTicks/realTimeTicks.jsx`
+- 화면 상태: `features/StockDetail/MainContent/RealTimeTicks/useRealTimeTicks.js`
+
+## 주문 연동
+
+사용자가 호가를 선택하면 해당 가격을 종목 상세의 주문 패널로 전달합니다.
+
+### 동작 순서
+
+1. 매수 또는 매도 호가를 선택합니다.
+2. 선택 가격을 `selectedPrice`에 저장합니다.
+3. 현재 주문 탭의 가격 입력에 반영합니다.
+
+### 핵심 코드
+
+```js
+const [selectedPrice, setSelectedPrice] = useState({ value: null });
+
+const handlePriceSelect = (price) => {
+  setSelectedPrice({ value: price });
+};
+```
+
+호가 화면이 주문 폼의 내부 상태를 직접 알지 않도록 callback으로 두 기능을 연결합니다. 사용자가 매수 또는 매도 가격 행을 선택하면 해당 가격을 `onPriceSelect`의 출력으로 전달합니다. 상위 상세 상태가 값을 보관한 뒤 현재 주문 탭의 가격 입력에 반영합니다.
+
+### 구현 위치
+
+- 가격 선택: `features/StockDetail/MainContent/HogaChart/HogaChart.jsx`
+- 상태 전달: `features/StockDetail/MainContent/MainContent.jsx`
 
 ## 흐름
 
 ```mermaid
 flowchart TD
-  HogaChart["호가 화면 표시"] --> Hook["호가 데이터 준비"]
-  Hook --> REST["초기 호가 요청"]
-  REST --> Endpoint["초기 매수/매도 호가 수신"]
-  Hook --> HogaSocket["실시간 호가 구독"]
-  HogaSocket --> HogaTopic["호가 변경 메시지 수신"]
-  HogaSocket --> Sell["매도 호가 갱신"]
-  HogaSocket --> Buy["매수 호가 갱신"]
-  Hook --> ExecutionSocket["실시간 체결 구독"]
-  ExecutionSocket --> ExecutionTopic["체결 메시지 수신"]
-  ExecutionSocket --> Executions["체결 목록 갱신"]
-  HogaChart --> Select["호가 가격 선택"]
-  Select --> OrderForm["주문 가격에 전달"]
+  View["호가 화면 진입"] --> REST["초기 호가 조회"]
+  REST --> Hoga["매수·매도 호가 표시"]
+  OrderWS["주문 WebSocket"] --> HogaTopic["호가 변경 수신"]
+  HogaTopic --> Hoga
+  StockWS["종목 WebSocket"] --> Execution["체결 수신"]
+  Execution --> Ticks["체결 목록 갱신"]
+  Hoga --> Select["가격 선택"]
+  Select --> Order["주문 가격 반영"]
 ```
+
 ## 핵심 구현 파일
 
-기준 경로
-
-`StockFrontEnd`
+기준 경로: `StockFrontEnd`
 
 | 파일 |
 | --- |
 | `features/StockDetail/MainContent/HogaChart/HogaChart.jsx` |
 | `features/StockDetail/MainContent/HogaChart/useHoga.js` |
-| `features/StockDetail/MainContent/HogaChart/HogaChart.css` |
 | `features/StockDetail/MainContent/RealTimeTicks/realTimeTicks.jsx` |
 | `features/StockDetail/MainContent/RealTimeTicks/useRealTimeTicks.js` |
-| `features/StockDetail/MainContent/RealTimeTicks/realTimeTicks.css` |
 | `lib/trade.js` |
 | `util/websocket/useHogaSocket.js` |
 | `util/websocket/useExecutionSocket.js` |
-| `util/websocket/context/OrderWebSocketContext.js` |
-| `util/websocket/context/StockWebSocketContext.js` |
 
-<div align="right">
+## 관련 문서
 
-[문서 맨 위로](#top)
+- [종목 상세](03-stock-detail.md)
+- [주문](05-order.md)
+- [실시간 연결](09-websocket.md)
 
-</div>
-
-
-
+<div align="right">[문서 맨 위로](#top)</div>

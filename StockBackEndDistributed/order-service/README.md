@@ -20,14 +20,14 @@
 
 | 분류 | 문서 | 분류 | 문서 |
 | --- | --- | --- | --- |
-| 루트 README | [README](../../README.md) | 서비스 README | [README](README.md) |
-| Engineering Notes | [Engineering Notes](../../docs/ENGINEERING.md) | Database Schema ERD | [Database Schema ERD](../../docs/database-schema.md) |
-| 00 | [주문 서비스 개요](docs/00-order-service-overview.md) | 01 | [주문 API](docs/01-order-api.md) |
-| 02 | [Kafka 주문 흐름](docs/02-kafka-order-flow.md) | 03 | [정산/체결 이벤트](docs/03-settlement-and-trade-events.md) |
-| 04 | [호가장](docs/04-orderbook.md) | 05 | [매칭 엔진](docs/05-matching-engine.md) |
-| 06 | [Candle 차트 흐름](docs/06-candle-chart-flow.md) | 07 | [실시간 발행 흐름](docs/07-websocket-flow.md) |
-| 08 | [Bot 거래 구조](docs/08-bot-trading-flow.md) | 09 | [초기화/주기 작업](docs/09-initialization-and-scheduler.md) |
-| 10 | [order-service 이슈](docs/10-order-service-issues.md) | 11 | [order-service 트러블슈팅](docs/11-troubleshooting.md) |
+| 주식 README | [README](../../README.md) | 주문 서비스 README | [README](README.md) |
+| 설계 노트 | [Engineering Notes](../../docs/ENGINEERING.md) | 데이터베이스 ERD | [Database Schema ERD](../../docs/database-schema.md) |
+| 주문 서비스 개요 | [주문 서비스 개요](docs/00-order-service-overview.md) | 주문 API | [주문 API](docs/01-order-api.md) |
+| Kafka 주문 흐름 | [Kafka 주문 흐름](docs/02-kafka-order-flow.md) | 정산/체결 이벤트 | [정산/체결 이벤트](docs/03-settlement-and-trade-events.md) |
+| 호가장 | [호가장](docs/04-orderbook.md) | 매칭 엔진 | [매칭 엔진](docs/05-matching-engine.md) |
+| Candle 차트 흐름 | [Candle 차트 흐름](docs/06-candle-chart-flow.md) | 실시간 발행 흐름 | [실시간 발행 흐름](docs/07-websocket-flow.md) |
+| Bot 거래 구조 | [Bot 거래 구조](docs/08-bot-trading-flow.md) | 초기화/주기 작업 | [초기화/주기 작업](docs/09-initialization-and-scheduler.md) |
+| 주문 서비스 이슈 | [order-service 이슈](docs/10-order-service-issues.md) | 주문 서비스 트러블슈팅 | [order-service 트러블슈팅](docs/11-troubleshooting.md) |
 
 ## 목차
 
@@ -39,38 +39,23 @@
 
 ## 주문 서비스 소개
 
-Kafka 기반 주문 처리, 주문 매칭 시스템, Redis Candle 저장, WebSocket 실시간 발행을 담당하는 주문 서비스입니다.
+주문 매칭 및 처리, 현재 분봉 저장(redis candle), 실시간 발행(websocket)을 담당하는 주문 서비스입니다.
 
-`order-service`는 주문을 단순히 저장하는 서비스가 아니라 주문 검증 이후의 체결 흐름을 조정합니다. 일반 사용자 주문은 Kafka `order-topic`으로 들어오고, 종목별 메모리 호가장에서 매칭된 뒤 정산 이벤트, 체결 이벤트, Candle 갱신, WebSocket 발행으로 이어집니다.
+`order-service`는 주문과 체결 흐름을 조정합니다. 사용자 주문은  종목별 메모리 호가장에서 매칭된 뒤 정산 이벤트, 체결 이벤트, Candle 갱신, WebSocket 발행으로 이어집니다.
 
 ## 주요 구현 내용
 
-주문은 프로젝트에서 가장 많은 변화를 만드는 도메인입니다. <br>
-현재 구현된 주문 흐름은 API 요청 하나로 끝나지 않고 다음 처리로 이어집니다.
-
-- user-service에 주문 가능 여부 검증 요청
-- Kafka `order-topic` 발행
-- 종목별 락 획득 후 주문 매칭
-- 미체결/부분체결/완료 주문 저장
-- 체결 이력 저장
-- user-service 정산 이벤트 발행
-- stock-service 체결 이벤트 발행
-- Redis 현재 Candle 갱신
-- 호가, 주문 상태, Candle WebSocket 발행
-
-이 흐름 때문에 order-service는 주문 접수, 호가장, 매칭, 체결 후 이벤트 발행을 한 서비스 내부에서 조정한다.
-
-| 영역 | 구현 내용 | 관련 코드 |
-| --- | --- | --- |
-| 주문 API | 주문 등록, 정정, 취소, 호가 조회, 내 주문 조회 | `features/Order/OrderController.java` |
-| 주문 검증 | user-service에 매수/매도 가능 여부 검증 요청 | `features/Order/OrderService.java` |
-| Kafka 주문 처리 | `order-topic` 발행/소비, DLT 재처리 | `features/kafka/KafkaProducer.java`, `KafkaConsumer.java` |
-| 메모리 호가장 | 종목별 `OrderBook` 캐시와 가격대별 주문 큐 | `OrderBookCache.java`, `OrderBook.java`, `PriceLevel.java` |
-| 매칭 엔진 | 가격/시간 우선 매칭, 부분체결/완료 상태 처리 | `features/Order/OrderTradeService.java` |
-| 정산 이벤트 | user-service 정산 이벤트와 stock-service 체결 이벤트 발행 | `features/kafka/SettlementProducer.java` |
-| Candle | Redis 현재 1분봉/일봉 갱신, Candle API 제공 | `features/Candle/*` |
-| WebSocket | 호가, 주문 상태, 현재/완성 Candle 발행 | `features/Websocket/WebSocketService.java` |
-| 초기화 | 서버 시작 시 종목, 호가장, Candle, Bot 캐시 초기화 | `init/*`, `features/Bot/BotInit.java` |
+| 영역 | 주요 구현 내용 | 사용 기술/처리 방식 | 관련 문서 |
+| --- | --- | --- | --- |
+| 주문 API | 주문 등록·정정·취소<br>호가 및 사용자 주문 조회 | REST API 제공<br>`features/Order/OrderController.java` | [주문 API](docs/01-order-api.md) |
+| 주문 검증 | 매수·매도 가능 여부 확인<br>주문 처리 전 자산 검증 | user-service 동기 요청<br>`features/Order/OrderService.java` | [주문 API](docs/01-order-api.md) |
+| Kafka 주문 처리 | `order-topic` 발행 및 소비<br>실패 주문 DLT 재처리 | Kafka 비동기 처리<br>`KafkaProducer`, `KafkaConsumer` | [Kafka 주문 흐름](docs/02-kafka-order-flow.md) |
+| 메모리 호가장 | 종목별 `OrderBook` 캐시<br>가격대별 주문 큐 관리 | 종목별 락과 메모리 큐<br>`OrderBookCache`, `PriceLevel` | [호가장](docs/04-orderbook.md) |
+| 매칭 엔진 | 가격·시간 우선 주문 매칭<br>부분체결·완료 상태 처리 | 체결 이력과 주문 상태 저장<br>`OrderTradeService.java` | [매칭 엔진](docs/05-matching-engine.md) |
+| 정산 이벤트 | user-service 정산 이벤트 발행<br>stock-service 체결 이벤트 발행 | Kafka 기반 후속 처리<br>`SettlementProducer.java` | [정산/체결 이벤트](docs/03-settlement-and-trade-events.md) |
+| Candle | Redis 현재 1분봉·일봉 갱신<br>Candle 조회 API 제공 | Redis 캐시와 Candle 집계<br>`features/Candle/*` | [Candle 차트 흐름](docs/06-candle-chart-flow.md) |
+| 웹소켓 | 호가와 주문 상태 발행<br>현재·완성 Candle 발행 | WebSocket topic 발행<br>`WebSocketService.java` | [실시간 발행 흐름](docs/07-websocket-flow.md) |
+| 초기화 | 종목·호가장·Candle 초기화<br>Bot 캐시 초기화 | 서버 시작 시 캐시 구성<br>`init/*`, `BotInit.java` | [초기화/주기 작업](docs/09-initialization-and-scheduler.md) |
 
 ## 시스템 아키텍처
 

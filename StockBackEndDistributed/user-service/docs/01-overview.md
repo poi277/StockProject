@@ -8,13 +8,13 @@
 
 | 분류 | 문서 | 분류 | 문서 |
 | --- | --- | --- | --- |
-| 루트 README | [README](../../../README.md) | 서비스 README | [README](../README.md) |
-| Engineering Notes | [Engineering Notes](../../../docs/ENGINEERING.md) | Database Schema ERD | [Database Schema ERD](../../../docs/database-schema.md) |
-| 01 | [개요](01-overview.md) | 02 | [인증/JWT](02-auth-jwt.md) |
-| 03 | [회원가입/프로필](03-user-register-profile.md) | 04 | [자산/주문 검증](04-user-asset-order-validation.md) |
-| 05 | [Kafka 정산](05-settlement-kafka.md) | 06 | [관심종목](06-watchlist.md) |
-| 07 | [실시간 연결](07-websocket.md) | 08 | [도메인 모델](08-domain-model.md) |
-| 09 | [보안 설정](09-security-config.md) | 10 | [user-service 이슈](10-user-service-issues.md) |
+| 주식 README | [README](../../../README.md) | 사용자 서비스 README | [README](../README.md) |
+| 설계 노트 | [Engineering Notes](../../../docs/ENGINEERING.md) | 데이터베이스 ERD | [Database Schema ERD](../../../docs/database-schema.md) |
+| 개요 | [개요](01-overview.md) | 인증/JWT | [인증/JWT](02-auth-jwt.md) |
+| 회원가입/프로필 | [회원가입/프로필](03-user-register-profile.md) | 자산/주문 검증 | [자산/주문 검증](04-user-asset-order-validation.md) |
+| Kafka 정산 | [Kafka 정산](05-settlement-kafka.md) | 관심종목 | [관심종목](06-watchlist.md) |
+| 실시간 연결 | [실시간 연결](07-websocket.md) | 도메인 모델 | [도메인 모델](08-domain-model.md) |
+| 보안 설정 | [보안 설정](09-security-config.md) | 유저 서비스 이슈 | [user-service 이슈](10-user-service-issues.md) |
 
 ## 목차
 
@@ -26,22 +26,14 @@
 > [핵심 구현 파일](#핵심-구현-파일)
 ## 개요
 
-`user-service`는 분산 백엔드 구조에서 사용자 도메인을 담당하는 Spring Boot 서비스다.<br>
- 주요 책임은 인증, 회원가입, 프로필 조회, 관심종목 관리, 사용자 자산/보유주식 관리, 주문 전 자산 검증, 체결 정산 반영, 사용자 WebSocket 알림이다.
+`user-service`는 분산 백엔드 구조에서 사용자 도메인을 담당한다.<br>
 
 
-## 서비스 포트와 외부 의존성
-
-`application-docker.properties` 기준으로 user-service는 별도 포트에서 실행되며, 다음 외부 시스템에 의존한다.
-
-- PostgreSQL
-- Redis
-- Kafka
-- stock-service
-
-주의: 설정 파일에는 DB, Redis, JWT 관련 민감정보가 포함되어 있다. 문서에는 값을 기록하지 않으며, 운영/공개 저장소 기준으로는 환경 변수로 분리 필요하다.
 
 ## 주요 기능
+
+ 주요 책임 및 기능은 인증, 회원가입, 프로필 조회, 관심종목 관리, 자산/보유주식 관리, 주문 전 자산 검증, 체결 정산 반영, 사용자 WebSocket 알림입니다.
+
 
 | 기능 | 설명 |
 | --- | --- |
@@ -66,6 +58,16 @@ flowchart TD
   Kafka["정산 이벤트 수신"] --> UserAPI
   UserAPI --> UserWS
 ```
+## 서비스 포트와 외부 의존성
+
+`application-docker.properties` 기준으로 user-service는 별도 포트에서 실행되며, 다음 외부 시스템에 의존합니다.
+
+- PostgreSQL
+- Redis
+- Kafka
+- stock-service
+
+주의: 설정 파일에는 DB, Redis, JWT 관련 민감정보가 포함되어 있습니다. 문서에는 값을 기록하지 않으며, 운영/공개 저장소 기준으로는 환경 변수로 분리 필요합니다.
 
 ## 핵심 구현 파일
 

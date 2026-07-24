@@ -1,118 +1,136 @@
 <a id="top"></a>
 
-# 종목 상세 기능 화면
+# 종목 상세 기능
 
 ## 문서 포털
 
-문서의 상세 구현, API, 아키텍처, 트러블슈팅은 아래 문서를 참고하세요.
+상세 구현, API, 아키텍처와 트러블슈팅 정보는 아래 문서에서 확인할 수 있습니다.
 
 | 분류 | 문서 | 분류 | 문서 |
 | --- | --- | --- | --- |
-| 루트 README | [README](../../README.md) | 서비스 README | [README](../README.md) |
-| Engineering Notes | [Engineering Notes](../../docs/ENGINEERING.md) | Database Schema ERD | [Database Schema ERD](../../docs/database-schema.md) |
-| 01 | [인증](01-auth.md) | 02 | [종목 목록](02-stock-list.md) |
-| 03 | [종목 상세](03-stock-detail.md) | 04 | [차트](04-chart.md) |
-| 05 | [주문](05-order.md) | 06 | [호가/체결](06-orderbook-execution.md) |
-| 07 | [자산](07-user-asset.md) | 08 | [관심종목](08-watchlist.md) |
-| 09 | [실시간 연결](09-websocket.md) | 10 | [프론트엔드 이슈](10-frontend-issues.md) |
+| 주식 README | [README](../../README.md) | 주식 거래 플랫폼 README | [README](../README.md) |
+| 설계 노트 | [Engineering Notes](../../docs/ENGINEERING.md) | 데이터베이스 ERD | [Database Schema ERD](../../docs/database-schema.md) |
+| 인증 | [인증](01-auth.md) | 종목 목록 | [종목 목록](02-stock-list.md) |
+| 종목 상세 | [종목 상세](03-stock-detail.md) | 차트 | [차트](04-chart.md) |
+| 주문 | [주문](05-order.md) | 호가/체결 | [호가/체결](06-orderbook-execution.md) |
+| 자산 | [자산](07-user-asset.md) | 관심종목 | [관심종목](08-watchlist.md) |
+| 실시간 연결 | [실시간 연결](09-websocket.md) | 프론트엔드 이슈 | [프론트엔드 이슈](10-frontend-issues.md) |
 
 ## 목차
 
-> [개요](#개요) ·
-> [라우팅](#라우팅) ·
-> [화면 구성](#화면-구성)
+> [개요](#개요) · [화면 구성](#화면-구성) · [상세 정보 갱신](#상세-정보-갱신) · [거래 영역](#거래-영역) · [흐름](#흐름) · [핵심 구현 파일](#핵심-구현-파일) · [관련 문서](#관련-문서)
 
-> [실시간 상세 갱신](#실시간-상세-갱신) ·
-> [메인 콘텐츠 레이아웃](#메인-콘텐츠-레이아웃) ·
-> [흐름](#흐름) ·
-> [핵심 구현 파일](#핵심-구현-파일)
 ## 개요
 
-종목 상세 화면은 종목 코드 기반 동적 라우트로 진입하며, 초기 종목 정보를 REST API로 조회한 뒤 상세 화면 컴포넌트에 전달한다. 상세 화면은 가격 헤더, 탭, 메인 콘텐츠 영역, 롤링 바 형태로 구성된다.
+종목 상세 화면은 URL의 종목 코드로 기본 정보를 조회하고 차트, 호가, 주문과 체결 기능을 구성합니다. 현재가는 WebSocket으로 갱신합니다.
 
 ## 화면 구성
 
-`StockDetailForm.jsx`는 다음 컴포넌트를 조합한다.
+상단에는 종목명과 가격 정보를 표시하고, 메인 영역에는 차트·호가·주문·보유 종목·체결 패널을 배치합니다.
 
-- `StockPriceHeader`: 종목명, 현재가 등 상단 가격 정보
-- `StockTabSelection`: 상세 화면 탭 UI
-- `MainContent`: 차트, 호가, 주문, 보유 주식, 체결 영역
-- `StockRollingBar`: 하단 롤링 영역
+### 구현 위치
 
-## 실시간 상세 갱신
+- 동적 라우트: `app/stock/[stockCode]/page.js`
+- 상세 화면: `features/StockDetail/StockDetailForm.jsx`
+- 가격 헤더: `features/StockDetail/StockHeader/StockPriceHeader.jsx`
+- 메인 영역: `features/StockDetail/MainContent/MainContent.jsx`
 
-수신 데이터로 다음 값을 갱신한다.
+## 상세 정보 갱신
 
-- `changeRate`
-- `changeAmount`
-- `openPrice`
-- `currentPrice`
-- `highPrice`
-- `lowPrice`
+초기 종목 정보를 표시한 뒤 종목 시세 topic을 구독합니다. 메시지의 현재가, 등락률, 등락값과 시가·고가·저가를 헤더에 반영합니다.
 
- 화면 표시 전에 `changeRate`를 `Number(...).toFixed(2)`로 변환한다.
+### 동작 순서
 
-## 메인 콘텐츠 레이아웃
+1. 종목 상세 화면 라우트(`/stock/{stockCode}`)에서 조회할 종목 코드를 읽습니다.
+2. 종목 상세 API로 기본 정보를 조회합니다.
+3. 선택 종목의 실시간 시세를 수신하는 WebSocket Topic(`/topic/stock/{stockCode}`)을 구독합니다.
+4. 수신한 시세로 상세 헤더를 갱신합니다.
 
-`MainContent.jsx`는 분할 가능한 패널 형태로 상세 화면 핵심 기능을 배치한다.
+### 핵심 코드
 
-- 차트
-- 호가
-- 일반 주문
-- 보유 주식
-- 실시간 체결
-- 커뮤니티 영역
+```js
+const subscription = client.subscribe(`/topic/stock/${initStock.stockCode}`, message => {
+  const data = JSON.parse(message.body);
+  setStock(prev => ({
+    ...prev,
+    changeRate: data.changeRate,
+    changeAmount: data.changeAmount,
+    openPrice: data.openPrice,
+    currentPrice: data.currentPrice,
+    highPrice: data.highPrice,
+    lowPrice: data.lowPrice,
+  }));
+});
+```
 
-분할 크기와 드래그 처리는 `useMainContent.js`에서 관리한다. 호가창에서 선택한 가격은 `selectedPrice` 상태로 저장되고 주문 패널에 전달된다.
+`stockCode`와 시세 메시지를 입력으로 받아 현재가·등락·시가·고가·저가를 기존 상태에 병합합니다. 병합 결과는 가격 헤더에 반영되어 전체 상세 데이터를 다시 조회하지 않아도 됩니다.
+
+### 구현 위치
+
+- 상세 조회: `lib/stock.js`의 `StockDetailApi()`
+- 상태 관리: `features/StockDetail/StockHeader/useStockDetail.js`
+- 실시간 구독: `util/websocket/useStockDetailSocket.js`
+
+## 거래 영역
+
+메인 영역은 드래그 가능한 패널로 구성됩니다. 호가에서 선택한 가격은 주문 패널의 입력 가격으로 전달합니다.
+
+### 동작 순서
+
+1. 차트, 호가와 주문 패널을 표시합니다.
+2. 사용자가 호가 가격을 선택합니다.
+3. 선택 값을 `selectedPrice`에 저장합니다.
+4. 주문 패널의 매수·매도 가격에 반영합니다.
+
+### 핵심 코드
+
+```js
+const [selectedPrice, setSelectedPrice] = useState({ value: null });
+
+const handlePriceSelect = (price) => {
+  setSelectedPrice({ value: price });
+};
+```
+
+호가 선택과 주문 입력을 직접 결합하지 않고 상위 상태를 통해 연결하기 위한 로직입니다. 사용자가 선택한 호가를 입력으로 `selectedPrice`를 갱신하고 매수·매도·정정 패널에 같은 값을 전달합니다. 이 구조는 호가 UI와 주문 UI의 책임을 분리하면서도 가격 입력을 즉시 동기화합니다.
+
+### 구현 위치
+
+- 패널 구성: `features/StockDetail/MainContent/MainContent.jsx`
+- 패널 상태: `features/StockDetail/MainContent/useMainContent.js`
 
 ## 흐름
 
 ```mermaid
 flowchart TD
-  Route["종목 상세 URL 진입"] --> Page["종목 코드 확인"]
-  Page --> API["종목 상세 정보 요청"]
-  API --> Endpoint["종목 기본 정보 수신"]
-  Endpoint --> Detail["상세 화면 구성"]
-  Detail --> Header["현재가와 등락 정보 표시"]
-  Header --> DetailSocket["실시간 시세 갱신"]
-  Detail --> Tabs["상세 탭 표시"]
-  Detail --> Main["핵심 거래 영역 표시"]
-  Main --> Chart["차트 표시"]
-  Main --> Hoga["호가 표시"]
-  Hoga --> SelectedPrice["호가 가격 선택"]
-  SelectedPrice --> Order["주문 가격에 반영"]
-  Main --> HaveStock["보유 주식 확인"]
-  Main --> Ticks["실시간 체결 확인"]
+  Route["종목 상세 URL 진입"] --> API["기본 정보 조회"]
+  API --> Detail["상세 화면 구성"]
+  Detail --> Socket["종목 시세 구독"]
+  Socket --> Header["가격 정보 갱신"]
+  Detail --> Main["차트·호가·주문 표시"]
+  Main --> Hoga["호가 선택"]
+  Hoga --> Order["주문 가격 반영"]
 ```
+
 ## 핵심 구현 파일
 
-기준 경로
-
-`StockFrontEnd`
+기준 경로: `StockFrontEnd`
 
 | 파일 |
 | --- |
 | `app/stock/[stockCode]/page.js` |
-| `app/stock/[stockCode]/layout.js` |
 | `features/StockDetail/StockDetailForm.jsx` |
 | `features/StockDetail/StockHeader/useStockDetail.js` |
 | `features/StockDetail/StockHeader/StockPriceHeader.jsx` |
-| `features/StockDetail/StockHeader/StockHeaderName/StockHeaderName.jsx` |
-| `features/StockDetail/StockHeader/StockHeaderName/StockHeaderPrice.jsx` |
-| `features/StockDetail/StockHeader/StockHeaderTabs/StockHeaderTabs.jsx` |
-| `features/StockDetail/StockHeader/StockHeaderTabs/StockHeaderGrid.jsx` |
-| `features/StockDetail/StockHeader/StockTabSelection/StockTabSelection.jsx` |
 | `features/StockDetail/MainContent/MainContent.jsx` |
 | `features/StockDetail/MainContent/useMainContent.js` |
-| `features/StockDetail/StockRollingBar/StockRollingBar.jsx` |
 | `lib/stock.js` |
 | `util/websocket/useStockDetailSocket.js` |
 
-<div align="right">
+## 관련 문서
 
-[문서 맨 위로](#top)
+- [차트](04-chart.md)
+- [주문](05-order.md)
+- [호가와 체결](06-orderbook-execution.md)
 
-</div>
-
-
-
+<div align="right">[문서 맨 위로](#top)</div>

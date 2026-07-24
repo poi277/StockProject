@@ -1,423 +1,240 @@
 <a id="top"></a>
 
-# FrontEnd 트러블슈팅
+# 프론트엔드 트러블슈팅
 
 ## 문서 포털
 
-문서의 상세 구현, API, 아키텍처, 트러블슈팅은 아래 문서를 참고한다.
+상세 구현, API, 아키텍처와 트러블슈팅 정보는 아래 문서에서 확인할 수 있습니다.
 
 | 분류 | 문서 | 분류 | 문서 |
 | --- | --- | --- | --- |
-| 루트 README | [README](../../../README.md) | 서비스 README | [README](../README.md) |
-| Engineering Notes | [Engineering Notes](../../../docs/ENGINEERING.md) | Database Schema ERD | [Database Schema ERD](../../../docs/database-schema.md) |
-| 00 | [주문 서비스 개요](00-order-service-overview.md) | 01 | [주문 API](01-order-api.md) |
+| 주식 README | [README](../../README.md) | 주식 거래 플랫폼 README | [README](../README.md) |
+| 설계 노트 | [Engineering Notes](../../docs/ENGINEERING.md) | 데이터베이스 ERD | [Database Schema ERD](../../docs/database-schema.md) |
+| 인증 | [인증](01-auth.md) | 종목 목록 | [종목 목록](02-stock-list.md) |
+| 종목 상세 | [종목 상세](03-stock-detail.md) | 차트 | [차트](04-chart.md) |
+| 주문 | [주문](05-order.md) | 호가/체결 | [호가/체결](06-orderbook-execution.md) |
+| 자산 | [자산](07-user-asset.md) | 관심종목 | [관심종목](08-watchlist.md) |
+| 실시간 연결 | [실시간 연결](09-websocket.md) | 프론트엔드 이슈 | [프론트엔드 이슈](10-frontend-issues.md) |
 
 ## 목차
 
+> [개요](#개요) · [Candle 업데이트](#candle-업데이트) · [시간과 주기 정규화](#시간과-주기-정규화) · [스크롤과 뷰포트](#스크롤과-뷰포트) · [표시 형식과 조회 범위](#표시-형식과-조회-범위) · [주문 정정](#주문-정정) · [핵심 구현 파일](#핵심-구현-파일) · [관련 문서](#관련-문서)
+
 ## 개요
 
-이 문서는 `FrontEnd`에서 해결한 트러블슈팅을 정리한다. 
+실시간 Candle, 과거 데이터 조회와 주문 정정 과정에서 해결한 문제를 정리합니다. 각 항목은 증상, 원인과 적용한 해결 방법만 간단히 설명합니다.
 
+## Candle 업데이트
 
-# Lightweight Charts 트러블슈팅
+Whitespace와 실시간 Candle이 같은 시간축을 사용할 때 업데이트 순서와 데이터 존재 여부를 구분해야 합니다.
 
-프로젝트에서 **lightweight-charts**를 적용하면서 실시간 캔들, 무한 스크롤, 다양한 시간 단위(분봉/시봉/일봉) 지원을 구현하는 과정에서 여러 문제가 발생했다. 단순히 에러를 해결하는 것이 아니라, 각 문제의 원인을 분석하고 차트의 동작 방식에 맞게 구조를 수정하면서 안정적인 차트 시스템을 완성했다.
+### 해결 순서
 
+1. Whitespace 뒤의 기존 Candle은 `series.update(data, true)`로 수정합니다.
+2. 장 시작 전 일봉처럼 Candle이 없을 수 있는 주기는 새 데이터 추가를 허용합니다.
+3. 진행 Candle은 같은 시간 구간에 병합하고 완료 Candle은 확정합니다.
+4. 그룹봉은 Open을 유지하고 High·Low·Close와 거래량을 누적합니다.
 
-## 1. whitespace(공백) 데이터 충돌 오류
+### 핵심 코드
 
-### 문제
+```js
+const mergedCandle = {
+    ...prev,
+    high: Math.max(prev.high, normalizedCandle.high),
+    low: Math.min(prev.low, normalizedCandle.low),
+    close: normalizedCandle.close,
+    buyQty: (prev.buyQty ?? 0) + (normalizedCandle.buyQty ?? 0),
+    sellQty: (prev.sellQty ?? 0) + (normalizedCandle.sellQty ?? 0),
+    movingAverages: normalizedCandle.movingAverages ?? prev.movingAverages,
+};
 
-실시간 데이터를 표현하기 위해 차트의 마지막에 미래 영역을 나타내는 **whitespace**를 미리 생성해두었다.
-
-하지만 웹소켓으로 들어온 현재 봉을 `update()` 하자 아래와 같은 오류가 발생했다.
-
-```
-Cannot update oldest data
-```
-
-### 원인
-
-`setData()`로 whitespace를 추가하면 차트 입장에서는 **가장 마지막 데이터가 미래 시점의 whitespace**가 된다.
-
-따라서 실제 현재 봉을 `update()` 하면 차트에서는 이미 마지막 데이터가 존재한다고 판단하여 현재 봉을 오래된 데이터(oldest data)로 인식하게 된다.
-
-### 해결
-
-`update()` 호출 시 두 번째 인자인 `historicalUpdate`를 `true`로 전달하여 기존 데이터 수정이라는 의미를 명시했다.
-
-```javascript
-series.update(data, true);
-```
-
-이를 통해 whitespace가 존재하더라도 현재 봉을 정상적으로 수정할 수 있도록 해결했다.
-
-
-## 2. 일봉에서의 장 시작전 오류
-
-### 문제
-
-분봉과 시봉에서는 정상 동작했지만 일봉으로 변경하면 웹소켓 수신 시 아래 오류가 발생했다.
-
-```
-Cannot update non-existing data point when historicalUpdate is true
+this._candles = [
+    ...candles.slice(0, idx),
+    mergedCandle,
+    ...candles.slice(idx + 1),
+];
 ```
 
-### 원인
-
-일봉은 장 시작 전이라면 **오늘 봉 자체가 아직 존재하지 않을 수 있다.**
-
-그런데 `historicalUpdate: true`는 기존 데이터를 수정하는 용도이므로 존재하지 않는 오늘 봉을 수정하려고 하면서 오류가 발생했다.
-
-### 해결
-
-봉 타입에 따라 업데이트 방식을 분기했다.
-
-* 분봉/시봉 → 기존 봉 수정 (`historicalUpdate: true`)
-* 일봉/주봉/월봉/년봉 → 새 봉 생성 가능 (`historicalUpdate: false`)
-
-이후 모든 봉 타입에서 정상적으로 실시간 데이터가 반영되었다.
-
-
-## 3. Whitespace가 항상 1분 간격으로 생성되는 문제
-
-### 문제
-
-3분봉, 5분봉, 10분봉으로 변경해도 whitespace가 항상 1분 간격으로 생성되었다.
-
-### 원인
-
-`toChartData()` 호출 시 현재 봉 타입(type)을 전달하지 않아
-
-```javascript
-getIntervalSeconds(undefined)
-```
-
-가 실행되었고 기본값인 60초(1분)가 사용되고 있었다.
-
-### 해결
-
-현재 선택된 봉 타입을 `typeRef`로 관리하고 모든 `toChartData()` 호출 시 명시적으로 전달하도록 수정하였다.
-
-```javascript
-toChartData(candles, typeRef.current)
-```
-
-이를 통해 모든 봉 타입에서 whitespace 간격이 정확하게 생성되었다.
-
-
-## 4. 시간 전달 규격 문제
-
-### 문제
-
-일봉 전환 시 아래 오류가 발생하였다.
-
-```
-Assertion failed:
-data must be asc ordered by time
-time = NaN
-```
-
-### 원인
-
-백엔드에서 내려오는 `CandleDTO`의 시간 문자열이 빈 문자열(`""`)이었고,
-
-이를 그대로 `toUnixTime()`에 전달하면서 `NaN`이 생성되었다.
-
-원인을 추적한 결과 `getCandidateTimeStr()`에서 `CandleDTO` 타입을 처리하지 못해 빈 문자열을 반환하고 있었다.
-
-### 해결
-
-불필요한 타입 분기를 제거하고
-
-```java
-candle.getCandleTime()
-```
-
-을 직접 사용하도록 수정하여 항상 올바른 시간이 전달되도록 변경했다.
-
-
-## 5. 차트 드래그 이후 차트 위치가 원래대로 돌아가는 문제
-
-### 문제
-
-왼쪽으로 드래그하여 과거 데이터를 불러오면 차트가 잠시 이동했다가 다시 이전 위치로 돌아가는 현상이 발생했다.
-
-### 원인
-
-추가된 데이터 개수를 계산할 때
-
-```javascript
-series.data()
-```
-
-를 사용했는데 이 데이터에는 whitespace까지 포함되어 있었다.
-
-따라서 실제 추가된 캔들 개수가 잘못 계산되어 스크롤 보정 값이 틀어졌다.
-
-### 해결
-
-`loadMore()` 호출 전후의 **순수 캔들 개수**를 비교하여 `addedCount`를 직접 계산하도록 변경했다.
-
-이후 prepend 이후에도 사용자가 보고 있던 위치가 정확하게 유지되었다.
-
-## 6. 오른쪽으로 무한 드래그되는 문제
-
-### 문제
-
-차트 오른쪽으로 계속 드래그하면 whitespace를 넘어 아무 데이터도 없는 빈 공간까지 이동할 수 있었다.
-
-### 원인
-
-`barsInLogicalRange()`는 실제 캔들 개수만 계산하고 whitespace는 제외한다.
-
-따라서 차트 끝을 계산하는 기준이 실제 데이터까지만 잡혀 있었다.
-
-### 해결
-
-`setData()` 직후 전체 데이터 길이를 저장하였다.
-
-```javascript
-totalDataLengthRef.current = chartData.length;
-```
-
-이후 사용자가 마지막 whitespace를 넘어가려고 하면 직접 Logical Range를 제한하여 더 이상 이동하지 못하도록 수정하였다.
-
-
-## 7. 오른쪽 클램핑 이후 loadMore가 연쇄 호출되는 문제
-
-### 문제
-
-오른쪽 끝에서 드래그가 막힌 직후 갑자기 왼쪽 데이터 로딩(loadMore)이 실행되며 불필요한 API 요청이 발생했다.
-
-### 원인
-
-클램핑을 위해
-
-```javascript
-setVisibleLogicalRange()
-```
-
-를 호출하면 내부적으로 range 값이 변경되고,
-이 값이 다시 loadMore 조건을 만족하게 되면서 연쇄 호출이 발생했다.
-
-### 해결
-
-클램핑 직후에는 잠시 로딩을 차단하도록 플래그를 추가하였다.
-
-```javascript
-isLoadingRef.current = true;
-```
-
-일정 시간 이후 플래그를 해제하여 불필요한 API 요청을 막았다.
-
-
-## 8. 타입 변경 직후 Whitespace 간격이 이전 타입으로 생성되는 문제
-
-### 문제
-
-분봉을 변경하면 가끔 이전 봉 타입 기준으로 whitespace가 생성되었다.
-
-### 원인
-
-`typeRef`는 `useEffect()`에서 갱신되는데,
-
-초기 데이터 요청이 먼저 실행되어 이전 타입을 참조하는 경우가 있었다.
-
-### 해결
-
-초기화 이벤트에서 현재 봉 타입을 직접 전달하거나,
-
-`typeRef`가 먼저 갱신된 이후 데이터를 생성하도록 순서를 보장하였다.
-
-
-## 9. 타입 변경 시 확대/축소 상태가 초기화되는 문제
-
-### 문제
-
-분봉과 일봉을 변경할 때마다 사용자가 조정한 줌 상태가 초기화되었다.
-
-### 원인
-
-초기화 이벤트마다
-
-```javascript
-fitContent()
-```
-
-를 호출하고 있었다.
-
-### 해결
-
-최초 한 번만 실행하도록 `isFirstLoad`를 추가하였다.
-
-```javascript
-if (isFirstLoad.current) {
-    chart.timeScale().fitContent();
+같은 시간 구간의 메시지를 새 Candle로 추가하면 시간축 중복과 잘못된 OHLC가 생기므로 기존 구간과 병합합니다. 이전 Candle과 완료 Candle을 입력으로 Open은 유지하고 High·Low·Close와 거래량을 합산합니다. 병합 결과는 같은 인덱스를 교체해 차트와 이동평균 계산의 확정 데이터가 됩니다.
+
+### 구현 위치
+
+- Candle 병합과 그룹화: `features/StockDetail/Chart/useChart.js`
+- 차트 업데이트: `features/StockDetail/Chart/ChartComponent.jsx`
+- 실시간 구독: `util/websocket/useCandleSocket.js`
+
+## 시간과 주기 정규화
+
+선택 주기와 시간대가 일치하지 않으면 Candle이 잘못된 슬롯에 들어갑니다. 현재 주기를 명시적으로 전달하고 KST 기준으로 시간을 정규화합니다.
+
+### 해결 순서
+
+1. 모든 차트 데이터 변환에 현재 주기를 전달합니다.
+2. 수신한 시간 문자열이 비어 있지 않은지 확인한 뒤 Candle에 적용합니다.
+3. KST 기준 시·분으로 분봉 슬롯을 계산합니다.
+4. 주기 변경 시 이전 진행 Candle을 새 주기로 다시 계산하지 않습니다.
+5. Whitespace 간격도 현재 주기로 생성합니다.
+
+### 핵심 코드
+
+```js
+switch (candleType) {
+    case 'THREE_MINUTE':
+        minutes = Math.floor(minutes / 3) * 3;
+        break;
+    case 'FIVE_MINUTE':
+        minutes = Math.floor(minutes / 5) * 5;
+        break;
+    case 'TEN_MINUTE':
+        minutes = Math.floor(minutes / 10) * 10;
+        break;
+    case 'HOUR':
+        minutes = 0;
+        break;
+    // 생략: 2·3·4시간봉과 일·주·월·연 주기 정규화
 }
 ```
 
-이후 타입을 변경해도 확대 상태가 유지되었다.
+서버 메시지 시각을 그대로 사용하면 같은 구간의 Candle이 서로 다른 키로 저장될 수 있어 주기별 시작 시각으로 정규화합니다. KST 시·분과 Candle 주기를 입력으로 3·5·10분 또는 시간 단위 슬롯을 계산합니다. 반환된 시각은 진행·완료 Candle을 찾고 병합하는 공통 키가 됩니다.
 
+### 구현 위치
 
-## 10. 시간축이 항상 전체 날짜를 표시하는 문제
+- 시간 정규화: `features/StockDetail/Chart/useChart.js`
+- 데이터 변환: `features/StockDetail/Chart/ChartComponent.jsx`
+- 주기 상태: `store/chartButtonStore.js`
 
-### 문제
+## 스크롤과 뷰포트
 
-확대와 축소를 반복해도 시간축이 항상
+과거 데이터를 추가하거나 오른쪽 끝을 제한할 때 사용자가 보던 위치를 유지해야 합니다. 실제 Candle 수와 전체 차트 데이터 길이를 분리해 계산합니다.
 
-```
-2026-06-24
-```
+### 해결 순서
 
-형태로만 표시되었다.
+1. 과거 조회 전후의 순수 Candle 수로 추가 개수를 계산합니다.
+2. 추가한 개수만큼 Logical Range를 보정합니다.
+3. Candle과 Whitespace를 포함한 전체 길이로 오른쪽 이동 범위를 제한합니다.
+4. 범위 제한 직후에는 과거 데이터 조회를 잠시 차단합니다.
+5. `fitContent()`는 최초 로딩에서만 실행해 줌 상태를 유지합니다.
 
-### 원인
+### 핵심 코드
 
-`tickMarkFormatter()`에서 `tickMarkType`을 무시하고 항상 동일한 포맷을 반환하고 있었다.
-
-### 해결
-
-`TickMarkType`에 따라 표시 형식을 변경하였다.
-
-* Year → 연도
-* Month → 월
-* Day → 일
-* Time → 시:분
-
-이를 통해 줌 수준에 따라 토스증권과 유사한 시간축을 구현하였다.
-
-
-## 11. 그룹봉에서 1분봉 OHLC가 추가되는 문제 표시되는 문제
-
-### 문제
-
-10분봉을 보고 있어도 실시간 봉은 항상 현재 1분봉의 OHLC로 표시되었다.
-
-### 원인
-
-백엔드에서는 항상 **1분봉**을 전송하는데,
-
-프론트에서는 동일 시간 슬롯을 단순히 교체(replace)하고 있었다.
-
-즉, 그룹봉을 계산하지 않고 마지막 1분봉 데이터만 덮어쓰고 있었다.
-
-### 해결
-
-`addLiveCandle()`을 누적 집계 방식으로 변경하였다.
-
-* Open → 최초 값 유지
-* High → 최대값
-* Low → 최소값
-* Close → 최신 값
-* Buy/Sell Volume → 누적
-
-이를 통해 3분봉, 5분봉, 10분봉에서도 실시간 그룹봉이 정확하게 생성되었다.
-
-## 12. Live Candle이 잘못된 봉에 업데이트되는 문제
-
-### 문제
-
-3분봉인데도 실시간 봉이 10분봉 위치에 업데이트되는 현상이 발생했다.
-ex)0 3 6 9 10 error
-### 원인
-
-`useEffect()`의 의존성 배열에 `type`이 포함되어 있었다.
-
-타입을 변경하면 이전 Live Candle이 새로운 타입 기준으로 다시 계산되면서 잘못된 시간 슬롯으로 들어가고 있었다.
-
-### 해결
-
-현재 봉 타입은 `typeRef.current`만 사용하도록 변경하고,
-
-`type`을 의존성 배열에서 제거하였다.
-
-이를 통해 이전 데이터가 다시 계산되는 현상이 사라졌다.
-
-
-## 13. KST/UTC 시간 차이로 Normalize가 잘못되는 문제
-
-### 문제
-
-실시간 데이터 시간이 정상인데도 그룹핑 결과가 엉뚱한 봉으로 들어가는 현상이 발생하였다.
-
-### 원인
-
-JavaScript의 `Date`는 UTC 기준으로 계산되는데,
-
-정규화 과정에서는 한국 시간(KST)을 기준으로 그룹핑해야 했다.
-
-### 해결
-
-UTC 시간에 +9시간을 더한 후
-
-```javascript
-getUTCHours()
-getUTCMinutes()
+```js
+applyCandles(event.candles, typeRef.current, candleSeries, maSeries, totalDataLengthRef);
+if (currentRange && event.addedCount > 0) {
+  timeScale.setVisibleLogicalRange({
+    from: currentRange.from + event.addedCount,
+    to: currentRange.to + event.addedCount,
+  });
+}
 ```
 
-를 이용하여 KST 기준으로 그룹핑하도록 수정하였다.
+과거 데이터를 배열 앞에 추가하면 인덱스가 이동해 차트가 갑자기 다른 시점으로 점프하는 문제를 보정합니다. 기존 논리 범위와 실제 추가된 Candle 수를 입력으로 범위의 시작과 끝을 같은 수만큼 이동합니다. 보정 결과가 Lightweight Charts의 표시 범위에 적용되어 사용자가 보던 구간이 유지됩니다.
 
-이후 모든 분봉 그룹핑이 정확하게 동작하였다.
+### 구현 위치
 
+- 과거 조회: `features/StockDetail/Chart/useChart.js`
+- 범위와 뷰포트: `features/StockDetail/Chart/ChartComponent.jsx`
+- 뷰포트 저장: `store/chartButtonStore.js`
 
-## 14. 모든 봉 타입에서 동일한 Load More 크기를 사용하는 문제
+## 표시 형식과 조회 범위
 
-### 문제
+시간축과 과거 조회 범위는 Candle 주기에 맞게 달라야 합니다.
 
-왼쪽으로 드래그하여 과거 데이터를 불러올 때 분봉은 정상적이지만 일봉이나 월봉은 한두 개의 봉만 불러와졌다.
+### 동작 기준
 
-### 원인
+1. 시간축은 `TickMarkType`에 따라 연도·월·일·시:분 형식으로 표시합니다.
+2. 분봉은 분 단위, 시봉은 일 단위로 과거 범위를 계산합니다.
+3. 일봉·주봉·월봉은 각각 30일·30주·12개월 범위를 사용합니다.
 
-과거 조회 범위를 120분 으로 고정해두었기 때문이다.
+| Candle 주기 | 과거 조회 범위 |
+| --- | ---: |
+| 1분봉 | 120분 |
+| 5분봉 | 600분 |
+| 1시간봉 | 7일 |
+| 일봉 | 30일 |
+| 주봉 | 30주 |
+| 월봉 | 12개월 |
 
-일봉에서는 120분이 하루도 되지 않기 때문에 거의 데이터를 가져오지 못했다.
+### 핵심 코드
 
-### 해결
+```js
+if (type === 'DAY' || type === 'WEEK') {
+  startTime.setDate(startTime.getDate() - 30);
+} else if (type === 'MONTH') {
+  startTime.setMonth(startTime.getMonth() - 12);
+} else if (type === 'YEAR') {
+  startTime.setFullYear(startTime.getFullYear() - 10);
+} else {
+  startTime.setMinutes(startTime.getMinutes() - 120);
+}
+```
 
-봉 타입별 조회 범위를 별도로 정의하였다.
+모든 주기에 같은 조회 폭을 사용하면 분봉은 부족하고 장기 봉은 과도한 데이터를 가져오므로 주기별 범위를 분리합니다. Candle 유형과 조회 종료 시각을 입력으로 분·일·월·연 단위의 시작 시각을 계산합니다. 계산된 `startTime`과 `endTime`은 과거 Candle API에 전달되어 스크롤 한 번에 가져올 데이터 크기를 제한합니다.
 
-| 봉 타입 | 조회 범위 |
-| ---- | ----: |
-| 1분봉  |  120분 |
-| 5분봉  |  600분 |
-| 1시간봉 |    7일 |
-| 일봉   |   30일 |
-| 주봉   |   30주 |
-| 월봉   |  12개월 |
+### 구현 위치
 
-이를 통해 모든 차트에서 적절한 개수의 과거 데이터를 불러올 수 있게 되었다.
+- 조회 범위: `features/StockDetail/Chart/useChart.js`
+- 시간축 형식: `features/StockDetail/Chart/ChartComponent.jsx`
+- Candle API: `lib/candle.js`
 
-## 주문 수정 시 수량 입력으로 인한 상태 불일치
+## 주문 정정
 
-### 문제
+부분 체결 주문의 수량 기준이 달라지는 문제를 막기 위해 정정 요청에서는 기존 주문 수량을 유지하고 가격만 변경합니다.
 
-부분체결된 주문을 수정할 때 프론트엔드에서 가격과 수량을 모두 수정할 수 있도록 구현되어 있었다.
+### 해결 순서
 
-이 때문에 사용자가 현재 남아있는 미체결 수량보다 적거나 많은 값을 입력할 수 있었고, 백엔드의 주문 수량과 프론트엔드에 표시되는 수량이 서로 달라질 가능성이 있었다.
+1. 정정 대상의 현재 가격을 입력 상태에 반영합니다.
+2. 수량 입력과 증감 버튼을 비활성화합니다.
+3. 기존 주문 수량과 변경 가격을 정정 요청에 전달합니다.
 
-특히 부분체결된 주문은 최초 주문 수량과 현재 잔여 수량이 다르기 때문에, 사용자가 수정 수량의 기준을 혼동할 수 있었다.
+### 핵심 코드
 
-### 원인
+```js
+const handleEditOrder = async () => {
+    if (!editTarget) return;
 
-주문 수정 화면이 신규 주문 화면과 동일한 입력 컴포넌트를 사용하면서 수량 입력창도 활성화된 상태로 제공되고 있었다.
+    const response = await editOrderApi(
+        editTarget.orderId,
+        editTarget.tradeType,
+        editTarget.stockName,
+        editTarget.stockCode,
+        editTarget.quantity,
+        Number(price)
+    );
 
-프론트엔드에서는 수정 요청 시 사용자가 입력한 수량을 그대로 전송했기 때문에, 부분체결 이후의 잔여 수량과 다른 값이 백엔드로 전달될 수 있었다.
+    if (response.success) {
+        closeEdit();
+    }
+};
+```
 
-또한 주문 수정의 정책이 가격 수정인지, 총 주문 수량 수정인지, 잔여 수량 수정인지 화면상에서 명확하게 구분되지 않았다.
+부분 체결 이후 화면에 남은 수량과 원래 주문 수량을 혼동하지 않도록 사이드바 정정은 가격만 변경합니다. 정정 대상과 새 가격을 입력으로 받되 요청 수량은 기존 `editTarget.quantity`를 유지합니다. API 성공 시 정정 화면을 닫고 실제 주문 목록 변화는 WebSocket 응답으로 반영합니다.
 
-### 해결
+### 구현 위치
 
-주문 수정 상태에서는 수량 입력창을 비활성화하고, 현재 미체결 잔여 수량을 그대로 표시하도록 변경했다.
+- 정정 화면: `features/StockDetail/MainContent/Order/Edit/SideBarEditForm.jsx`
+- 정정 상태: `features/StockDetail/MainContent/Order/Edit/useSideBarEditOrder.js`
+- 정정 API: `lib/order.js`
 
-수량 증가 및 감소 버튼도 함께 비활성화하여 사용자가 수정 과정에서 수량을 변경할 수 없도록 처리했다.
+## 핵심 구현 파일
 
+기준 경로: `StockFrontEnd`
 
-# 결과
+| 파일 |
+| --- |
+| `features/StockDetail/Chart/ChartComponent.jsx` |
+| `features/StockDetail/Chart/useChart.js` |
+| `store/chartButtonStore.js` |
+| `util/websocket/useCandleSocket.js` |
+| `lib/candle.js` |
+| `features/StockDetail/MainContent/Order/Edit/SideBarEditForm.jsx` |
+| `features/StockDetail/MainContent/Order/Edit/useSideBarEditOrder.js` |
+| `lib/order.js` |
 
-이 과정에서 단순히 차트를 출력하는 수준을 넘어 **실시간 웹소켓 데이터**, **무한 스크롤**, **미래 whitespace**, **그룹봉 생성**, **다양한 시간 단위**, **줌 상태 유지**, **시간축 최적화**까지 고려한 차트 시스템을 구현하였다.
+## 관련 문서
 
+- [차트](04-chart.md)
+- [주문](05-order.md)
+- [실시간 연결](09-websocket.md)
+- [프론트엔드 이슈](10-frontend-issues.md)
 
-## 체결시 기존 기격에 호가 웹소켓 전달문제
-
-
+<div align="right">[문서 맨 위로](#top)</div>
