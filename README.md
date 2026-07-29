@@ -175,8 +175,8 @@ README에 MP4 파일을 직접 포함하지 않습니다.
 
 ## 시연 영상
 
-- [시연 영상](VIDEO_SHORT_URL)
-- [긴 시연 영상](VIDEO_FULL_URL)
+- [시연 영상](https://youtu.be/CC4gMc7gtGg)
+- [긴 시연 영상](https://youtu.be/Wi0h79Y9xls)
 
 ## 보안 및 외부 시세 참고
 
